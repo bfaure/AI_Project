@@ -7,18 +7,19 @@ from PyQt4 import QtGui, QtCore
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
+# class to hold details for a single cell
 class cell:
 	def __init__(self,x_coordinate=None,y_coordinate=None):
 		self.state = "free"
 		self.x = x_coordinate
 		self.y = y_coordinate
 
+# UI element (widget) that represents the interface with the grid
 class eight_neighbor_grid(QWidget):
 
 	def __init__(self,num_columns=160,num_rows=120):
-		# constructor
-		super(eight_neighbor_grid,self).__init__()
-		
+		# constructor, pass the number of cols and rows
+		super(eight_neighbor_grid,self).__init__()		
 		self.num_columns = num_columns
 		self.num_rows = num_rows
 		self.init_ui()
@@ -55,12 +56,12 @@ class eight_neighbor_grid(QWidget):
 	def drawWidget(self, qp):
 		# draw the grid, let the (0,0) cell be in the top left of the window
 		print("Re-Drawing Grid")
-		size = self.size()
-		width = size.width()
-		height = size.height()
+		size = self.size() # current size of widget
+		width = size.width() # current width of widget
+		height = size.height() # current height of widget
 
-		horizontal_step = int(round(width/self.num_columns))
-		vertical_step = int(round(height/self.num_rows))
+		horizontal_step = int(round(width/self.num_columns)) # per cell width
+		vertical_step = int(round(height/self.num_rows)) # per cell height
 
 		index = 0
 		for cell in self.cells:
@@ -142,13 +143,18 @@ class main_window(QWidget):
 	def init_vars(self):
 		# initialize all class variables here
 		self.grids = [] # list of all grid elements
-
 		self.click = None # save click info
+		self.host_os = os.name 
 
 	def init_ui(self):
 		# initialize ui elements here
 		self.layout = QVBoxLayout(self) # layout for window
 		self.setWindowTitle("AI Project 1")
+
+		# if windows, need to make room for menubar, on OSX the menubar
+		# is kept in the top OS menu bar instead
+		if os.name == "nt":
+			self.layout.addSpacing(25)
 
 		self.grid = eight_neighbor_grid()
 		self.grid.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -164,28 +170,50 @@ class main_window(QWidget):
 		context_menu_partial_action = self.context_menu.addAction("Set Cell as Partially Blocked",self.set_partial)
 		context_menu_full_action = self.context_menu.addAction("Set Cell as Fully Blocked",self.set_full)
 
-		self.resize(1700,1350) # ratio for a single grid is 4:3 (160,120)
+		# menubar
+		self.menu_bar = QMenuBar(self)
+		self.file_menu = self.menu_bar.addMenu("File")
+
+		# menubar actions
+		load_action = self.file_menu.addAction("Load...",self.load,QKeySequence("Ctrl+L"))
+		quit_action = self.file_menu.addAction("Quit", self.quit, QKeySequence("Ctrl+Q"))
+
+		self.resize(1627,1252) # ratio for a single grid is 4:3 (160,120)
 		self.show()
 
+	def load(self):
+		# load a new grid from file
+		pass
+
+	def quit(self):
+		# quits the application
+		self.close()
+
 	def on_context_menu_request(self,point):
+		# function called when user right clicks on grid
 		print(point)
 		self.click = point
 		self.context_menu.exec_(self.grid.mapToGlobal(point))
 		self.grid.repaint()
 
 	def set_start(self):
+		# called when user chooses item in right click menu
 		self.grid.set_cell_state(self.click.x(),self.click.y(),"start")
 
 	def set_end(self):
+		# called when user chooses item in right click menu
 		self.grid.set_cell_state(self.click.x(),self.click.y(),"end")
 
 	def set_free(self):
+		# called when user chooses item in right click menu
 		self.grid.set_cell_state(self.click.x(),self.click.y(),"free")
 
 	def set_partial(self):
+		# called when user chooses item in right click menu
 		self.grid.set_cell_state(self.click.x(),self.click.y(),"partial")
 
 	def set_full(self):
+		# called when user chooses item in right click menu
 		self.grid.set_cell_state(self.click.x(),self.click.y(),"full")
 
 	def resizeEvent(self,e):
