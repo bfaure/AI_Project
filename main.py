@@ -46,6 +46,9 @@ class eight_neighbor_grid(QWidget):
 		self.end_cell = (self.num_columns-1,self.num_rows-1) # default end cell
 		self.hard_to_traverse_cells = [] # empty by default
 
+	def clear(self):
+		# clears the current grid
+		self.init_cells()
 
 	def save(self,filename):
 		# saves the current grid to filename location
@@ -272,10 +275,22 @@ class main_window(QWidget):
 		load_action = self.file_menu.addAction("Load...",self.load,QKeySequence("Ctrl+L"))
 		save_action = self.file_menu.addAction("Save As...",self.save_as,QKeySequence("Ctrl+S"))
 		self.file_menu.addSeparator()
+		clear_action = self.file_menu.addAction("Clear Grid",self.clear,QKeySequence("Ctrl+C"))
+		self.file_menu.addSeparator()
 		quit_action = self.file_menu.addAction("Quit", self.quit, QKeySequence("Ctrl+Q"))
 
-		self.resize(1627,1252) # ratio for a single grid is 4:3 (160,120)
+
+		if os.name == "nt":
+			self.resize(1627,1252) # large monitor size
+		else:
+			self.resize(1330,772) # fits my macbook well
+
 		self.show()
+
+	def clear(self):
+		# clears the current grid
+		self.grid.clear_grid()
+		self.grid.repaint()
 
 	def save_as(self):
 		# allow user to save the current grid
