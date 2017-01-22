@@ -31,7 +31,8 @@ class eight_neighbor_grid(QWidget):
 		self.free_cell_color = [255,255,255] # white for free cell
 		self.trans_cell_color = [128,128,128] # gray cell for partially blocked
 		self.blocked_cell_color = [0,0,0] # black cell for blocked
-		self.debug_cell_color = [255,0,0] # red cell for locating cells (debugging)
+		self.end_cell_color = [255,0,0] # red cell for end location
+		self.start_cell_color = [0,255,0] # green cell for start location
 		self.init_cells()
 
 	def init_cells(self):
@@ -41,10 +42,86 @@ class eight_neighbor_grid(QWidget):
 			for y in range(self.num_rows):
 				new_cell = cell(x,y)
 				self.cells.append(new_cell)
+		self.start_cell = (0,0) # default start cell
+		self.end_cell = (self.num_columns-1,self.num_rows-1) # default end cell
+		self.hard_to_traverse_cells = [] # empty by default
 
-	def load_cells(self,new_cells,reload=True):
-		# loads in a new set of cells and reloads the UI if reload=True
+
+	def save(self,filename):
+		# saves the current grid to filename location
+		f = open(filename, 'w')
+
+		f.write("s_start:("+str(self.start_cell[0])+","+str(self.start_cell[1])+")\n")
+		f.write("s_goal:("+str(self.end_cell[0])+","+str(self.end_cell[1])+")\n")
+		for hard_cell in self.hard_to_traverse_cells:
+			f.write("hard:("+str(hard_cell[0])+","+str(hard_cell[1])+")\n")
+
+		row_ct = 0
+		line_buf = ""
+		for cell in self.cells:
+			row_ct += 1			
+			if cell.state == "full":
+				line_buf+='0'
+			if cell.state == "free":
+				line_buf+='1'
+			if cell.state == "partial":
+				line_buf+='2'
+			if cell.state == "free_highway":
+				line_buf+='a'
+			if cell.state == "partial_highway":
+				line_buf+='b'
+
+			if row_ct == self.num_columns:
+				line_buf+="\n"
+				f.write(line_buf)
+				line_buf = ""
+				row_ct = 0
+
+	def load(self,filename):
+		# loads in a new set of cells from a file, see the assignment pdf for
+		# details on the file format
+		f 			= open(filename,'r') # open the file
+		lines 		= f.read().split('\n') # split file into lines
+		new_cells 	= [] # to hold the new cells
+		start_cell 	= None # string (x,y) 
+		end_cell 	= None # string (x,y)
+		hard_to_traverse_cells = [] # to hold (x,y) locations of hard to traverse cells
+
+		for line in lines:
+			if line.find("s_start:")!=-1:
+				start_cell = line.split(":")[1]
+			elif line.find("s_goal:")!=-1:
+				end_cell = line.split(":")[1]
+			elif line.find("hard:")!=-1:
+				hard_to_traverse_cells.append(line.split(":")[1])
+			elif line in [""," "]:
+				# just an empty line, skip it
+				continue
+			else:
+				for char in line:
+
+					cell_state = None
+					if char == '0':
+						cell_state = "full"
+					elif char == '1':
+						cell_state = "free"
+					elif char == '2':
+						cell_state = "partial"
+					elif char == 'a':
+						cell_state = "free_highway"
+					elif char == 'b':
+						cell_state = "partial_highway"
+
+					new_cell = cell(cell_state)
+					new_cells.append(new_cell)
+
 		self.cells = new_cells
+		self.start_cell = eval(start_cell)
+		self.end_cell = eval(end_cell)
+
+		self.hard_to_traverse_cells = []
+		for item in hard_to_traverse_cells:
+			self.hard_to_traverse_cells.append(eval(item))
 
 	def paintEvent(self, e):
 		# called by pyqt when it needs to update the widget (dimensions changed, etc.)
@@ -78,6 +155,12 @@ class eight_neighbor_grid(QWidget):
 			else:
 				print("Need to create brushes for cell status:",cell.state)
 				cell_color = self.free_cell_color # for now
+			
+			# check if cell is the start or end cell
+			if x==self.start_cell[0] and y==self.start_cell[1]:
+				cell_color = self.start_cell_color
+			if x==self.end_cell[0] and y==self.end_cell[1]:
+				cell_color = self.end_cell_color
 
 			qp.setPen(QColor(cell_color[0],cell_color[1],cell_color[2]))
 			qp.setBrush(QColor(cell_color[0],cell_color[1],cell_color[2])) 
@@ -120,6 +203,14 @@ class eight_neighbor_grid(QWidget):
 		y = int(round(float((float(y_coord)/float(height))*float(self.num_rows))))
 
 		print("changing cell at x="+str(x)+", y="+str(y))
+
+		# if the change is to the start or end cell then we don't need to change any cells
+		if state == "start":
+			self.start_cell = (x,y)
+			return
+		if state == "end":
+			self.end_cell = (x,y)
+			return
 
 		index = 0
 		for cell in self.cells:
@@ -176,14 +267,25 @@ class main_window(QWidget):
 
 		# menubar actions
 		load_action = self.file_menu.addAction("Load...",self.load,QKeySequence("Ctrl+L"))
+		save_action = self.file_menu.addAction("Save As...",self.save_as,QKeySequence("Ctrl+S"))
+		self.file_menu.addSeparator()
 		quit_action = self.file_menu.addAction("Quit", self.quit, QKeySequence("Ctrl+Q"))
 
 		self.resize(1627,1252) # ratio for a single grid is 4:3 (160,120)
 		self.show()
 
+	def save_as(self):
+		# allow user to save the current grid
+		filename = QFileDialog.getSaveFileName(self,"Save As")
+		if filename != "":
+			self.grid.save(filename)
+
 	def load(self):
 		# load a new grid from file
-		pass
+		filename = QFileDialog.getOpenFileName(self, "Select File")
+		if filename != "":
+			self.grid.load(filename)
+		self.grid.repaint()
 
 	def quit(self):
 		# quits the application
