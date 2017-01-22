@@ -17,11 +17,12 @@ class cell:
 # UI element (widget) that represents the interface with the grid
 class eight_neighbor_grid(QWidget):
 
-	def __init__(self,num_columns=160,num_rows=120):
+	def __init__(self,num_columns=160,num_rows=120,use_character=True):
 		# constructor, pass the number of cols and rows
 		super(eight_neighbor_grid,self).__init__()		
 		self.num_columns = num_columns
 		self.num_rows = num_rows
+		self.using_game_character = use_character
 		self.init_ui()
 
 	def init_ui(self):
@@ -33,6 +34,22 @@ class eight_neighbor_grid(QWidget):
 		self.blocked_cell_color = [0,0,0] # black cell for blocked
 		self.end_cell_color = [255,0,0] # red cell for end location
 		self.start_cell_color = [0,255,0] # green cell for start location
+		'''
+		#if self.using_game_character:
+			#self.user_character = QWidget(self)
+			#self.pic = QLabel(self.user_character)
+			#pixmap = QPixmap(os.getcwd()+"/character.png")
+			#self.user_character.resize(pixmap.wi)
+			#selfpic.setFixedWidth(600)
+			#self.pic.setFixedHeight(600)
+			#self.pic.setGeometry(10, 10, 400, 400)
+			#use full ABSOLUTE path to the image, not relative
+			#self.pic.setPixmap(QtGui.QPixmap(os.getcwd() + "/character.png"))
+			#label = QLabel(w)
+			#pixmap = QPixmap(os.getcwd() + '/logo.png')
+			#label.setPixmap(pixmap)
+			#w.resize(pixmap.width(),pixmap.height())
+		'''
 		self.init_cells()
 
 	def init_cells(self):
@@ -45,6 +62,7 @@ class eight_neighbor_grid(QWidget):
 		self.start_cell = (0,0) # default start cell
 		self.end_cell = (self.num_columns-1,self.num_rows-1) # default end cell
 		self.hard_to_traverse_cells = [] # empty by default
+		self.current_location = self.start_cell
 
 	def clear(self):
 		# clears the current grid
@@ -167,6 +185,11 @@ class eight_neighbor_grid(QWidget):
 				cell_color = self.start_cell_color
 			if x==self.end_cell[0] and y==self.end_cell[1]:
 				cell_color = self.end_cell_color
+
+			if x==self.current_location[0] and y==self.current_location[0]:
+				if self.using_game_character:
+					self.pic.move(x,y)
+					self.pic.show()
 
 			qp.setPen(QColor(cell_color[0],cell_color[1],cell_color[2]))
 			qp.setBrush(QColor(cell_color[0],cell_color[1],cell_color[2])) 
