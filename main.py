@@ -7,8 +7,35 @@ from PyQt4 import QtGui, QtCore
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
+# class to hold the image on the grid that represents the current location
+class character_image(QLabel):
+
+    def __init__(self, img, parent=None):
+    	# constructor, pass the path to the image that will be used
+        super(character_image, self).__init__()
+        self.setFrameStyle(QtGui.QFrame.StyledPanel)
+        self.pixmap = QtGui.QPixmap(img)
+
+    def paintEvent(self, event):
+    	# called whenever the image needs to be drawn
+        size = self.size()
+        painter = QtGui.QPainter(self)
+        point = QtCore.QPoint(0,0)
+        scaledPix = self.pixmap.scaled(size, Qt.KeepAspectRatio, transformMode = Qt.SmoothTransformation)
+        # start painting the label from left upper corner
+        point.setX((size.width() - scaledPix.width())/2)
+        point.setY((size.height() - scaledPix.height())/2)
+        print (point.x(), ' ', point.y())
+        painter.drawPixmap(point, scaledPix)
+
+    def changePixmap(self, img):
+    	# can change the image used
+    	self.pixmap = QtGui.QPixmap(img)
+    	self.repaint()
+
 # class to hold details for a single cell
 class cell:
+
 	def __init__(self,x_coordinate=None,y_coordinate=None):
 		self.state = "free"
 		self.x = x_coordinate
@@ -17,7 +44,7 @@ class cell:
 # UI element (widget) that represents the interface with the grid
 class eight_neighbor_grid(QWidget):
 
-	def __init__(self,num_columns=160,num_rows=120,use_character=True):
+	def __init__(self,num_columns=160,num_rows=120,use_character=False):
 		# constructor, pass the number of cols and rows
 		super(eight_neighbor_grid,self).__init__()		
 		self.num_columns = num_columns
@@ -34,22 +61,16 @@ class eight_neighbor_grid(QWidget):
 		self.blocked_cell_color = [0,0,0] # black cell for blocked
 		self.end_cell_color = [255,0,0] # red cell for end location
 		self.start_cell_color = [0,255,0] # green cell for start location
-		'''
-		#if self.using_game_character:
-			#self.user_character = QWidget(self)
-			#self.pic = QLabel(self.user_character)
-			#pixmap = QPixmap(os.getcwd()+"/character.png")
-			#self.user_character.resize(pixmap.wi)
-			#selfpic.setFixedWidth(600)
-			#self.pic.setFixedHeight(600)
-			#self.pic.setGeometry(10, 10, 400, 400)
-			#use full ABSOLUTE path to the image, not relative
-			#self.pic.setPixmap(QtGui.QPixmap(os.getcwd() + "/character.png"))
-			#label = QLabel(w)
-			#pixmap = QPixmap(os.getcwd() + '/logo.png')
-			#label.setPixmap(pixmap)
-			#w.resize(pixmap.width(),pixmap.height())
-		'''
+		self.current_location_color = [0,0,255] # blue for current location
+		if self.using_game_character:
+			# trying to allow user to select an image to use as the current location on the grid
+			'''
+			self.pic = QLabel(self)
+			self.pic.setGeometry(10, 10, 400, 400)
+			self.pic.setPixmap(QtGui.QPixmap(os.getcwd() + "/character.png"))
+			'''
+			self.pic = character_image(os.getcwd()+"/character.png",self)
+
 		self.init_cells()
 
 	def init_cells(self):
@@ -144,8 +165,6 @@ class eight_neighbor_grid(QWidget):
 		self.hard_to_traverse_cells = []
 		for item in hard_to_traverse_cells:
 			self.hard_to_traverse_cells.append(eval(item))
-		print("Finished loading "+filename)
-
 
 	def paintEvent(self, e):
 		# called by pyqt when it needs to update the widget (dimensions changed, etc.)
@@ -166,10 +185,16 @@ class eight_neighbor_grid(QWidget):
 
 		index = 0
 		for cell in self.cells:
+			# iterate over each cell and fill in the grid color, also we need
+			# to check several conditions such as whether the cell represents one
+			# of the states (free, blocked, partially blocked, highway, start point,
+			# end point, current location).
 
+			# calculate the cell coordinates from list index
 			x = index % self.num_columns # x coordinate
 			y = int(index/self.num_columns) # get the y coordinate
 
+			# check if cell is free, partially blocked, or fully blocked
 			if cell.state == "free":
 				cell_color = self.free_cell_color
 			elif cell.state == "partial":
@@ -186,18 +211,33 @@ class eight_neighbor_grid(QWidget):
 			if x==self.end_cell[0] and y==self.end_cell[1]:
 				cell_color = self.end_cell_color
 
-			if x==self.current_location[0] and y==self.current_location[0]:
-				if self.using_game_character:
-					self.pic.move(x,y)
-					self.pic.show()
-
+			# set the QPainter line color and brush color
 			qp.setPen(QColor(cell_color[0],cell_color[1],cell_color[2]))
 			qp.setBrush(QColor(cell_color[0],cell_color[1],cell_color[2])) 
 
-			x_start = x*horizontal_step
-			y_start = y*vertical_step
+			x_start = x*horizontal_step # left of square
+			y_start = y*vertical_step # top of square 
+			qp.drawRect(x_start,y_start,x_start+horizontal_step,y_start+vertical_step) # draw the square
 
-			qp.drawRect(x_start,y_start,x_start+horizontal_step,y_start+vertical_step)
+			# check if the current cell is the current location
+			if x==self.current_location[0] and y==self.current_location[0]:
+				if self.using_game_character:
+					# represent the current location with an image
+					self.pic.move(x,y)
+					self.pic.show()
+				else:
+					# represent the current location with a blue circle
+					cell_color = self.current_location_color
+					qp.setPen(QColor(cell_color[0],cell_color[1],cell_color[2]))
+					qp.setBrush(QColor(cell_color[0],cell_color[1],cell_color[2]))
+
+					# calculating the center of the cell...
+					x_center = x_start+(horizontal_step/2)
+					y_center = y_start+(vertical_step/2)
+					center = QPoint(x_center,y_center)
+					radius_x = horizontal_step/4
+					radius_y = vertical_step/4 
+					qp.drawEllipse(center,radius_x,radius_y) # draw the blue circle
 
 			index += 1
 
@@ -327,6 +367,7 @@ class main_window(QWidget):
 		if filename != "":
 			self.grid.load(filename)
 		self.grid.repaint()
+		print("Finished loading "+filename)
 
 	def quit(self):
 		# quits the application
