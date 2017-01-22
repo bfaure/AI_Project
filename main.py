@@ -69,7 +69,7 @@ class eight_neighbor_grid(QWidget):
 			self.pic.setGeometry(10, 10, 400, 400)
 			self.pic.setPixmap(QtGui.QPixmap(os.getcwd() + "/character.png"))
 			'''
-			self.pic = character_image(os.getcwd()+"/character.png",self)
+			self.pic = character_image(os.getcwd()+"/resources/character.png",self)
 
 		self.init_cells()
 
@@ -342,7 +342,6 @@ class main_window(QWidget):
 		self.file_menu.addSeparator()
 		quit_action = self.file_menu.addAction("Quit", self.quit, QKeySequence("Ctrl+Q"))
 
-
 		if os.name == "nt":
 			self.resize(1627,1252) # large monitor size
 		else:
@@ -352,7 +351,7 @@ class main_window(QWidget):
 
 	def clear(self):
 		# clears the current grid
-		self.grid.clear_grid()
+		self.grid.clear()
 		self.grid.repaint()
 
 	def save_as(self):
@@ -360,6 +359,7 @@ class main_window(QWidget):
 		filename = QFileDialog.getSaveFileName(self,"Save As")
 		if filename != "":
 			self.grid.save(filename)
+		print("Finished saving "+filename)
 
 	def load(self):
 		# load a new grid from file
