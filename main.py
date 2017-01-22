@@ -112,7 +112,8 @@ class eight_neighbor_grid(QWidget):
 					elif char == 'b':
 						cell_state = "partial_highway"
 
-					new_cell = cell(cell_state)
+					new_cell = cell()
+					new_cell.state = cell_state
 					new_cells.append(new_cell)
 
 		self.cells = new_cells
@@ -122,6 +123,8 @@ class eight_neighbor_grid(QWidget):
 		self.hard_to_traverse_cells = []
 		for item in hard_to_traverse_cells:
 			self.hard_to_traverse_cells.append(eval(item))
+		print("Finished loading "+filename)
+
 
 	def paintEvent(self, e):
 		# called by pyqt when it needs to update the widget (dimensions changed, etc.)
