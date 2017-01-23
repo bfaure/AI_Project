@@ -451,6 +451,7 @@ class eight_neighbor_grid(QWidget):
 		hard_to_traverse_regions = [] # to hold (x,y) locations of hard to traverse cells
 		highways 	= [] # list of disparate highway coordinates
 
+		print("Loading cell data...")
 		y = 0
 		for line in lines:
 			if line.find("s_start:")!=-1:
@@ -499,7 +500,7 @@ class eight_neighbor_grid(QWidget):
 		self.highways = [] # list of lists of coordinates
 		print("Reconstructing highways...")
 		self.reconstruct_highways(highways)
-		print(self.highways)
+		#print(self.highways)
 
 	def paintEvent(self, e):
 		# called by pyqt when it needs to update the widget (dimensions changed, etc.)
