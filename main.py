@@ -370,60 +370,72 @@ class eight_neighbor_grid(QWidget):
 	def is_finished_highway(self,highway):
 		# checks if both of the endpoints of the highway
 		# are at the boundary of the grid
+		if highway==None:
+			return False
 		start_cell = highway[0]
 		end_cell = highway[len(highway)-1]
+
+		if len(highway)<100:
+			return False
 
 		if self.check_for_boundary(start_cell[0],start_cell[1]) and self.check_for_boundary(end_cell[0],end_cell[1]):
 			return True
 		return False
 
-	def check_if_cell_fits_a_highway(self,coord,attach_distance):
-		# takes in a coordinate and checks all highways in self.highways
-		# to see if it fits one of them
+	def reconstruct_highways(self,coordinate_list):
+		# takes in an unordered list of coordinates and reconstructs the 4 highways,
+		# called from the load function below
+		broken = []
+		last = None
+		last_cut = 0
+		for item in coordinate_list:
+			if last == None:
+				last = item
+				continue
+			dist = self.get_cell_distance(item,last)
+			if dist>1:
+				broken.append(coordinate_list[last_cut:coordinate_list.index(item)])
+				last_cut = coordinate_list.index(item)
+			last = item
+		print(len(broken))
 
-		if len(self.highways)==0:
-			new_highway = [coord]
-			self.highways.append(new_highway)
-			return True
+		i = 0
+		while True:
+			segment = broken[i]
+			segment_start = segment[0]
+			segment_end = segment[len(segment)-1]
 
-		for i in range(len(self.highways)):
-			cur_highway = self.highways[i]
-			if cur_highway!=None:
+			new_broken = []
+			for other_item in broken:
+				if broken.index(other_item)!=i:
+					other_segment_start = other_item[0]
+					other_segment_end = other_item[len(other_item)-1]
 
-				if self.is_finished_highway(cur_highway):
-					# if this highway is done, stop adding to it
-					continue
+					segment_start = segment[0]
+					segment_end = segment[len(segment)-1]
 
-				first_cell = cur_highway[0]
-				last_cell = cur_highway[len(cur_highway)-1]
+					if self.get_cell_distance(segment_start,other_segment_start)==1:
+						segment.reverse()
+						segment.extend(other_item)
+					elif self.get_cell_distance(segment_start,other_segment_end)==1:
+						segment = other_item.extend(segment)
+					elif self.get_cell_distance(segment_end,other_segment_start)==1:
+						segment.extend(other_item)
+					elif self.get_cell_distance(segment_end,other_segment_end)==1:
+						other_item.reverse()
+						segment.extend(other_item)
+					else:	
+						new_broken.append(other_item)
+			new_broken.append(segment)
+			broken = new_broken
 
-				if self.get_cell_distance(last_cell,coord)<=attach_distance:
-					# put the new cell at the end of the highway
-					self.highways[i].append(coord)
-					return True
+			if len(broken)==4:
+				self.highways = broken
+				return
 
-				if self.get_cell_distance(first_cell,coord)<=attach_distance:
-					# put the new cell at the beginning of the highway
-					before = [coord]
-					self.highways[i] = before.extend(self.highways[i])
-					return True
-
-		if len(self.highways)<4:
-			new_highway = [coord]
-			self.highways.append(new_highway)
-			return True
-
-		return False
-
-	def reconstruct_highway(self,coords,attach_distance=1):
-		# takes in a disconnected list of coordinates that relate to several
-		# highways and attempts to list them into sequences representing all
-		# 4 of the highways
-		unused_coords = []
-		for item in coords:
-			if self.check_if_cell_fits_a_highway(item,attach_distance)==False:
-				unused_coords.append(item)
-		return unused_coords
+			#i+=1
+			if i>len(broken):
+				break
 
 	def load(self,filename):
 		# loads in a new set of cells from a file, see the assignment pdf for
@@ -483,26 +495,8 @@ class eight_neighbor_grid(QWidget):
 		# it into individual lists that each represent an individual highway
 		self.highways = [] # list of lists of coordinates
 		print("Reconstructing highways...")
-		run_ct = 0
-		attach_distance = 1
-		while len(highways)!=0:
-			start_length = len(highways)
-			print("                                                                                                       ",end='\r')
-			print("coord remaining: "+str(len(highways))+", run_ct: "+str(run_ct)+", num highways: "+str(len(self.highways)),end='\r')
-			highways = self.reconstruct_highway(highways,attach_distance)
-			run_ct+=1
-			end_length = len(highways)
-			if end_length == start_length:
-				attach_distance+=1
-				# if we couldnt attach any new coordinates to the highways on this
-				# run then try to increase the distance allowed between consecutive
-				# highway positions to try to find the correct mapping
-			if end_length != start_length:
-				# if we were able to attach a segment, reduce the attach distance
-				# back down to 1 to prevent from attaching incorrect segments
-				attach_distance = 1
-		print("\n")
-
+		self.reconstruct_highways(highways)
+		print(self.highways)
 
 	def paintEvent(self, e):
 		# called by pyqt when it needs to update the widget (dimensions changed, etc.)
@@ -601,6 +595,9 @@ class eight_neighbor_grid(QWidget):
 		qp.setPen(pen)
 		qp.setBrush(Qt.NoBrush)
 		for highway in self.highways:
+			if highway == None:
+				print("Encountered empty list:",highway)
+				continue
 			last_location = None
 			for location in highway:
 				if last_location == None:
