@@ -41,8 +41,8 @@ class cell:
 
 	def __init__(self,x_coordinate=None,y_coordinate=None):
 		self.state = "free"
-		self.x = x_coordinate
-		self.y = y_coordinate
+		self.x = x_coordinate # not using anymore
+		self.y = y_coordinate # not using anymore
 
 # UI element (widget) that represents the interface with the grid
 class eight_neighbor_grid(QWidget):
@@ -50,14 +50,14 @@ class eight_neighbor_grid(QWidget):
 	def __init__(self,num_columns=160,num_rows=120,use_character=False):
 		# constructor, pass the number of cols and rows
 		super(eight_neighbor_grid,self).__init__()		
-		self.num_columns = num_columns
-		self.num_rows = num_rows
-		self.using_game_character = use_character
-		self.init_ui()
+		self.num_columns = num_columns # width of the board
+		self.num_rows = num_rows # height of the board
+		self.using_game_character = use_character # leave as false, see init_ui line
+		self.init_ui() # initialize a bunch of class instance variables
 
 	def init_ui(self):
 		# initialize ui elements
-		self.setMinimumSize(800,600) # grid dimensions
+		self.setMinimumSize(800,600) # ui pixel dimensions (w,h)
 		self.line_color = [0,0,0] # black for cell lines
 		self.free_cell_color = [255,255,255] # white for free cell
 		self.trans_cell_color = [128,128,128] # gray cell for partially blocked
@@ -70,7 +70,7 @@ class eight_neighbor_grid(QWidget):
 			# trying to allow user to select an image to use as the current location on the grid
 			self.pic = character_image(os.getcwd()+"/resources/character.png",self)
 
-		self.init_cells(True)
+		self.init_cells(True) # more instance variables that can be reset more easily from within instance
 
 	def init_cells(self,leave_empty=False):
 		# creates the list of cells in the grid (all default to free), if leave_empty
@@ -118,10 +118,11 @@ class eight_neighbor_grid(QWidget):
 			return True
 		return False
 
-	def get_highway(self,head,edge):
+	def get_highway(self,head,edge,total_attempts):
 		# helper function for the init_highways function, returns True if it can
 		# create a highway starting at head that does not intersect with any others
-		# that have already been placed on the map
+		# that have already been placed on the map. Either max_attempts tries are 
+		# used or less, if a highway can be placed the function will break out.
 
 		highway_path = [] 
 		highway_path.append(head)
@@ -130,7 +131,7 @@ class eight_neighbor_grid(QWidget):
 		start_y = head[1]
 
 		num_attempts = 0
-		max_attempts = 100
+		max_attempts = 10
 
 		while num_attempts<max_attempts:			
 			
@@ -165,39 +166,37 @@ class eight_neighbor_grid(QWidget):
 					if self.check_for_boundary(cur_x,cur_y)==True:
 						new_coord = (x,y)
 						highway_path.append(new_coord)
-						if len(highway_path) >= 100:
-							self.highways.append(highway_path)
-							#print("Created highway of length:",len(highway_path))
-							#print(highway_path)
-							return
+						if len(highway_path) >= 100: 
+							self.highways.append(highway_path) # append the finished highway and return
+							return num_attempts
 						else:
-							loop = False 
+							loop = False # break from the 
 							break
 
 					# check if we hit another highway, if not, add it to the current
 					# highway, if so, break out (clearing the current highway) and start
-					# over
+					# over from the same head location.
 					if self.check_for_highway(cur_x,cur_y,highway_path)==False:
 						x = cur_x 
 						y = cur_y 
 						new_coord = (x,y)
 						highway_path.append(new_coord)
 					else:
-						loop = False 
+						loop = False # clear the current highway attempt and start over from the same head location
 						break
 
-				if loop:
-					next_direction = random.randint(1,10)
-					if next_direction <= 6:
+				if loop: # continue the current highway and get a new random direction
+					next_direction = random.randint(1,10) # random integer in [1,...,10]
+					if next_direction <= 6: # 60% chance same direction
 						# keep going same direction
 						direction = direction
-					elif next_direction in [7,8]:
+					elif next_direction in [7,8]: # 20% chance perpendicular direction 
 						# go perpendicular direction...
 						if direction in ["up","down"]:
 							direction = "left"
 						elif direction in ["left","right"]:
 							direction = "up"
-					elif next_direction in [9,10]:
+					elif next_direction in [9,10]: # 20% chance perpendicular direction
 						# go other perpendicular direction...
 						if direction in ["up","down"]:
 							direction = "right"
@@ -206,7 +205,9 @@ class eight_neighbor_grid(QWidget):
 
 			num_attempts+=1
 
-		print("Exhausted the maximum number of attempts.")
+		print("                                                                             ",end='\r')
+		print("Exhausted "+str(num_attempts)+" attempts, "+str(total_attempts)+" total.",end='\r')
+		return num_attempts
 
 	def init_highways(self):
 		print("Placing highways...")
@@ -214,9 +215,10 @@ class eight_neighbor_grid(QWidget):
 		self.highways = []
 		# select 4 random highway start locations 
 		num_highways = 4
+		total_attempts = 0
 		while len(self.highways)<num_highways:
 			# must start on an edge cell
-			num_head_possibilities = 2*self.num_columns + 2*self.num_rows - 1
+			num_head_possibilities = 2*self.num_columns + 2*self.num_rows - 1 # number of possible starting cells
 			start_cell = random.randint(0,num_head_possibilities)
 			# interpreting as clockwise (i.e. 0 would be top left corner, 160 would be
 			# top right corner, 280 would be bottom right corner, 340 would be bottom
@@ -236,8 +238,9 @@ class eight_neighbor_grid(QWidget):
 			else:
 				print("ERROR in init_highways, could not locate edge for start_cell: "+str(start_cell))
 				return
-			self.get_highway(coord,edge) # try to place highway from that head
-
+			total_attempts+=self.get_highway(coord,edge,total_attempts) # try to place highway from that head
+		print("\n",end='\r') # save the last entry output from the get_highway() function
+			
 	def init_blocked_cells(self):
 		print("Creating fully blocked cells...")
 		num_blocked_cells = 3840
