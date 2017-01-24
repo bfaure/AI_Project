@@ -738,7 +738,7 @@ class main_window(QWidget):
 		if os.name == "nt":
 			self.resize(1627,1252) # large monitor size
 		else:
-			self.resize(1330,772) # fits my macbook well
+			self.resize(1323,764) # fits my macbook well
 
 		self.show()
 
