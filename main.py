@@ -284,13 +284,17 @@ class eight_neighbor_grid(QWidget):
 		# initializes the locations of the start and end cells
 		print("Creating start/end cells...")
 		while True:
+
+			# gereate random start and end cells according to the
+			# rules in the Sakai PDF...
 			temp_start = self.get_start_or_end_cell()
 			temp_end = self.get_start_or_end_cell()
 
+			# check if the generated cells are far enough apart
 			if self.get_cell_distance(temp_start,temp_end) >= 100:
 				self.start_cell = temp_start
-				self.current_location = temp_start
 				self.end_cell = temp_end
+				self.current_location = self.start_cell
 				return
 
 	def init_partially_blocked_cells(self):
@@ -453,18 +457,29 @@ class eight_neighbor_grid(QWidget):
 
 		print("Loading cell data...")
 		y = 0
-		for line in lines:
-			if line.find("s_start:")!=-1:
-				start_cell = line.split(":")[1]
+		for line in lines: # iterate over each line of file
+
+			# parse the start cell
+			if line.find("s_start:")!=-1: 
+				start_cell = line.split(":")[1] 
+
+			# parse the end cell
 			elif line.find("s_goal:")!=-1:
 				end_cell = line.split(":")[1]
+
+			# parse out the list of hard region center (8 total)
 			elif line.find("hard:")!=-1:
 				hard_to_traverse_regions.append(line.split(":")[1])
+
+			# check if line has any data
 			elif line in [""," "]:
 				# just an empty line, skip it
 				continue
+
+			# parse out the grid data (1 line for 1 row of grid)
 			else:
 				x = 0
+				# iterate over each column (1 char for 1 column)
 				for char in line:
 
 					cell_state = None
