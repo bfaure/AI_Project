@@ -736,7 +736,9 @@ class main_window(QWidget):
 
 		# menubar
 		self.menu_bar = QMenuBar(self)
+		self.menu_bar.setMinimumWidth(125)
 		self.file_menu = self.menu_bar.addMenu("File")
+		self.algo_menu = self.menu_bar.addMenu("Algorithm")
 
 		# menubar actions
 		load_action = self.file_menu.addAction("Load...",self.load,QKeySequence("Ctrl+L"))
@@ -746,6 +748,9 @@ class main_window(QWidget):
 		create_action = self.file_menu.addAction("Create New Grid",self.create,QKeySequence("Ctrl+N"))
 		self.file_menu.addSeparator()
 		quit_action = self.file_menu.addAction("Quit", self.quit, QKeySequence("Ctrl+Q"))
+		a_star_action = self.algo_menu.addAction("Run A*",self.a_star)
+		weighted_a_action = self.algo_menu.addAction("Run Weighted A",self.weighted_a)
+		uniform_cost_action = self.algo_menu.addAction("Run Uniform-cost Search",self.uniform_cost)
 
 		if os.name == "nt":
 			self.resize(1623,1249) # large monitor size
@@ -753,6 +758,15 @@ class main_window(QWidget):
 			self.resize(1323,764) # fits my macbook well
 
 		self.show()
+
+	def a_star(self):
+		pass
+
+	def weighted_a(self):
+		pass
+
+	def uniform_cost(self):
+		pass
 
 	def create(self):
 		# clears the current grid and creates a new random one
