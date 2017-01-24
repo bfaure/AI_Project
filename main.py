@@ -70,7 +70,7 @@ class eight_neighbor_grid(QWidget):
 			# trying to allow user to select an image to use as the current location on the grid
 			self.pic = character_image(os.getcwd()+"/resources/character.png",self)
 
-		self.init_cells(True) # more instance variables that can be reset more easily from within instance
+		self.init_cells(leave_empty=True) # more instance variables that can be reset more easily from within instance
 
 	def init_cells(self,leave_empty=False):
 		# creates the list of cells in the grid (all default to free), if leave_empty
@@ -91,7 +91,7 @@ class eight_neighbor_grid(QWidget):
 
 		print("Generating a random grid...")
 		self.init_partially_blocked_cells() # init the partially blocked
-		self.init_highways() # initialized the 4 highways
+		self.init_highways() # initialize the 4 highways
 		self.init_blocked_cells() # initialize the completely blocked cells
 		self.init_start_end_cells() # initialize the start/end locations
 		print("Finisehd generating random grid.")
@@ -583,7 +583,7 @@ class eight_neighbor_grid(QWidget):
 			qp.drawRect(x_start,y_start,x_start+horizontal_step,y_start+vertical_step) # draw the square
 
 			# check if the current cell is the current location
-			if x==self.current_location[0] and y==self.current_location[0]:
+			if x==self.current_location[0] and y==self.current_location[1]:
 				if self.using_game_character:
 					# represent the current location with an image
 					self.pic.move(x,y)
@@ -720,7 +720,7 @@ class main_window(QWidget):
 		if os.name == "nt":
 			self.layout.addSpacing(25)
 
-		self.grid = eight_neighbor_grid()
+		self.grid = eight_neighbor_grid() 
 		self.grid.setContextMenuPolicy(Qt.CustomContextMenu)
 		self.grid.customContextMenuRequested.connect(self.on_context_menu_request)
 		self.layout.addWidget(self.grid)
@@ -748,7 +748,7 @@ class main_window(QWidget):
 		quit_action = self.file_menu.addAction("Quit", self.quit, QKeySequence("Ctrl+Q"))
 
 		if os.name == "nt":
-			self.resize(1627,1252) # large monitor size
+			self.resize(1623,1249) # large monitor size
 		else:
 			self.resize(1323,764) # fits my macbook well
 
