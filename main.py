@@ -127,15 +127,16 @@ class eight_neighbor_grid(QWidget):
 		highway_path = [] 
 		highway_path.append(head)
 
-		start_x = head[0]
-		start_y = head[1]
+		start_x = head[0] # starting x coordinate
+		start_y = head[1] # starting y coordinate
 
-		num_attempts = 0
-		max_attempts = 10
+		num_attempts = 0 
+		max_attempts = 10 # number of attempts to try before choosing a new head
 
 		while num_attempts<max_attempts:			
 			
-			# create a path
+			# figure out which direction we are starting with 
+			# based on the edge we are starting from...
 			if edge == "top": direction = "down"
 			if edge == "right": direction = "left"
 			if edge == "bottom": direction = "up"
@@ -144,14 +145,17 @@ class eight_neighbor_grid(QWidget):
 			x = start_x
 			y = start_y
 			highway_path = [] # list of tuples representing the path of the highway
-			highway_path.append(head)
+			highway_path.append(head) # append the starting coordinate
 
 			loop = True
 			while loop:
 				# go in the direction for 20 steps, if possible
 				for i in range(20):
-					cur_x = x
-					cur_y = y 
+					cur_x = x # current x coordinate
+					cur_y = y # current y coordinate
+
+					# figure out which coordinate should be incremented
+					# based on the direction we are traveling...
 					if direction == "down":
 						cur_y = cur_y+1
 					if direction == "left":
@@ -242,6 +246,7 @@ class eight_neighbor_grid(QWidget):
 		print("\n",end='\r') # save the last entry output from the get_highway() function
 			
 	def init_blocked_cells(self):
+		# choose 20% of the remaining cells to mark as fully blocked, Sakai PDF
 		print("Creating fully blocked cells...")
 		num_blocked_cells = 3840
 		cur_blocked_cells = 0
@@ -254,7 +259,7 @@ class eight_neighbor_grid(QWidget):
 
 	def get_cell_distance(self,cell1,cell2):
 		# calculates the distance between the two cell inputs
-		x_run = abs(cell1[0]-cell2[0])
+		x_run = abs(cell1[0]-cell2[0]) 
 		y_run = abs(cell1[1]-cell2[1])
 		return x_run+y_run
 
@@ -392,11 +397,14 @@ class eight_neighbor_grid(QWidget):
 	def reconstruct_highways(self,coordinate_list):
 		# takes in an unordered list of coordinates and reconstructs the 4 highways,
 		# called from the load function below
-		broken = []
-		last = None
+		broken = [] # list of highway segments
+		last = None 
 		last_cut = 0
+		# iterate over the list of highway coordinates and if any consecutive
+		# coordinates are greater than a distance of 1 away then cut the the
+		# coordinate_list and push the onto the broken list
 		for item in coordinate_list:
-			if last == None:
+			if last == None: # if this is the first item
 				last = item
 				continue
 			dist = self.get_cell_distance(item,last)
@@ -406,6 +414,10 @@ class eight_neighbor_grid(QWidget):
 			last = item
 		print(len(broken))
 
+		# now we have the broken list with partially reconstructed highway
+		# segments but they are most likely not complete, iterate over the 
+		# stuff in the broken list and connect any highway endpoints that
+		# are only a distance of 1 away from eachother
 		i = 0
 		while True:
 			segment = broken[i]
