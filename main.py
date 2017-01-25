@@ -816,17 +816,23 @@ class attrib_color_window(QWidget):
 
 		self.set_color_boxes(self.colors[0])
 
+		if os.name == "nt": # these dimensions fit Windows better
+			self.sample_square_top_left = (240,25) # (x,y) coordinates of top left
+			self.sample_square_bottom_right = (267,52) # (x,y) coordinates of bottom right
+			self.sample_square_size = 27 # width and height of sample square
+		else: # and these are better for osx
+			self.sample_square_top_left = (315,35)
+			self.sample_square_bottom_right = (342,62)
+			self.sample_square_size = 27
+
 	def mousePressEvent(self,e):
 		# catch when the user clicks and see if its in the sample area, if so, 
 		# open up the default PyQt color picker
 		x = e.x() # get x coordinate of click
 		y = e.y() # get y coordinate of click
 
-		square_top_left = (240,25) # top left of sample square
-		square_bottom_right = (267,52) # bottom right of sample square
-
-		if x <=square_bottom_right[0] and x>= square_top_left[0]:
-			if y>= square_top_left[1] and y<= square_bottom_right[1]:
+		if x <=self.sample_square_bottom_right[0] and x>= self.sample_square_top_left[0]:
+			if y>= self.sample_square_top_left[1] and y<= self.sample_square_bottom_right[1]:
 				# click was within the sample area
 				color = QColorDialog.getColor() # open QColor dialog
 				if color.isValid(): # if a value was returned
@@ -838,10 +844,13 @@ class attrib_color_window(QWidget):
 	def draw_sample_event(self,qp,color):
 		# function called when the sample color window needs to be redrawn, colors
 		# in the square with the current color
-		qp.setPen(QColor(color[0],color[1],color[2]))
+		qp.setPen(QColor(0,0,0))
 		qp.setBrush(QColor(color[0],color[1],color[2])) 
-		size = 27
-		qp.drawRect(240,25,size,size) # draw the square
+		qp.drawRect( # draw the square
+			self.sample_square_top_left[0],
+			self.sample_square_top_left[1],
+			self.sample_square_size,
+			self.sample_square_size)
 
 	def paintEvent(self,e):
 		# calls the draw_sample_event function to re-color the sample square
