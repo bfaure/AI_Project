@@ -540,7 +540,8 @@ class eight_neighbor_grid(QWidget):
 
 	def drawWidget(self, qp):
 		# draw the grid, let the (0,0) cell be in the top left of the window
-		print("Re-Drawing Grid")
+		print("Re-Drawing Grid...",end="\r")
+		start_time = time.time() # to time the draw event
 		size = self.size() # current size of widget
 		width = size.width() # current width of widget
 		height = size.height() # current height of widget
@@ -646,6 +647,9 @@ class eight_neighbor_grid(QWidget):
 				y2 = (location[1]*horizontal_step)+(vertical_step/2)
 				qp.drawLine(x1,y1,x2,y2)
 				last_location = location
+
+		print("                                                     ",end="\r")
+		print("Re-Drawing Grid: "+str(time.time()-start_time)[:5]+" seconds")
 
 	def set_cell_state(self,x_coord,y_coord,state,add_adjustment=True):
 		# updates a single cell in the grid with a new state then reloads the ui
