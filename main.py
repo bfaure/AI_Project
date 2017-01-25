@@ -96,7 +96,7 @@ class eight_neighbor_grid(QWidget):
 		self.init_highways() # initialize the 4 highways
 		self.init_blocked_cells() # initialize the completely blocked cells
 		self.init_start_end_cells() # initialize the start/end locations
-		print("Finisehd generating random grid.")
+		print("Finished generating random grid.")
 
 	def check_for_highway(self,x_coord,y_coord,temp_highway=None):
 		# checks if the coordinates in question contain a highway, the temp_highway
@@ -809,10 +809,13 @@ class attrib_color_window(QWidget):
 	def set_color_boxes(self,color):
 		# sets the rgb boxes to the input color
 		self.backend = True
-		self.red.setText(str(color[0]))
-		self.green.setText(str(color[1]))
-		self.blue.setText(str(color[2]))
-		self.attrib_value = color
+		try:
+			self.red.setText(str(color[0]))
+			self.green.setText(str(color[1]))
+			self.blue.setText(str(color[2]))
+			self.attrib_value = color
+		except:
+			pass
 		self.backend = False
 
 	def get_current_color(self):
