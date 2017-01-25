@@ -582,7 +582,8 @@ class eight_neighbor_grid(QWidget):
 
 			x_start = x*horizontal_step # left of square
 			y_start = y*vertical_step # top of square 
-			qp.drawRect(x_start,y_start,x_start+horizontal_step,y_start+vertical_step) # draw the square
+			#qp.drawRect(x_start,y_start,x_start+horizontal_step,y_start+vertical_step) # draw the square
+			qp.drawRect(x_start,y_start,horizontal_step,vertical_step)
 
 			# check if the current cell is the current location
 			if x==self.current_location[0] and y==self.current_location[1]:
