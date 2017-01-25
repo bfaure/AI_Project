@@ -291,7 +291,6 @@ class eight_neighbor_grid(QWidget):
 		# initializes the locations of the start and end cells
 		print("Creating start/end cells...")
 		while True:
-
 			# gereate random start and end cells according to the
 			# rules in the Sakai PDF...
 			temp_start = self.get_start_or_end_cell()
@@ -956,6 +955,8 @@ class main_window(QWidget):
 		self.toggle_grid_lines_action = self.tools_menu.addAction("Turn Off Grid Lines",self.toggle_grid_lines,QKeySequence("Ctrl+G"))
 		self.tools_menu.addSeparator()
 		change_attrib_color_action = self.tools_menu.addAction("Set Attribute Color...",self.change_attrib_color,QKeySequence("Ctrl+M"))
+		self.tools_menu.addSeparator()
+		regenerate_start_end_action = self.tools_menu.addAction("New Start/End Cells...",self.regenerate_start_end)
 
 		if os.name == "nt":
 			self.resize(1623,1249) # large monitor size
@@ -964,6 +965,11 @@ class main_window(QWidget):
 
 		QtCore.QObject.connect(self.color_preferences_window, QtCore.SIGNAL("return_color_prefs()"), self.finished_changing_colors)
 		self.show()
+
+	def regenerate_start_end(self):
+		# called when the user selects the "New Start/End Cells..." menu item in tools menu
+		self.grid.init_start_end_cells()
+		self.grid.repaint()
 
 	def finished_changing_colors(self):
 		# called by the color preferences window when the user is done
@@ -1037,7 +1043,6 @@ class main_window(QWidget):
 
 	def on_context_menu_request(self,point):
 		# function called when user right clicks on grid
-		print(point)
 		self.click = point
 		self.context_menu.exec_(self.grid.mapToGlobal(point))
 		self.grid.repaint()
@@ -1065,13 +1070,14 @@ class main_window(QWidget):
 	def resizeEvent(self,e):
 		# called when user resizes the window
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+")")
+		return # skip printing information
 		print(self.size().width(),self.size().height())
 
 	def mousePressEvent(self,e):
 		# called when user clicks somewhere in window
 		x = e.x()
 		y = e.y()
-		print(x,y)
+		#print(x,y)
 
 	def closeEvent(self,e):
 		self.color_preferences_window.close()
