@@ -7,6 +7,7 @@
 `Ctrl+C`: Clear grid <br>
 `Ctrl+N`: Create new, random grid <br>
 `Ctrl+Q`: Quit application <br>
+`Ctrl+M`: Change colors <br>
 
 ## Dependencies
 Python 2.7, PyQt4
