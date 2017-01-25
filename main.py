@@ -548,6 +548,8 @@ class eight_neighbor_grid(QWidget):
 		horizontal_step = int(round(width/self.num_columns)) # per cell width
 		vertical_step = int(round(height/self.num_rows)) # per cell height
 
+		last_color = None # save the color used for the last cell in case its the same for this one
+
 		index = 0
 		for cell in self.cells:
 			# iterate over each cell and fill in the grid color, also we need
@@ -576,13 +578,13 @@ class eight_neighbor_grid(QWidget):
 			if x==self.end_cell[0] and y==self.end_cell[1]:
 				cell_color = self.end_cell_color
 
-			# set the QPainter line color and brush color
-			qp.setPen(QColor(cell_color[0],cell_color[1],cell_color[2]))
-			qp.setBrush(QColor(cell_color[0],cell_color[1],cell_color[2])) 
+			# check if the cell_color is the same as last time because, if so, dont need to re-set it
+			if cell_color != last_color or last_color==None:
+				# set the QPainter brush color
+				qp.setBrush(QColor(cell_color[0],cell_color[1],cell_color[2])) 
 
 			x_start = x*horizontal_step # left of square
 			y_start = y*vertical_step # top of square 
-			#qp.drawRect(x_start,y_start,x_start+horizontal_step,y_start+vertical_step) # draw the square
 			qp.drawRect(x_start,y_start,horizontal_step,vertical_step)
 
 			# check if the current cell is the current location
@@ -594,7 +596,6 @@ class eight_neighbor_grid(QWidget):
 				else:
 					# represent the current location with a blue circle
 					cell_color = self.current_location_color
-					qp.setPen(QColor(cell_color[0],cell_color[1],cell_color[2]))
 					qp.setBrush(QColor(cell_color[0],cell_color[1],cell_color[2]))
 
 					# calculating the center of the cell...
@@ -606,6 +607,7 @@ class eight_neighbor_grid(QWidget):
 					qp.drawEllipse(center,radius_x,radius_y) # draw the blue circle
 
 			index += 1
+			last_color = cell_color
 
 		# Drawing in grid lines...
 		pen = QPen(QColor(self.line_color[0],self.line_color[1],self.line_color[2]), 1, Qt.SolidLine)
@@ -728,7 +730,7 @@ class eight_neighbor_grid(QWidget):
 			print("Unknown attribute: "+attrib)
 
 class attrib_color_window(QWidget):
-	# small window that opens if the user wants to change an attrib color
+	# small window that opens if the user wants to change an attribute color
 	def __init__(self):
 		# constructor
 		super(attrib_color_window,self).__init__()
@@ -834,12 +836,15 @@ class attrib_color_window(QWidget):
 					self.value_changed() # record the change
 
 	def draw_sample_event(self,qp,color):
+		# function called when the sample color window needs to be redrawn, colors
+		# in the square with the current color
 		qp.setPen(QColor(color[0],color[1],color[2]))
 		qp.setBrush(QColor(color[0],color[1],color[2])) 
 		size = 27
 		qp.drawRect(240,25,size,size) # draw the square
 
 	def paintEvent(self,e):
+		# calls the draw_sample_event function to re-color the sample square
 		cur_color = self.get_current_color()
 		qp = QPainter()
 		qp.begin(self)
@@ -1003,12 +1008,15 @@ class main_window(QWidget):
 		self.grid.repaint()
 
 	def a_star(self):
+		# put a* implementation here
 		pass
 
 	def weighted_a(self):
+		# put weighted a implementation here
 		pass
 
 	def uniform_cost(self):
+		# put uniform cost search implementation here
 		pass
 
 	def create(self):
