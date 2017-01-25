@@ -749,51 +749,96 @@ class attrib_color_window(QWidget):
 
 	def init_ui(self):
 		# set up ui elements
-		self.setFixedWidth(275)
-		self.setFixedHeight(110)
+
+		self.layout = QVBoxLayout(self)
+
+		first_row = QHBoxLayout()
+		second_row = QHBoxLayout()
+
+		self.layout.addLayout(first_row)
+		self.layout.addLayout(second_row)
+
 		self.setWindowTitle("Set Color Preferences")
 		# selection box
 		self.selection_box = QComboBox(self)
 		self.selection_box.addItems(self.attribs)
 		self.selection_box.currentIndexChanged.connect(self.attrib_changed)
-		self.selection_box.move(10,45)
+		first_row.addStretch()
+		selection_box_layout = QVBoxLayout()
+		first_row.addLayout(selection_box_layout)
+		selection_box_layout.addSpacing(5)
+		selection_box_layout.addWidget(self.selection_box)
 
 		# color elements
 		self.red = QLineEdit("",self)
 		self.red.textChanged.connect(self.value_changed)
 		validator = QIntValidator(0,255)
 		self.red.setValidator(validator)
-		self.red.move(120,45)
 		self.red.setFixedWidth(30)
-		self.red_label = QLabel("R",self)
-		self.red_label.move(126,15)
+		self.red_label = QLabel("   R",self)
+		red_layout = QVBoxLayout()
+		red_layout.addWidget(self.red_label)
+		red_layout.addWidget(self.red)
 		self.green = QLineEdit("",self)
 		self.green.textChanged.connect(self.value_changed)
 		validator = QIntValidator(0,255)
 		self.green.setValidator(validator)		
-		self.green.move(155,45)
 		self.green.setFixedWidth(30)
-		self.green_label = QLabel("G",self)
-		self.green_label.move(161,15)
+		self.green_label = QLabel("   G",self)
+		green_layout = QVBoxLayout()
+		green_layout.addWidget(self.green_label)
+		green_layout.addWidget(self.green)
 		self.blue = QLineEdit("",self)
 		self.blue.textChanged.connect(self.value_changed)
 		validator = QIntValidator(0,255)
 		self.blue.setValidator(validator)
-		self.blue.move(190,45)
 		self.blue.setFixedWidth(30)
-		self.blue_label = QLabel("B",self)
-		self.blue_label.move(196,15)
+		self.blue_label = QLabel("   B",self)
+		blue_layout = QVBoxLayout()
+		blue_layout.addWidget(self.blue_label)
+		blue_layout.addWidget(self.blue)
+		
+		first_row.addSpacing(10)
+		first_row.addLayout(red_layout)
+		first_row.addLayout(green_layout)
+		first_row.addLayout(blue_layout)
+		first_row.addSpacing(37)
+		first_row.addStretch(1)
+
 		# save prefs and return button
 		self.return_button = QPushButton("Save",self)
 		self.return_button.clicked.connect(self.save)
-		self.return_button.move(100,75)
+
+		second_row.addStretch()
+		second_row.addWidget(self.return_button)
+		second_row.addStretch()
+
 		self.set_color_boxes(self.colors[0])
+
+	def mousePressEvent(self,e):
+		# catch when the user clicks and see if its in the sample area, if so, 
+		# open up the default PyQt color picker
+		x = e.x() # get x coordinate of click
+		y = e.y() # get y coordinate of click
+
+		square_top_left = (240,25) # top left of sample square
+		square_bottom_right = (267,52) # bottom right of sample square
+
+		if x <=square_bottom_right[0] and x>= square_top_left[0]:
+			if y>= square_top_left[1] and y<= square_bottom_right[1]:
+				# click was within the sample area
+				color = QColorDialog.getColor() # open QColor dialog
+				if color.isValid(): # if a value was returned
+					color = color.getRgb() # conver to rgb
+					color = list(color) # convert 3 length tuple to list
+					self.set_color_boxes(color) # set the color 
+					self.value_changed() # record the change
 
 	def draw_sample_event(self,qp,color):
 		qp.setPen(QColor(color[0],color[1],color[2]))
 		qp.setBrush(QColor(color[0],color[1],color[2])) 
-		size = 25
-		qp.drawRect(235,45,size,size) # draw the square
+		size = 27
+		qp.drawRect(240,25,size,size) # draw the square
 
 	def paintEvent(self,e):
 		cur_color = self.get_current_color()
