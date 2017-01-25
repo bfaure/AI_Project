@@ -60,6 +60,7 @@ class eight_neighbor_grid(QWidget):
 		self.setMinimumSize(800,600) # ui pixel dimensions (w,h)
 		self.line_color = [0,0,0] # black for cell lines
 		self.free_cell_color = [255,255,255] # white for free cell
+		#self.free_cell_color = [1,166,17] # green for free cell
 		self.trans_cell_color = [128,128,128] # gray cell for partially blocked
 		self.blocked_cell_color = [0,0,0] # black cell for blocked
 		self.end_cell_color = [255,0,0] # red cell for end location
@@ -70,6 +71,7 @@ class eight_neighbor_grid(QWidget):
 			# trying to allow user to select an image to use as the current location on the grid
 			self.pic = character_image(os.getcwd()+"/resources/character.png",self)
 
+		self.draw_grid_lines = True # set to true by default
 		self.init_cells(leave_empty=True) # more instance variables that can be reset more easily from within instance
 
 	def init_cells(self,leave_empty=False):
@@ -609,11 +611,14 @@ class eight_neighbor_grid(QWidget):
 		qp.setPen(pen)
 		qp.setBrush(Qt.NoBrush)
 
-		for x in range(self.num_columns):
-			qp.drawLine(x*horizontal_step,0,x*horizontal_step,height)
+		# allow user to decide if grid lines should be rendered
+		if self.draw_grid_lines:
+		
+			for x in range(self.num_columns):
+				qp.drawLine(x*horizontal_step,0,x*horizontal_step,height)
 
-		for y in range(self.num_rows):
-			qp.drawLine(0,y*vertical_step,width,y*vertical_step)
+			for y in range(self.num_rows):
+				qp.drawLine(0,y*vertical_step,width,y*vertical_step)
 		
 		# Drawing in outer boundaries
 		qp.drawLine(0,0,0,height-1)
@@ -696,6 +701,147 @@ class eight_neighbor_grid(QWidget):
 				break
 			index += 1
 
+	def toggle_grid_lines(self,grid_lines):
+		self.draw_grid_lines = grid_lines 
+
+	def set_attrib_color(self,attrib="free",color=[0,0,0]):
+		# called by the main_window, sets the color of a certain attribute
+		if attrib == "free":
+			self.free_cell_color = color 
+		elif attrib == "highway":
+			self.highway_color = color 
+		elif attrib == "full":
+			self.blocked_cell_color = color 
+		elif attrib == "partial":
+			self.trans_cell_color = color 
+		elif attrib == "start":
+			self.start_cell_color = color 
+		elif attrib == "end":
+			self.end_cell_color = color 
+		elif attrib == "current_location":
+			self.current_location_color = color 
+		else:
+			print("Unknown attribute: "+attrib)
+
+class attrib_color_window(QWidget):
+	# small window that opens if the user wants to change an attrib color
+	def __init__(self):
+		# constructor
+		super(attrib_color_window,self).__init__()
+		self.init_vars()
+		self.init_ui()	
+
+	def init_vars(self):
+		# initialize to default settings
+		self.attribs = ["free","highway","fully blocked","partially blocked","start","end","current location"]
+		# default colors
+		self.colors = [[255,255,255],[0,0,255],[0,0,0],[128,128,128],[0,255,0],[255,0,0],[0,0,255]]
+		# default element being shown
+		self.attrib_index = 0
+		# current attribute value
+		self.attrib_value = self.colors[self.attrib_index]
+		self.backend = False
+
+	def init_ui(self):
+		# set up ui elements
+		self.setFixedWidth(275)
+		self.setFixedHeight(110)
+		self.setWindowTitle("Set Color Preferences")
+		# selection box
+		self.selection_box = QComboBox(self)
+		self.selection_box.addItems(self.attribs)
+		self.selection_box.currentIndexChanged.connect(self.attrib_changed)
+		self.selection_box.move(10,45)
+
+		# color elements
+		self.red = QLineEdit("",self)
+		self.red.textChanged.connect(self.value_changed)
+		validator = QIntValidator(0,255)
+		self.red.setValidator(validator)
+		self.red.move(120,45)
+		self.red.setFixedWidth(30)
+		self.red_label = QLabel("R",self)
+		self.red_label.move(126,15)
+		self.green = QLineEdit("",self)
+		self.green.textChanged.connect(self.value_changed)
+		validator = QIntValidator(0,255)
+		self.green.setValidator(validator)		
+		self.green.move(155,45)
+		self.green.setFixedWidth(30)
+		self.green_label = QLabel("G",self)
+		self.green_label.move(161,15)
+		self.blue = QLineEdit("",self)
+		self.blue.textChanged.connect(self.value_changed)
+		validator = QIntValidator(0,255)
+		self.blue.setValidator(validator)
+		self.blue.move(190,45)
+		self.blue.setFixedWidth(30)
+		self.blue_label = QLabel("B",self)
+		self.blue_label.move(196,15)
+		# save prefs and return button
+		self.return_button = QPushButton("Save",self)
+		self.return_button.clicked.connect(self.save)
+		self.return_button.move(100,75)
+		self.set_color_boxes(self.colors[0])
+
+	def draw_sample_event(self,qp,color):
+		qp.setPen(QColor(color[0],color[1],color[2]))
+		qp.setBrush(QColor(color[0],color[1],color[2])) 
+		size = 25
+		qp.drawRect(235,45,size,size) # draw the square
+
+	def paintEvent(self,e):
+		cur_color = self.get_current_color()
+		qp = QPainter()
+		qp.begin(self)
+		self.draw_sample_event(qp,cur_color)
+		qp.end()
+
+	def save(self):
+		# fetches the current colors and sends a signal back to the main_window
+		self.emit(SIGNAL("return_color_prefs()"))
+		self.hide()
+
+	def attrib_changed(self):
+		# function called by pyqt when user changes the selection box attribute
+		self.set_color_boxes(self.colors[self.selection_box.currentIndex()])
+
+	def set_color_boxes(self,color):
+		# sets the rgb boxes to the input color
+		self.backend = True
+		self.red.setText(str(color[0]))
+		self.green.setText(str(color[1]))
+		self.blue.setText(str(color[2]))
+		self.attrib_value = color
+		self.backend = False
+
+	def get_current_color(self):
+		# parse the current color from the ui boxes
+		current = []
+		try:
+			current.append(int(self.red.text()))
+			current.append(int(self.green.text()))
+			current.append(int(self.blue.text()))
+			return current
+		except:
+			return [-1,-1,-1]
+
+	def value_changed(self):
+		# called by pyqt when one of the rgb boxes is changed
+		if self.backend==False: 
+			color = self.get_current_color()
+			if color!=[-1,-1,-1]:
+				self.colors[self.selection_box.currentIndex()] = color 
+		self.repaint()
+
+	def open_window(self):
+		# called from the main_window
+		self.show()
+
+	def hide_window(self):
+		# called from the main_window
+		self.hide()
+
 class main_window(QWidget):
 
 	def __init__(self):
@@ -709,6 +855,8 @@ class main_window(QWidget):
 		self.grids = [] # list of all grid elements
 		self.click = None # save click info
 		self.host_os = os.name 
+		self.show_grid_lines = True # true by default
+		self.color_preferences_window = attrib_color_window()
 
 	def init_ui(self):
 		# initialize ui elements here
@@ -736,9 +884,10 @@ class main_window(QWidget):
 
 		# menubar
 		self.menu_bar = QMenuBar(self)
-		self.menu_bar.setMinimumWidth(125)
+		self.menu_bar.setMinimumWidth(170)
 		self.file_menu = self.menu_bar.addMenu("File")
 		self.algo_menu = self.menu_bar.addMenu("Algorithm")
+		self.tools_menu = self.menu_bar.addMenu("Tools")
 
 		# menubar actions
 		load_action = self.file_menu.addAction("Load...",self.load,QKeySequence("Ctrl+L"))
@@ -751,13 +900,48 @@ class main_window(QWidget):
 		a_star_action = self.algo_menu.addAction("Run A*",self.a_star)
 		weighted_a_action = self.algo_menu.addAction("Run Weighted A",self.weighted_a)
 		uniform_cost_action = self.algo_menu.addAction("Run Uniform-cost Search",self.uniform_cost)
+		self.toggle_grid_lines_action = self.tools_menu.addAction("Turn Off Grid Lines",self.toggle_grid_lines,QKeySequence("Ctrl+G"))
+		self.tools_menu.addSeparator()
+		change_attrib_color_action = self.tools_menu.addAction("Set Attribute Color...",self.change_attrib_color,QKeySequence("Ctrl+M"))
 
 		if os.name == "nt":
 			self.resize(1623,1249) # large monitor size
 		else:
 			self.resize(1323,764) # fits my macbook well
 
+		QtCore.QObject.connect(self.color_preferences_window, QtCore.SIGNAL("return_color_prefs()"), self.finished_changing_colors)
 		self.show()
+
+	def finished_changing_colors(self):
+		# called by the color preferences window when the user is done
+		self.color_preferences_window.hide_window()
+		new_color_prefs = self.color_preferences_window.colors 
+		new_color_attribs = self.color_preferences_window.attribs 
+		for attrib,color in list(zip(new_color_attribs,new_color_prefs)):
+			if attrib == "fully blocked":
+				attrib = "full"
+			if attrib == "partially blocked":
+				attrib = "partial"
+			if attrib == "current location":
+				attrib = "current_location"
+			self.grid.set_attrib_color(attrib,color)
+		self.grid.repaint()
+
+	def change_attrib_color(self):
+		# function called by pyqt when user chooses change_attrib_color_action menu item
+		self.color_preferences_window.open_window()
+
+	def toggle_grid_lines(self):
+		# function called by pyqt when user chooses the appropriate menu item
+		if self.show_grid_lines == True:
+			self.show_grid_lines = False
+			self.toggle_grid_lines_action.setText("Turn On Grid Lines")
+		else:
+			self.show_grid_lines = True
+			self.toggle_grid_lines_action.setText("Turn Off Grid Lines")
+
+		self.grid.toggle_grid_lines(grid_lines=self.show_grid_lines)
+		self.grid.repaint()
 
 	def a_star(self):
 		pass
@@ -835,6 +1019,9 @@ class main_window(QWidget):
 		x = e.x()
 		y = e.y()
 		print(x,y)
+
+	def closeEvent(self,e):
+		self.color_preferences_window.close()
 
 def main():
 	pyqt_app = QtGui.QApplication(sys.argv)
