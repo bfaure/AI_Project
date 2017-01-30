@@ -260,8 +260,14 @@ class eight_neighbor_grid(QWidget):
 				self.set_cell_state(x_coord,y_coord,"full",False)
 				cur_blocked_cells+=1
 
-	def get_cell_distance(self,cell1,cell2):
-		# calculates the distance between the two cell inputs
+	def get_euclidean_distance(self,cell1,cell2):
+		# calculates the length of the straight line distance between two cells
+		x_run = abs(cell1[0]-cell2[0]) 
+		y_run = abs(cell1[1]-cell2[1])
+		return sqrt((x_run**2)+(y_run**2))
+
+	def get_manhattan_distance(self,cell1,cell2):
+		# calculates manhattan distance
 		x_run = abs(cell1[0]-cell2[0]) 
 		y_run = abs(cell1[1]-cell2[1])
 		return x_run+y_run
@@ -298,7 +304,7 @@ class eight_neighbor_grid(QWidget):
 			temp_end = self.get_start_or_end_cell()
 
 			# check if the generated cells are far enough apart
-			if self.get_cell_distance(temp_start,temp_end) >= 100:
+			if self.get_manhattan_distance(temp_start,temp_end) >= 100:
 				self.start_cell = temp_start
 				self.end_cell = temp_end
 				self.current_location = self.start_cell
@@ -409,7 +415,7 @@ class eight_neighbor_grid(QWidget):
 			if last == None: # if this is the first item
 				last = item
 				continue
-			dist = self.get_cell_distance(item,last)
+			dist = self.get_manhattan_distance(item,last)
 			if dist>1:
 				broken.append(coordinate_list[last_cut:coordinate_list.index(item)])
 				last_cut = coordinate_list.index(item)
@@ -435,14 +441,14 @@ class eight_neighbor_grid(QWidget):
 					segment_start = segment[0]
 					segment_end = segment[len(segment)-1]
 
-					if self.get_cell_distance(segment_start,other_segment_start)==1:
+					if self.get_manhattan_distance(segment_start,other_segment_start)==1:
 						segment.reverse()
 						segment.extend(other_item)
-					elif self.get_cell_distance(segment_start,other_segment_end)==1:
+					elif self.get_manhattan_distance(segment_start,other_segment_end)==1:
 						segment = other_item.extend(segment)
-					elif self.get_cell_distance(segment_end,other_segment_start)==1:
+					elif self.get_manhattan_distance(segment_end,other_segment_start)==1:
 						segment.extend(other_item)
-					elif self.get_cell_distance(segment_end,other_segment_end)==1:
+					elif self.get_manhattan_distance(segment_end,other_segment_end)==1:
 						other_item.reverse()
 						segment.extend(other_item)
 					else:	
