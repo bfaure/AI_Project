@@ -92,11 +92,12 @@ class eight_neighbor_grid(QWidget):
 		if leave_empty: return 
 
 		print("Generating a random grid...")
+		start_time = time.time()
 		self.init_partially_blocked_cells() # init the partially blocked
 		self.init_highways() # initialize the 4 highways
 		self.init_blocked_cells() # initialize the completely blocked cells
 		self.init_start_end_cells() # initialize the start/end locations
-		print("Finished generating random grid.")
+		print("Finished generating random grid, "+str(time.time()-start_time)+" seconds")
 
 	def check_for_highway(self,x_coord,y_coord,temp_highway=None):
 		# checks if the coordinates in question contain a highway, the temp_highway
@@ -510,7 +511,7 @@ class eight_neighbor_grid(QWidget):
 						cell_state = "partial"
 						coord = (x,y)
 						highways.append(coord)
-					new_cell = cell()
+					new_cell = cell(x,y)
 					new_cell.state = cell_state
 					new_cells.append(new_cell)
 					x+=1
@@ -558,8 +559,10 @@ class eight_neighbor_grid(QWidget):
 			# end point, current location).
 
 			# calculate the cell coordinates from list index
-			x = index % self.num_columns # x coordinate
-			y = int(index/self.num_columns) # get the y coordinate
+			#x = index % self.num_columns # x coordinate
+			#y = int(index/self.num_columns) # get the y coordinate
+			x = cell.x 
+			y = cell.y
 
 			# check if cell is free, partially blocked, or fully blocked
 			if cell.state == "free":
@@ -644,8 +647,8 @@ class eight_neighbor_grid(QWidget):
 					continue
 				x1 = (last_location[0]*horizontal_step)+(horizontal_step/2)
 				x2 = (location[0]*horizontal_step)+(horizontal_step/2)
-				y1 = (last_location[1]*horizontal_step)+(vertical_step/2)
-				y2 = (location[1]*horizontal_step)+(vertical_step/2)
+				y1 = (last_location[1]*vertical_step)+(vertical_step/2)
+				y2 = (location[1]*vertical_step)+(vertical_step/2)
 				qp.drawLine(x1,y1,x2,y2)
 				last_location = location
 
@@ -685,27 +688,33 @@ class eight_neighbor_grid(QWidget):
 
 		index = 0
 		for cell in self.cells:
-			cur_x = index % self.num_columns
-			cur_y = int(index/self.num_columns)
+			#cur_x = index % self.num_columns
+			#cur_y = int(index/self.num_columns)
 
-			if cur_x==x and cur_y==y:
+			if x==cell.x and y==cell.y:
 				#print("Changing cell to "+state)
 				self.cells[index].state = state 
-				break
+				return
+
 			index += 1
 
 	def get_cell_state(self,x_coord,y_coord):
 		# locates the cell in question and returns the state
-		index = 0
+		#index = 0
 		for cell in self.cells:
-			cur_x = index % self.num_columns
-			cur_y = int(index/self.num_columns)
-			if cur_x==x and cur_y==y:
-				#print("Changing cell to "+state)
-				return self.cells[index].state
-				self.cells[index].state = state 
-				break
-			index += 1
+
+			if x==cell.x and y==cell.y:
+				return cell.state 
+
+			#cur_x = index % self.num_columns
+			#cur_y = int(index/self.num_columns)
+			#if cur_x==x and cur_y==y:
+			#	#print("Changing cell to "+state)
+			#	return self.cells[index].state
+			#	self.cells[index].state = state 
+			#	break
+			#index += 1
+			
 
 	def toggle_grid_lines(self,grid_lines):
 		self.draw_grid_lines = grid_lines 
