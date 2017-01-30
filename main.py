@@ -711,17 +711,7 @@ class eight_neighbor_grid(QWidget):
 
 			if x==cell.x and y==cell.y:
 				return cell.state 
-
-			#cur_x = index % self.num_columns
-			#cur_y = int(index/self.num_columns)
-			#if cur_x==x and cur_y==y:
-			#	#print("Changing cell to "+state)
-			#	return self.cells[index].state
-			#	self.cells[index].state = state 
-			#	break
-			#index += 1
 			
-
 	def toggle_grid_lines(self,grid_lines):
 		self.draw_grid_lines = grid_lines 
 
@@ -1033,6 +1023,7 @@ class main_window(QWidget):
 
 	def a_star(self):
 		# put a* implementation here
+		self.grid.a_star()
 		pass
 
 	def weighted_a(self):
