@@ -64,7 +64,7 @@ class attrib_color_window(QWidget):
 		# initialize to default settings
 		self.attribs = ["free","highway","fully blocked","partially blocked","start","end","current location","solution_swarm","solution","start_gradient","end_gradient","path_trace"]
 		# default colors
-		self.colors = [[255,255,255],[0,0,255],[0,0,0],[128,128,128],[0,255,0],[255,0,0],[0,0,255],[0,255,255],[0,255,0],[255,0,0],[0,255,50],[128,128,128]]
+		self.colors = [[255,255,255],[0,0,255],[0,0,0],[128,128,128],[0,255,0],[255,0,0],[0,0,255],[0,255,255],[0,255,0],[255,255,0],[0,255,50],[128,128,128]]
 		# default element being shown
 		self.attrib_index = 0
 		# current attribute value
@@ -345,7 +345,7 @@ class main_window(QWidget):
 			self.show_trace = True
 			self.toggle_trace_action.setText("Turn Off Swarm Gradient")
 
-		self.grid.toggle_trace(use_trace=self.use_trace)
+		self.grid.toggle_trace(use_trace=self.show_trace)
 		self.grid.repaint()
 		pyqt_app.processEvents()
 

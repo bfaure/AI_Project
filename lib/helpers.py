@@ -719,7 +719,7 @@ class eight_neighbor_grid(QWidget):
 					last_location = None
 
 					for location in self.solution_path:
-						pen = QPen(QColor(int(cur_shade[0]),int(cur_shade[1]),int(cur_shade[2])),0.25,Qt.DashLine)
+						pen = QPen(QColor(int(cur_shade[0]),int(cur_shade[1]),int(cur_shade[2])),0.1,Qt.DashLine)
 						qp.setPen(pen)
 						cur_shade = [cur_shade[0]+r_delta,cur_shade[1]+g_delta,cur_shade[2]+b_delta]
 						
