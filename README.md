@@ -10,7 +10,10 @@
 `Ctrl+C`: Clear grid <br>
 `Ctrl+N`: Create new, random grid <br>
 `Ctrl+Q`: Quit application <br>
-`Ctrl+M`: Change colors <br>
+`Ctrl+M`: Change colors <br><br>
+`Ctrl+1`: Run A\* Algorithm<br>
+`Ctrl+2`: Run Weighted A\* Algorithm<br>
+`Ctrl+3`: Run Uniform-Cost Search Algorithm<br>
 
 ## Dependencies
 Python 2.7, PyQt4
