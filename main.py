@@ -779,6 +779,10 @@ class eight_neighbor_grid(QWidget):
 			self.end_cell_color = color 
 		elif attrib == "current_location":
 			self.current_location_color = color 
+		elif attrib == "solution_swarm":
+			self.solution_swarm_color = color 
+		elif attrib == "solution":
+			self.solution_color = color 
 		else:
 			print("Unknown attribute: "+attrib)
 
@@ -792,9 +796,9 @@ class attrib_color_window(QWidget):
 
 	def init_vars(self):
 		# initialize to default settings
-		self.attribs = ["free","highway","fully blocked","partially blocked","start","end","current location"]
+		self.attribs = ["free","highway","fully blocked","partially blocked","start","end","current location","solution_swarm","solution"]
 		# default colors
-		self.colors = [[255,255,255],[0,0,255],[0,0,0],[128,128,128],[0,255,0],[255,0,0],[0,0,255]]
+		self.colors = [[255,255,255],[0,0,255],[0,0,0],[128,128,128],[0,255,0],[255,0,0],[0,0,255],[0,255,255],[0,255,0]]
 		# default element being shown
 		self.attrib_index = 0
 		# current attribute value
@@ -1236,6 +1240,7 @@ class main_window(QWidget):
 		self.frontier = PriorityQueue()
 		self.frontier.push(self.start_cell,0,parent=None)
 		self.path_end = self.start_cell
+		self.path_length = 1
 
 		self.explored = [] # empty set
 
@@ -1299,7 +1304,7 @@ class main_window(QWidget):
 				self.path_end = cur_node
 				return False
 
-		print("\nFinished uniform cost search in "+str(time.time()-start_time)[:5]+" seconds, rendering grid...")
+		print("\nFinished uniform cost search in "+str(time.time()-overall_start)[:5]+" seconds, rendering grid...")
 		return True
 
 	def create(self):
