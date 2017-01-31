@@ -18,5 +18,8 @@
 `Ctrl+2`: Run Weighted A\* Algorithm<br>
 `Ctrl+3`: Run Uniform-Cost Search Algorithm<br>
 
+## Instructions
+Run `python main.py` (normal execution of Python 2.7) to open the UI. If you have Cython installed the lib/helpers.py file will automatically be copied to helpers.pyx and Cython will build this up to helpers.c. If Cython is not installed, the original helpers.py file will be used.
+
 ## Dependencies
 Python 2.7, PyQt4
