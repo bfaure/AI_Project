@@ -6,9 +6,13 @@ import sys
 import time
 import random
 
+from math import sqrt
+
 from PyQt4 import QtGui, QtCore
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
+
+import heapq # for priority queue implementation
 
 # class to hold the image on the grid that represents the current location
 class character_image(QLabel):
@@ -67,6 +71,7 @@ class eight_neighbor_grid(QWidget):
 		self.start_cell_color = [0,255,0] # green cell for start location
 		self.current_location_color = [0,0,255] # blue for current location
 		self.highway_color = [0,0,255] # blue for highway lines
+		self.solution_color = [0,255,0] # green for solution path
 		if self.using_game_character:
 			# trying to allow user to select an image to use as the current location on the grid
 			self.pic = character_image(os.getcwd()+"/resources/character.png",self)
@@ -88,6 +93,7 @@ class eight_neighbor_grid(QWidget):
 		self.end_cell = (self.num_columns-1,self.num_rows-1) # default end cell
 		self.hard_to_traverse_regions = [] # empty by default
 		self.highways = [] # empty by default
+		self.solution_path = [] # the path eventually filled by one of the search algos
 		self.current_location = self.start_cell				
 		if leave_empty: return 
 
@@ -97,6 +103,7 @@ class eight_neighbor_grid(QWidget):
 		self.init_highways() # initialize the 4 highways
 		self.init_blocked_cells() # initialize the completely blocked cells
 		self.init_start_end_cells() # initialize the start/end locations
+		self.solution_path = [] # the path eventually filled by one of the search algos
 		print("Finished generating random grid, "+str(time.time()-start_time)+" seconds")
 
 	def check_for_highway(self,x_coord,y_coord,temp_highway=None):
@@ -658,6 +665,21 @@ class eight_neighbor_grid(QWidget):
 				qp.drawLine(x1,y1,x2,y2)
 				last_location = location
 
+		# Drawing in solution path
+		pen = QPen(QColor(self.solution_color[0],self.solution_color[1],self.solution_color[2]),2.0,Qt.SolidLine)
+		qp.setPen(pen)
+		last_location = None
+		for location in self.solution_path:
+			if last_location == None:
+				last_location = location
+				continue
+			x1 = (last_location[0]*horizontal_step)+(horizontal_step/2)
+			x2 = (location[0]*horizontal_step)+(horizontal_step/2)
+			y1 = (last_location[1]*vertical_step)+(vertical_step/2)
+			y2 = (location[1]*vertical_step)+(vertical_step/2)
+			qp.drawLine(x1,y1,x2,y2)
+			last_location = location
+
 		print("                                                     ",end="\r")
 		print("Re-Drawing Grid: "+str(time.time()-start_time)[:5]+" seconds")
 
@@ -913,6 +935,127 @@ class attrib_color_window(QWidget):
 		# called from the main_window
 		self.hide()
 
+
+class PriorityQueue:
+	def __init__(self):
+		self._queue = []
+		self._index = 0
+
+	def push(self, item, cost):
+		# Push element onto queue
+		heapq.heappush(self._queue, (cost, self._index, item))
+		self._index += 1
+
+	def pop(self):
+		# Return the item with the lowest cost
+		return heapq.heappop(self._queue)[-1]
+
+	def length(self):
+		# Return the length of the queue
+		return len(self._queue)
+
+	def has_cell(self,cell):
+		# Returns True if the cell is in the queue, False if not
+		for item in self._queue:
+			queued_cell = item[2]
+			if cell.x==queued_cell.x and cell.y==queued_cell.y:
+				return True 
+		return False
+
+	def replace_cell(self,cell,new_cost):
+		i = 0
+		for item in self._queue:
+			queued_cell = item[2]
+			if queued_cell.x==cell.x and queued_cell.y==cell.y:
+				del self._queue[i]
+				break
+			i+=1
+		self.push(queued_cell,new_cost)
+
+	def get_cell_cost(self,cell):
+		for item in self._queue:
+			if cell.x==item[2].x and cell.y==item[2].y:
+				return item[0]
+
+def get_neighbors(current,cells):
+	# Returns a list of all 8 neighbor cells to "current"
+	x = current.x 
+	y = current.y 
+	neighbors = []
+	for cell in cells:
+		if cell.x in [x,x-1,x+1] and cell.y in [y,y-1,y+1]:
+			neighbors.append(cell)
+	return neighbors
+
+def cell_in_list(current,cells):
+	# Returns True if "current" is in the list, False if not
+	for cell in cells:
+		if current.x==cell.x and current.y==cell.y:
+			return True 
+	return False
+
+def cell_in_highway(current,highways):
+	for h in highways:
+		for item in highways:
+			if item[0]==current.x and item[1]==current.y:
+				return True 
+	return False
+
+def get_transition_cost(current_cell,new_cell,highways):
+	# Calculates the cost of transitioning from current_cell to new_cell
+	# recall: state can be one of: "free", "partial", "full"
+
+	current_state = current_cell.state 
+	new_state = new_cell.state 
+
+	if current_cell.x == new_cell.x or current_cell.y==new_cell.y:
+		orientation = "horizontal_or_vertical"
+	else:
+		orientation = "diagonal"
+
+	# move from free cell to free cell
+	if current_state=="free" and new_state=="free":
+		if orientation=="diagonal":
+			cost = sqrt(2)
+		else:
+			cost = 1
+
+	# move from "hard to traverse" cell to another "hard to traverse" cell
+	elif current_state=="partial" and new_state=="partial":
+		if orientation=="diagonal":
+			cost = sqrt(8)
+		else:
+			cost = 2
+
+	# move from free cell to "hard to traverse" cell
+	elif current_state=="free" and new_state=="partial":
+		if orientation=="diagonal":
+			cost = (sqrt(2)+sqrt(8))/2
+		else:
+			cost = 1.5 
+
+	# move from "hard to traverse" cell to free cell
+	elif current_state=="partial" and new_state=="free":
+		if orientation=="diagonal":
+			cost = (sqrt(2)+sqrt(8))/2
+		else:
+			cost = 1.5 
+
+	# trying to traverse to blocked cell
+	elif new_state=="full":
+		cost = -1
+
+	else:
+		print("Could not decode cell transition from "+current_state+" to "+new_state)
+		cost = -1
+
+	# now need to check if both cells are in a highway
+	if orientation == "horizontal_or_vertical":
+		if cell_in_highway(current_cell,highways)==True and cell_in_highway(new_cell,highways)==True:
+			cost = cost*0.25
+
+	return cost
+
 class main_window(QWidget):
 
 	def __init__(self):
@@ -968,9 +1111,9 @@ class main_window(QWidget):
 		create_action = self.file_menu.addAction("Create New Grid",self.create,QKeySequence("Ctrl+N"))
 		self.file_menu.addSeparator()
 		quit_action = self.file_menu.addAction("Quit", self.quit, QKeySequence("Ctrl+Q"))
-		a_star_action = self.algo_menu.addAction("Run A*",self.a_star)
-		weighted_a_action = self.algo_menu.addAction("Run Weighted A",self.weighted_a)
-		uniform_cost_action = self.algo_menu.addAction("Run Uniform-cost Search",self.uniform_cost)
+		a_star_action = self.algo_menu.addAction("Run A*",self.a_star,QKeySequence("Ctrl+1"))
+		weighted_a_action = self.algo_menu.addAction("Run Weighted A",self.weighted_a,QKeySequence("Ctrl+2"))
+		uniform_cost_action = self.algo_menu.addAction("Run Uniform-cost Search",self.uniform_cost,QKeySequence("Ctrl+3"))
 		self.toggle_grid_lines_action = self.tools_menu.addAction("Turn Off Grid Lines",self.toggle_grid_lines,QKeySequence("Ctrl+G"))
 		self.tools_menu.addSeparator()
 		change_attrib_color_action = self.tools_menu.addAction("Set Attribute Color...",self.change_attrib_color,QKeySequence("Ctrl+M"))
@@ -1023,7 +1166,6 @@ class main_window(QWidget):
 
 	def a_star(self):
 		# put a* implementation here
-		self.grid.a_star()
 		pass
 
 	def weighted_a(self):
@@ -1032,7 +1174,61 @@ class main_window(QWidget):
 
 	def uniform_cost(self):
 		# put uniform cost search implementation here
-		pass
+		print("Performing uniform_cost search...")
+		start_time = time.time() # to log the amount of time taken
+
+		cells = self.grid.cells # current state of cells in grid
+		start_cell = self.grid.start_cell  # current start cell 
+
+		for item in cells:
+			if item.x==start_cell[0] and item.y==start_cell[1]:
+				start_cell = item 
+				break
+
+		end_cell = self.grid.end_cell # current end cell
+		highways = self.grid.highways # current highways on grid
+
+		path = [] # to be filled with the path found by algorithm
+
+		frontier = PriorityQueue()
+		frontier.push(start_cell,0)
+
+		explored = [] # empty set
+
+		num_iterations = 0
+
+		while True:
+
+			print("explored: "+str(len(explored))+", frontier: "+str(frontier.length())+", path: "+str(len(path))+", time: "+str(time.time()-start_time)[:5],end="\r")
+
+			if frontier.length() == 0:
+				print("Uniform cost search failed to find a solution path.")
+				return
+
+			cur_node = frontier.pop()
+			path.append(cur_node)
+
+			if cur_node.x==end_cell[0] and cur_node.y==end_cell[1]:
+				# if we have reached the goal node
+				break
+
+			explored.append(cur_node) # add current node to explored list
+			node_neigbors = get_neighbors(cur_node,cells)
+
+			for neighbor in node_neigbors:
+				transition_cost = get_transition_cost(cur_node,neighbor,highways)
+
+				if cell_in_list(neighbor,explored)==False and frontier.has_cell(neighbor)==False:
+					if transition_cost!=-1:
+						frontier.push(neighbor,transition_cost)
+
+				elif frontier.has_cell(neighbor)==True: 
+					if frontier.get_cell_cost(neighbor)>transition_cost:
+						frontier.replace_cell(neighbor,transition_cost)
+
+		print("\nFinished uniform cost search in "+str(time.time()-start_time)[:5]+" seconds, rendering grid...")
+		self.grid.solution_path = path
+		self.grid.repaint() # render grid with new solution path
 
 	def create(self):
 		# clears the current grid and creates a new random one
