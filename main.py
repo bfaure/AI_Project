@@ -26,8 +26,12 @@ except:
 if using_cython:
 	print("Found Cython installation, copying helpers.py to helpers.pyx...")
 
-	if filecmp.cmp("lib/helpers.py","helpers.pyx")==False: # if they are not the same already
+	if os.path.exists("helpers.pyx"):
+		if filecmp.cmp("lib/helpers.py","helpers.pyx")==False: # if they are not the same already
+			shutil.copyfile("lib/helpers.py","helpers.pyx")
+	else:
 		shutil.copyfile("lib/helpers.py","helpers.pyx")
+
 	print("Building C code (if error here change python2 to python in main.py)...")
 	try:
 		os.system("python2 setup.py build_ext --inplace")
