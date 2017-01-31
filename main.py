@@ -326,11 +326,11 @@ class eight_neighbor_grid(QWidget):
 
 			# check if the generated cells are far enough apart
 			if self.get_manhattan_distance(temp_start,temp_end) >= 100:
-				if get_cell_state(temp_start)=="full":
+				if self.get_cell_state(temp_start[0],temp_start[1])=="full":
 					continue # cant use if already a fully blocked cell
-				if get_cell_state(temp_end)=="full":
+				if self.get_cell_state(temp_end[0],temp_end[1])=="full":
 					continue # cant use if already a fully blocked cell
-					
+
 				self.start_cell = temp_start
 				self.end_cell = temp_end
 				self.current_location = self.start_cell
@@ -769,7 +769,7 @@ class eight_neighbor_grid(QWidget):
 		#index = 0
 		for cell in self.cells:
 
-			if x==cell.x and y==cell.y:
+			if x_coord==cell.x and y_coord==cell.y:
 				return cell.state 
 			
 	def toggle_grid_lines(self,grid_lines):
