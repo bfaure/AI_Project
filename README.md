@@ -1,6 +1,8 @@
 # [AI_Project](https://content.sakai.rutgers.edu/access/content/attachment/1975a4df-41ed-4746-ac06-a13a9cc7cf4b/Assignments/26768e78-7ed1-4bd5-8d6a-5fd98a16fe6f/project1.pdf)
 ## Uniform-Cost Search
+#### With `solution_swarm`
 ![Alt text](https://github.com/bfaure/AI_Project/blob/master/screenshots/ucs_windows_2.png)<br>
+#### Without `solution_swarm`
 ![Alt text](https://github.com/bfaure/AI_Project/blob/master/screenshots/ucs_windows_3.png)<br>
 ## Custom Colors
 ![Alt text](https://github.com/bfaure/AI_Project/blob/master/screenshots/screenshot_windows.png)
