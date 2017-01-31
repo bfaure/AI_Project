@@ -105,14 +105,14 @@ class eight_neighbor_grid(QWidget):
 		self.current_location = self.start_cell				
 		if leave_empty: return 
 
-		print("Generating a random grid...")
+		print("\nGenerating a random grid...")
 		start_time = time.time()
 		self.init_partially_blocked_cells() # init the partially blocked
 		self.init_highways() # initialize the 4 highways
 		self.init_blocked_cells() # initialize the completely blocked cells
 		self.init_start_end_cells() # initialize the start/end locations
 		self.solution_path = [] # the path eventually filled by one of the search algos
-		print("Finished generating random grid, "+str(time.time()-start_time)+" seconds")
+		print("Finished generating random grid, "+str(time.time()-start_time)+" seconds\n")
 
 	def check_for_highway(self,x_coord,y_coord,temp_highway=None):
 		# checks if the coordinates in question contain a highway, the temp_highway
@@ -694,10 +694,10 @@ class eight_neighbor_grid(QWidget):
 				if last_location == None:
 					last_location = location
 					continue
-				x1 = (last_location[0]*horizontal_step)+(horizontal_step/2)
-				x2 = (location[0]*horizontal_step)+(horizontal_step/2)
-				y1 = (last_location[1]*vertical_step)+(vertical_step/2)
-				y2 = (location[1]*vertical_step)+(vertical_step/2)
+				x1 = (last_location.x*horizontal_step)+(horizontal_step/2)
+				x2 = (location.x*horizontal_step)+(horizontal_step/2)
+				y1 = (last_location.y*vertical_step)+(vertical_step/2)
+				y2 = (location.y*vertical_step)+(vertical_step/2)
 				qp.drawLine(x1,y1,x2,y2)
 				last_location = location
 
@@ -1043,7 +1043,7 @@ def cell_in_list(current,cells):
 
 def cell_in_highway(current,highways):
 	for h in highways:
-		for item in highways:
+		for item in h:
 			if item[0]==current.x and item[1]==current.y:
 				return True 
 	return False
@@ -1055,7 +1055,7 @@ def get_transition_cost(current_cell,new_cell,highways):
 	current_state = current_cell.state 
 	new_state = new_cell.state 
 
-	if current_cell.x == new_cell.x or current_cell.y==new_cell.y:
+	if current_cell.x==new_cell.x or current_cell.y==new_cell.y:
 		orientation = "horizontal_or_vertical"
 	else:
 		orientation = "diagonal"
@@ -1246,11 +1246,11 @@ class main_window(QWidget):
 		pass
 
 	def uniform_cost(self):
-		print("Performing uniform_cost search...")
+		print("\nPerforming uniform_cost search...")
 		self.grid.verbose = False 
 
 		# indicate the refresh rate here
-		refresh_rate = 2 # seconds
+		refresh_rate = 1 # seconds
 		self.overall_start = time.time()
 
 		self.cells = self.grid.cells # current state of cells in grid
@@ -1264,7 +1264,7 @@ class main_window(QWidget):
 		self.end_cell = self.grid.end_cell # current end cell
 		self.highways = self.grid.highways # current highways on grid
 
-		self.path = [] # to be filled with the path found by algorithm
+		#self.path = [] # to be filled with the path found by algorithm
 		self.path_cost = 0 # overall path cost
 
 		self.frontier = PriorityQueue()
@@ -1276,7 +1276,7 @@ class main_window(QWidget):
 
 		while True:
 			done = self.uniform_cost_step(refresh_rate)
-			self.grid.solution_path = self.path
+			self.grid.solution_path = self.explored
 			self.grid.shortest_path = rectify_path(self.path_end)
 			self.grid.repaint() # render grid with new solution path
 			pyqt_app.processEvents()
@@ -1302,9 +1302,6 @@ class main_window(QWidget):
 
 			cur_node = self.frontier.pop()
 			self.path_cost = cur_node.cost # get the path cost so far
-			#print("\nexpanding node with cost: "+str(self.path_cost))
-
-			self.path.append([cur_node.x,cur_node.y])
 
 			if cur_node.x==self.end_cell[0] and cur_node.y==self.end_cell[1]:
 				# if we have reached the goal node
@@ -1334,7 +1331,7 @@ class main_window(QWidget):
 				self.path_end = cur_node
 				return False
 
-		print("\nFinished uniform cost search in "+str(time.time()-self.overall_start)[:5]+" seconds, rendering grid...")
+		print("\nFinished uniform cost search in "+str(time.time()-self.overall_start)[:5]+" seconds, final cost: "+str(self.path_cost)+"\n")
 		return True
 
 	def create(self):
