@@ -62,9 +62,9 @@ class attrib_color_window(QWidget):
 
 	def init_vars(self):
 		# initialize to default settings
-		self.attribs = ["free","highway","fully blocked","partially blocked","start","end","current location","solution_swarm","solution"]
+		self.attribs = ["free","highway","fully blocked","partially blocked","start","end","current location","solution_swarm","solution","start_gradient","end_gradient","path_trace"]
 		# default colors
-		self.colors = [[255,255,255],[0,0,255],[0,0,0],[128,128,128],[0,255,0],[255,0,0],[0,0,255],[0,255,255],[0,255,0]]
+		self.colors = [[255,255,255],[0,0,255],[0,0,0],[128,128,128],[0,255,0],[255,0,0],[0,0,255],[0,255,255],[0,255,0],[255,0,0],[0,255,50],[128,128,128]]
 		# default element being shown
 		self.attrib_index = 0
 		# current attribute value
@@ -246,6 +246,8 @@ class main_window(QWidget):
 		self.host_os = os.name 
 		self.show_grid_lines = True # true by default
 		self.show_solution_swarm = True # true by default
+		self.use_gradient = False # False by default
+		self.show_trace = True # true by default
 
 		self.color_preferences_window = attrib_color_window()
 
@@ -293,6 +295,8 @@ class main_window(QWidget):
 		uniform_cost_action = self.algo_menu.addAction("Run Uniform-cost Search",self.uniform_cost,QKeySequence("Ctrl+3"))
 		self.toggle_grid_lines_action = self.tools_menu.addAction("Turn Off Grid Lines",self.toggle_grid_lines,QKeySequence("Ctrl+G"))
 		self.toggle_solution_swarm_action = self.tools_menu.addAction("Turn Off Solution Swarm",self.toggle_solution_swarm,QKeySequence("Ctrl+T"))
+		self.toggle_gradient_action = self.tools_menu.addAction("Turn On Swarm Gradient",self.toggle_gradient)
+		self.toggle_trace_action = self.tools_menu.addAction("Turn Off Path Trace",self.toggle_trace)
 		self.tools_menu.addSeparator()
 		change_attrib_color_action = self.tools_menu.addAction("Set Attribute Color...",self.change_attrib_color,QKeySequence("Ctrl+M"))
 		self.tools_menu.addSeparator()
@@ -317,6 +321,33 @@ class main_window(QWidget):
 
 		self.grid.toggle_solution_swarm(show_swarm=self.show_solution_swarm)
 		self.grid.repaint()
+		pyqt_app.processEvent()
+
+	def toggle_gradient(self):
+		# function called by pyqt when user chooses the appropriate menu item
+		if self.use_gradient == True:
+			self.use_gradient = False
+			self.toggle_gradient_action.setText("Turn On Swarm Gradient")
+		else:
+			self.use_gradient = True
+			self.toggle_gradient_action.setText("Turn Off Swarm Gradient")
+
+		self.grid.toggle_gradient(use_gradient=self.use_gradient)
+		self.grid.repaint()
+		pyqt_app.processEvents()
+
+	def toggle_trace(self):
+		# function called by pyqt when user chooses the appropriate menu item
+		if self.show_trace == True:
+			self.show_trace = False
+			self.toggle_trace_action.setText("Turn On Swarm Gradient")
+		else:
+			self.show_trace = True
+			self.toggle_trace_action.setText("Turn Off Swarm Gradient")
+
+		self.grid.toggle_trace(use_trace=self.use_trace)
+		self.grid.repaint()
+		pyqt_app.processEvents()
 
 	def regenerate_start_end(self):
 		# called when the user selects the "New Start/End Cells..." menu item in tools menu
@@ -381,9 +412,8 @@ class main_window(QWidget):
 
 		self.end_cell = self.grid.end_cell # current end cell
 		self.highways = self.grid.highways # current highways on grid
-
-		#self.path = [] # to be filled with the path found by algorithm
 		self.path_cost = 0 # overall path cost
+		self.tried_paths = [] # to hold all paths shown to user
 
 		self.frontier = PriorityQueue()
 		self.frontier.push(self.start_cell,0,parent=None)
@@ -396,6 +426,8 @@ class main_window(QWidget):
 			done = self.uniform_cost_step(refresh_rate)
 			self.grid.solution_path = self.explored
 			self.grid.shortest_path = rectify_path(self.path_end)
+			self.tried_paths.append(self.grid.shortest_path)
+			self.grid.path_traces = self.tried_paths
 			self.grid.update() # render grid with new solution path
 			pyqt_app.processEvents()
 			if done:

@@ -77,12 +77,18 @@ class eight_neighbor_grid(QWidget):
 		self.highway_color = [0,0,255] # blue for highway lines
 		self.solution_color = [0,255,0] # green for solution path
 		self.solution_swarm_color = [0,255,255] # green for path that has been tested so far
+		self.start_gradient = [255,0,0] # if gradient is used, the starting color 
+		self.end_gradient = [0,255,50] # if gradient is used, the ending color
+		self.trace_color = [128,128,128] # if trace is on, the color of the prior solution paths
+
 		if self.using_game_character:
 			# trying to allow user to select an image to use as the current location on the grid
 			self.pic = character_image(os.getcwd()+"/resources/character.png",self)
 
 		self.draw_grid_lines = True # set to true by default
 		self.show_solution_swarm = True # set to true by default
+		self.show_path_trace = True # if true then show the prior tried paths
+		self.using_gradient = False # if true then solution swarm will be gradient
 		self.init_cells(leave_empty=True) # more instance variables that can be reset more easily from within instance
 
 	def init_cells(self,leave_empty=False):
@@ -102,7 +108,8 @@ class eight_neighbor_grid(QWidget):
 		self.highways = [] # empty by default
 		self.solution_path = [] # the path eventually filled by one of the search algos
 		self.shortest_path = []
-		self.current_location = self.start_cell				
+		self.current_location = self.start_cell	
+		self.path_traces = [] # list of all paths tried (shown to user)			
 		if leave_empty: return 
 
 		print("\nGenerating a random grid...")
@@ -453,7 +460,14 @@ class eight_neighbor_grid(QWidget):
 		# stuff in the broken list and connect any highway endpoints that
 		# are only a distance of 1 away from eachother
 		i = 0
+		iterations = 0
+		max_allowed = 1000
 		while True:
+			iterations+=1
+			if iterations>max_allowed:
+				print("Could not load the highways for this .grid file.")
+				return
+
 			segment = broken[i]
 			segment_start = segment[0]
 			segment_end = segment[len(segment)-1]
@@ -688,27 +702,75 @@ class eight_neighbor_grid(QWidget):
 
 		if self.show_solution_swarm:
 			# Drawing in solution swarm
-			pen = QPen(QColor(self.solution_swarm_color[0],self.solution_swarm_color[1],self.solution_swarm_color[2]),0.25,Qt.DashLine)
-			qp.setPen(pen)
-			last_location = None
-			for location in self.solution_path:
-			#for location in self.solution_path:
-				if last_location == None:
+			if self.using_gradient: # swarm color that goes from red to blue
+				if len(self.solution_path)>0:
+					start_gradient = self.start_gradient
+					end_gradient = self.end_gradient
+
+					r_delta = abs(float(start_gradient[0]-end_gradient[0])/float(len(self.solution_path)))
+					g_delta = abs(float(start_gradient[1]-end_gradient[1])/float(len(self.solution_path)))
+					b_delta = abs(float(start_gradient[2]-end_gradient[2])/float(len(self.solution_path)))
+
+					if start_gradient[0]>end_gradient[0]: r_delta=r_delta*-1
+					if start_gradient[1]>end_gradient[1]: g_delta=g_delta*-1
+					if start_gradient[2]>end_gradient[2]: b_delta=b_delta*-1
+
+					cur_shade = start_gradient
+					last_location = None
+
+					for location in self.solution_path:
+						pen = QPen(QColor(int(cur_shade[0]),int(cur_shade[1]),int(cur_shade[2])),0.25,Qt.DashLine)
+						qp.setPen(pen)
+						cur_shade = [cur_shade[0]+r_delta,cur_shade[1]+g_delta,cur_shade[2]+b_delta]
+						
+						if last_location == None:
+							last_location = location
+							continue
+						x1 = (last_location.x*horizontal_step)+(horizontal_step/2)
+						x2 = (location.x*horizontal_step)+(horizontal_step/2)
+						y1 = (last_location.y*vertical_step)+(vertical_step/2)
+						y2 = (location.y*vertical_step)+(vertical_step/2)
+						qp.drawLine(x1,y1,x2,y2)
+						last_location = location
+			
+			else: # solid color swarm
+				pen = QPen(QColor(self.solution_swarm_color[0],self.solution_swarm_color[1],self.solution_swarm_color[2]),0.1,Qt.DashLine)
+				qp.setPen(pen)
+				last_location = None
+				for location in self.solution_path:
+				#for location in self.solution_path:
+					if last_location == None:
+						last_location = location
+						continue
+					x1 = (last_location.x*horizontal_step)+(horizontal_step/2)
+					x2 = (location.x*horizontal_step)+(horizontal_step/2)
+					y1 = (last_location.y*vertical_step)+(vertical_step/2)
+					y2 = (location.y*vertical_step)+(vertical_step/2)
+					qp.drawLine(x1,y1,x2,y2)
 					last_location = location
-					continue
-				x1 = (last_location.x*horizontal_step)+(horizontal_step/2)
-				x2 = (location.x*horizontal_step)+(horizontal_step/2)
-				y1 = (last_location.y*vertical_step)+(vertical_step/2)
-				y2 = (location.y*vertical_step)+(vertical_step/2)
-				qp.drawLine(x1,y1,x2,y2)
-				last_location = location
+
+		# Drawing in the prior solution paths
+		if self.show_path_trace:
+			pen = QPen(QColor(self.trace_color[0],self.trace_color[1],self.trace_color[2]),0.1,Qt.DashLine)
+			qp.setPen(pen)
+			for path in self.path_traces:
+				last_location = None
+				for location in path:
+					if last_location == None:
+						last_location = location
+						continue
+					x1 = (last_location[0]*horizontal_step)+(horizontal_step/2)
+					x2 = (location[0]*horizontal_step)+(horizontal_step/2)
+					y1 = (last_location[1]*vertical_step)+(vertical_step/2)
+					y2 = (location[1]*vertical_step)+(vertical_step/2)
+					qp.drawLine(x1,y1,x2,y2)
+					last_location = location
 
 		# Drawing in solution path
 		pen = QPen(QColor(self.solution_color[0],self.solution_color[1],self.solution_color[2]),5.0,Qt.SolidLine)
 		qp.setPen(pen)
 		last_location = None
 		for location in self.shortest_path:
-		#for location in self.solution_path:
 			if last_location == None:
 				last_location = location
 				continue
@@ -780,6 +842,12 @@ class eight_neighbor_grid(QWidget):
 	def toggle_solution_swarm(self,show_swarm):
 		self.show_solution_swarm = show_swarm
 
+	def toggle_gradient(self,use_gradient):
+		self.using_gradient = use_gradient
+
+	def toggle_trace(self,use_trace):
+		self.show_path_trace = use_trace
+
 	def set_attrib_color(self,attrib="free",color=[0,0,0]):
 		# called by the main_window, sets the color of a certain attribute
 		if attrib == "free":
@@ -800,6 +868,12 @@ class eight_neighbor_grid(QWidget):
 			self.solution_swarm_color = color 
 		elif attrib == "solution":
 			self.solution_color = color 
+		elif attrib == "start_gradient":
+			self.start_gradient = color
+		elif attrib == "end_gradient":
+			self.end_gradient = color
+		elif attrib == "path_trace":
+			self.trace_color = color
 		else:
 			print("Unknown attribute: "+attrib)
 
