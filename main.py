@@ -572,7 +572,9 @@ class eight_neighbor_grid(QWidget):
 
 	def drawWidget(self, qp):
 		# draw the grid, let the (0,0) cell be in the top left of the window
-		print("Re-Drawing Grid...",end="\r")
+		if self.verbose:
+			print("Re-Drawing Grid...",end="\r")
+
 		start_time = time.time() # to time the draw event
 		size = self.size() # current size of widget
 		width = size.width() # current width of widget
@@ -686,7 +688,7 @@ class eight_neighbor_grid(QWidget):
 
 		if self.show_solution_swarm:
 			# Drawing in solution swarm
-			pen = QPen(QColor(self.solution_swarm_color[0],self.solution_swarm_color[1],self.solution_swarm_color[2]),0.5,Qt.DashLine)
+			pen = QPen(QColor(self.solution_swarm_color[0],self.solution_swarm_color[1],self.solution_swarm_color[2]),0.25,Qt.DashLine)
 			qp.setPen(pen)
 			last_location = None
 			for location in self.solution_path:
@@ -1286,14 +1288,10 @@ class main_window(QWidget):
 		self.grid.verbose = True
 
 	def uniform_cost_step(self,refresh_rate):
-		# put uniform cost search implementation here
-		
+		# helper function for uniform_cost search, performs only refresh_rate seconds then returns
 		start_time = time.time() # to log the amount of time taken
 
-		num_iterations = 0
-
 		while True:
-
 			print("explored: "+str(len(self.explored))+", frontier: "+str(self.frontier.length())+", time: "+str(time.time()-self.overall_start)[:4]+", cost: "+str(self.path_cost)[:5],end="\r")
 
 			if self.frontier.length() == 0:
@@ -1362,10 +1360,7 @@ class main_window(QWidget):
 
 	def quit(self):
 		# quits the application
-		pyqt_app.quit()
-		QApplication.quit()
-
-		self.close()
+		sys.exit()
 
 	def on_context_menu_request(self,point):
 		# function called when user right clicks on grid
@@ -1404,9 +1399,6 @@ class main_window(QWidget):
 		x = e.x()
 		y = e.y()
 		#print(x,y)
-
-	def closeEvent(self,e):
-		self.color_preferences_window.close()
 
 def main():
 	global pyqt_app 
