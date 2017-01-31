@@ -82,6 +82,7 @@ class eight_neighbor_grid(QWidget):
 			self.pic = character_image(os.getcwd()+"/resources/character.png",self)
 
 		self.draw_grid_lines = True # set to true by default
+		self.show_solution_swarm = True # set to true by default
 		self.init_cells(leave_empty=True) # more instance variables that can be reset more easily from within instance
 
 	def init_cells(self,leave_empty=False):
@@ -271,6 +272,12 @@ class eight_neighbor_grid(QWidget):
 			x_coord = random.randint(0,self.num_columns-1)
 			y_coord = random.randint(0,self.num_rows-1)
 			if self.check_for_highway(x_coord,y_coord)==False:
+				
+				if self.start_cell[0]==x_coord and self.start_cell[1]==y_coord:
+					continue # skip if already used as start cell
+				if self.end_cell[0]==x_coord and self.end_cell[1]==y_coord:
+					continue # skip if already used as end cell
+
 				self.set_cell_state(x_coord,y_coord,"full",False)
 				cur_blocked_cells+=1
 
@@ -319,6 +326,11 @@ class eight_neighbor_grid(QWidget):
 
 			# check if the generated cells are far enough apart
 			if self.get_manhattan_distance(temp_start,temp_end) >= 100:
+				if get_cell_state(temp_start)=="full":
+					continue # cant use if already a fully blocked cell
+				if get_cell_state(temp_end)=="full":
+					continue # cant use if already a fully blocked cell
+					
 				self.start_cell = temp_start
 				self.end_cell = temp_end
 				self.current_location = self.start_cell
@@ -672,22 +684,22 @@ class eight_neighbor_grid(QWidget):
 				qp.drawLine(x1,y1,x2,y2)
 				last_location = location
 
-
-		# Drawing in solution swarm
-		pen = QPen(QColor(self.solution_swarm_color[0],self.solution_swarm_color[1],self.solution_swarm_color[2]),1.0,Qt.DashLine)
-		qp.setPen(pen)
-		last_location = None
-		for location in self.solution_path:
-		#for location in self.solution_path:
-			if last_location == None:
+		if self.show_solution_swarm:
+			# Drawing in solution swarm
+			pen = QPen(QColor(self.solution_swarm_color[0],self.solution_swarm_color[1],self.solution_swarm_color[2]),0.5,Qt.DashLine)
+			qp.setPen(pen)
+			last_location = None
+			for location in self.solution_path:
+			#for location in self.solution_path:
+				if last_location == None:
+					last_location = location
+					continue
+				x1 = (last_location[0]*horizontal_step)+(horizontal_step/2)
+				x2 = (location[0]*horizontal_step)+(horizontal_step/2)
+				y1 = (last_location[1]*vertical_step)+(vertical_step/2)
+				y2 = (location[1]*vertical_step)+(vertical_step/2)
+				qp.drawLine(x1,y1,x2,y2)
 				last_location = location
-				continue
-			x1 = (last_location[0]*horizontal_step)+(horizontal_step/2)
-			x2 = (location[0]*horizontal_step)+(horizontal_step/2)
-			y1 = (last_location[1]*vertical_step)+(vertical_step/2)
-			y2 = (location[1]*vertical_step)+(vertical_step/2)
-			qp.drawLine(x1,y1,x2,y2)
-			last_location = location
 
 		# Drawing in solution path
 		pen = QPen(QColor(self.solution_color[0],self.solution_color[1],self.solution_color[2]),5.0,Qt.SolidLine)
@@ -762,6 +774,9 @@ class eight_neighbor_grid(QWidget):
 			
 	def toggle_grid_lines(self,grid_lines):
 		self.draw_grid_lines = grid_lines 
+
+	def toggle_solution_swarm(self,show_swarm):
+		self.show_solution_swarm = show_swarm
 
 	def set_attrib_color(self,attrib="free",color=[0,0,0]):
 		# called by the main_window, sets the color of a certain attribute
@@ -1113,6 +1128,8 @@ class main_window(QWidget):
 		self.click = None # save click info
 		self.host_os = os.name 
 		self.show_grid_lines = True # true by default
+		self.show_solution_swarm = True # true by default
+
 		self.color_preferences_window = attrib_color_window()
 
 	def init_ui(self):
@@ -1158,6 +1175,7 @@ class main_window(QWidget):
 		weighted_a_action = self.algo_menu.addAction("Run Weighted A",self.weighted_a,QKeySequence("Ctrl+2"))
 		uniform_cost_action = self.algo_menu.addAction("Run Uniform-cost Search",self.uniform_cost,QKeySequence("Ctrl+3"))
 		self.toggle_grid_lines_action = self.tools_menu.addAction("Turn Off Grid Lines",self.toggle_grid_lines,QKeySequence("Ctrl+G"))
+		self.toggle_solution_swarm_action = self.tools_menu.addAction("Turn Off Solution Swarm",self.toggle_solution_swarm,QKeySequence("Ctrl+T"))
 		self.tools_menu.addSeparator()
 		change_attrib_color_action = self.tools_menu.addAction("Set Attribute Color...",self.change_attrib_color,QKeySequence("Ctrl+M"))
 		self.tools_menu.addSeparator()
@@ -1170,6 +1188,18 @@ class main_window(QWidget):
 
 		QtCore.QObject.connect(self.color_preferences_window, QtCore.SIGNAL("return_color_prefs()"), self.finished_changing_colors)
 		self.show()
+
+	def toggle_solution_swarm(self):
+		# function called by pyqt when user chooses the appropriate menu item
+		if self.show_solution_swarm == True:
+			self.show_solution_swarm = False
+			self.toggle_solution_swarm_action.setText("Turn On Solution Swarm")
+		else:
+			self.show_solution_swarm = True
+			self.toggle_solution_swarm_action.setText("Turn Off Solution Swarm")
+
+		self.grid.toggle_solution_swarm(show_swarm=self.show_solution_swarm)
+		self.grid.repaint()
 
 	def regenerate_start_end(self):
 		# called when the user selects the "New Start/End Cells..." menu item in tools menu
@@ -1264,7 +1294,7 @@ class main_window(QWidget):
 
 		while True:
 
-			print("explored: "+str(len(self.explored))+", frontier: "+str(self.frontier.length())+", path: "+str(len(self.path))+", time: "+str(time.time()-self.overall_start)[:4]+", cost: "+str(self.path_cost)[:5],end="\r")
+			print("explored: "+str(len(self.explored))+", frontier: "+str(self.frontier.length())+", time: "+str(time.time()-self.overall_start)[:4]+", cost: "+str(self.path_cost)[:5],end="\r")
 
 			if self.frontier.length() == 0:
 				print("Uniform cost search failed to find a solution path.")
@@ -1304,7 +1334,7 @@ class main_window(QWidget):
 				self.path_end = cur_node
 				return False
 
-		print("\nFinished uniform cost search in "+str(time.time()-overall_start)[:5]+" seconds, rendering grid...")
+		print("\nFinished uniform cost search in "+str(time.time()-self.overall_start)[:5]+" seconds, rendering grid...")
 		return True
 
 	def create(self):
