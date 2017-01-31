@@ -7,6 +7,7 @@ import time
 import random
 
 import shutil # for copying helpers.py to helpers.pyx
+import filecmp
 
 from math import sqrt
 
@@ -24,7 +25,9 @@ except:
 
 if using_cython:
 	print("Found Cython installation, copying helpers.py to helpers.pyx...")
-	shutil.copyfile("lib/helpers.py","helpers.pyx")
+
+	if filecmp.cmp("lib/helpers.py","helpers.pyx")==False: # if they are not the same already
+		shutil.copyfile("lib/helpers.py","helpers.pyx")
 	print("Building C code (if error here change python2 to python in main.py)...")
 	try:
 		os.system("python2 setup.py build_ext --inplace")
@@ -360,7 +363,7 @@ class main_window(QWidget):
 		self.grid.verbose = False 
 
 		# indicate the refresh rate here
-		refresh_rate = 1 # seconds
+		refresh_rate = 0.1 # seconds
 		self.overall_start = time.time()
 
 		self.cells = self.grid.cells # current state of cells in grid
@@ -388,7 +391,7 @@ class main_window(QWidget):
 			done = self.uniform_cost_step(refresh_rate)
 			self.grid.solution_path = self.explored
 			self.grid.shortest_path = rectify_path(self.path_end)
-			self.grid.repaint() # render grid with new solution path
+			self.grid.update() # render grid with new solution path
 			pyqt_app.processEvents()
 			if done:
 				break
@@ -507,6 +510,9 @@ class main_window(QWidget):
 		x = e.x()
 		y = e.y()
 		#print(x,y)
+
+	def closeEvent(self,e):
+		sys.exti()
 
 def main():
 	global pyqt_app 
