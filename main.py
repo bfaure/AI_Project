@@ -14,6 +14,8 @@ from PyQt4.QtGui import *
 
 import heapq # for priority queue implementation
 
+pyqt_app = ""
+
 # class to hold the image on the grid that represents the current location
 class character_image(QLabel):
 
@@ -47,6 +49,8 @@ class cell:
 		self.state = "free"
 		self.x = x_coordinate # not using anymore
 		self.y = y_coordinate # not using anymore
+		self.cost = 0 # used for Priority Queue to remember cost
+		self.parent = None
 
 # UI element (widget) that represents the interface with the grid
 class eight_neighbor_grid(QWidget):
@@ -72,6 +76,7 @@ class eight_neighbor_grid(QWidget):
 		self.current_location_color = [0,0,255] # blue for current location
 		self.highway_color = [0,0,255] # blue for highway lines
 		self.solution_color = [0,255,0] # green for solution path
+		self.solution_swarm_color = [0,255,255] # green for path that has been tested so far
 		if self.using_game_character:
 			# trying to allow user to select an image to use as the current location on the grid
 			self.pic = character_image(os.getcwd()+"/resources/character.png",self)
@@ -94,6 +99,7 @@ class eight_neighbor_grid(QWidget):
 		self.hard_to_traverse_regions = [] # empty by default
 		self.highways = [] # empty by default
 		self.solution_path = [] # the path eventually filled by one of the search algos
+		self.shortest_path = []
 		self.current_location = self.start_cell				
 		if leave_empty: return 
 
@@ -665,11 +671,13 @@ class eight_neighbor_grid(QWidget):
 				qp.drawLine(x1,y1,x2,y2)
 				last_location = location
 
-		# Drawing in solution path
-		pen = QPen(QColor(self.solution_color[0],self.solution_color[1],self.solution_color[2]),2.0,Qt.SolidLine)
+		
+		# Drawing in solution swarm
+		pen = QPen(QColor(self.solution_swarm_color[0],self.solution_swarm_color[1],self.solution_swarm_color[2]),1.0,Qt.DashLine)
 		qp.setPen(pen)
 		last_location = None
 		for location in self.solution_path:
+		#for location in self.solution_path:
 			if last_location == None:
 				last_location = location
 				continue
@@ -680,7 +688,23 @@ class eight_neighbor_grid(QWidget):
 			qp.drawLine(x1,y1,x2,y2)
 			last_location = location
 
-		print("                                                     ",end="\r")
+		# Drawing in solution path
+		pen = QPen(QColor(self.solution_color[0],self.solution_color[1],self.solution_color[2]),5.0,Qt.SolidLine)
+		qp.setPen(pen)
+		last_location = None
+		for location in self.shortest_path:
+		#for location in self.solution_path:
+			if last_location == None:
+				last_location = location
+				continue
+			x1 = (last_location[0]*horizontal_step)+(horizontal_step/2)
+			x2 = (location[0]*horizontal_step)+(horizontal_step/2)
+			y1 = (last_location[1]*vertical_step)+(vertical_step/2)
+			y2 = (location[1]*vertical_step)+(vertical_step/2)
+			qp.drawLine(x1,y1,x2,y2)
+			last_location = location
+
+		print("                                                                           ",end="\r")
 		print("Re-Drawing Grid: "+str(time.time()-start_time)[:5]+" seconds")
 
 	def set_cell_state(self,x_coord,y_coord,state,add_adjustment=True):
@@ -941,8 +965,10 @@ class PriorityQueue:
 		self._queue = []
 		self._index = 0
 
-	def push(self, item, cost):
+	def push(self, item, cost, parent):
 		# Push element onto queue
+		item.cost = cost # save the cost to the cell struct
+		item.parent = parent
 		heapq.heappush(self._queue, (cost, self._index, item))
 		self._index += 1
 
@@ -962,7 +988,7 @@ class PriorityQueue:
 				return True 
 		return False
 
-	def replace_cell(self,cell,new_cost):
+	def replace_cell(self,cell,new_cost,parent):
 		i = 0
 		for item in self._queue:
 			queued_cell = item[2]
@@ -970,12 +996,12 @@ class PriorityQueue:
 				del self._queue[i]
 				break
 			i+=1
-		self.push(queued_cell,new_cost)
+		self.push(queued_cell,new_cost,parent)
 
 	def get_cell_cost(self,cell):
 		for item in self._queue:
 			if cell.x==item[2].x and cell.y==item[2].y:
-				return item[0]
+				return item[2].cost
 
 def get_neighbors(current,cells):
 	# Returns a list of all 8 neighbor cells to "current"
@@ -1055,6 +1081,17 @@ def get_transition_cost(current_cell,new_cell,highways):
 			cost = cost*0.25
 
 	return cost
+
+def rectify_path(path_end):
+	path = []
+	cur = path_end
+	path.append([cur.x,cur.y])
+	while True:
+		cur = cur.parent
+		if cur == None:
+			break
+		path.append([cur.x,cur.y])
+	return path
 
 class main_window(QWidget):
 
@@ -1173,62 +1210,92 @@ class main_window(QWidget):
 		pass
 
 	def uniform_cost(self):
-		# put uniform cost search implementation here
 		print("Performing uniform_cost search...")
-		start_time = time.time() # to log the amount of time taken
 
-		cells = self.grid.cells # current state of cells in grid
-		start_cell = self.grid.start_cell  # current start cell 
+		# indicate the refresh rate here
+		refresh_rate = 2 # seconds
+		self.overall_start = time.time()
 
-		for item in cells:
-			if item.x==start_cell[0] and item.y==start_cell[1]:
-				start_cell = item 
+		self.cells = self.grid.cells # current state of cells in grid
+		self.start_cell = self.grid.start_cell  # current start cell 
+
+		for item in self.cells:
+			if item.x==self.start_cell[0] and item.y==self.start_cell[1]:
+				self.start_cell = item 
 				break
 
-		end_cell = self.grid.end_cell # current end cell
-		highways = self.grid.highways # current highways on grid
+		self.end_cell = self.grid.end_cell # current end cell
+		self.highways = self.grid.highways # current highways on grid
 
-		path = [] # to be filled with the path found by algorithm
+		self.path = [] # to be filled with the path found by algorithm
+		self.path_cost = 0 # overall path cost
 
-		frontier = PriorityQueue()
-		frontier.push(start_cell,0)
+		self.frontier = PriorityQueue()
+		self.frontier.push(self.start_cell,0,parent=None)
+		self.path_end = self.start_cell
 
-		explored = [] # empty set
+		self.explored = [] # empty set
+
+		while True:
+			done = self.uniform_cost_step(refresh_rate)
+			self.grid.solution_path = self.path
+			self.grid.shortest_path = rectify_path(self.path_end)
+			self.grid.repaint() # render grid with new solution path
+			pyqt_app.processEvents()
+			if done:
+				break
+
+	def uniform_cost_step(self,refresh_rate):
+		# put uniform cost search implementation here
+		
+		start_time = time.time() # to log the amount of time taken
 
 		num_iterations = 0
 
 		while True:
 
-			print("explored: "+str(len(explored))+", frontier: "+str(frontier.length())+", path: "+str(len(path))+", time: "+str(time.time()-start_time)[:5],end="\r")
+			print("explored: "+str(len(self.explored))+", frontier: "+str(self.frontier.length())+", path: "+str(len(self.path))+", time: "+str(time.time()-self.overall_start)[:4]+", cost: "+str(self.path_cost)[:5],end="\r")
 
-			if frontier.length() == 0:
+			if self.frontier.length() == 0:
 				print("Uniform cost search failed to find a solution path.")
-				return
+				return True
 
-			cur_node = frontier.pop()
-			path.append(cur_node)
+			cur_node = self.frontier.pop()
+			self.path_cost = cur_node.cost # get the path cost so far
+			#print("\nexpanding node with cost: "+str(self.path_cost))
 
-			if cur_node.x==end_cell[0] and cur_node.y==end_cell[1]:
+			self.path.append([cur_node.x,cur_node.y])
+
+			if cur_node.x==self.end_cell[0] and cur_node.y==self.end_cell[1]:
 				# if we have reached the goal node
+				self.path_end = cur_node
 				break
 
-			explored.append(cur_node) # add current node to explored list
-			node_neigbors = get_neighbors(cur_node,cells)
+			self.explored.append(cur_node) # add current node to explored list
+			node_neigbors = get_neighbors(cur_node,self.cells)
 
 			for neighbor in node_neigbors:
-				transition_cost = get_transition_cost(cur_node,neighbor,highways)
+				transition_cost = get_transition_cost(cur_node,neighbor,self.highways)
 
-				if cell_in_list(neighbor,explored)==False and frontier.has_cell(neighbor)==False:
+				# if not explored yet and not in frontier already
+				if cell_in_list(neighbor,self.explored)==False and self.frontier.has_cell(neighbor)==False:
+					# if not a blocked cell
 					if transition_cost!=-1:
-						frontier.push(neighbor,transition_cost)
+						# add to frontier
+						self.frontier.push(neighbor,self.path_cost+transition_cost,parent=cur_node)
 
-				elif frontier.has_cell(neighbor)==True: 
-					if frontier.get_cell_cost(neighbor)>transition_cost:
-						frontier.replace_cell(neighbor,transition_cost)
+				# if in the frontier already
+				elif self.frontier.has_cell(neighbor)==True: 
+					# if version in frontier has higher cost
+					if self.frontier.get_cell_cost(neighbor)>(self.path_cost+transition_cost):
+						self.frontier.replace_cell(neighbor,self.path_cost+transition_cost,parent=cur_node)		
+
+			if int(time.time()-start_time)>refresh_rate:
+				self.path_end = cur_node
+				return False
 
 		print("\nFinished uniform cost search in "+str(time.time()-start_time)[:5]+" seconds, rendering grid...")
-		self.grid.solution_path = path
-		self.grid.repaint() # render grid with new solution path
+		return True
 
 	def create(self):
 		# clears the current grid and creates a new random one
@@ -1258,6 +1325,9 @@ class main_window(QWidget):
 
 	def quit(self):
 		# quits the application
+		pyqt_app.quit()
+		QApplication.quit()
+
 		self.close()
 
 	def on_context_menu_request(self,point):
@@ -1302,6 +1372,8 @@ class main_window(QWidget):
 		self.color_preferences_window.close()
 
 def main():
+	global pyqt_app 
+
 	pyqt_app = QtGui.QApplication(sys.argv)
 	_ = main_window()
 	sys.exit(pyqt_app.exec_())	
