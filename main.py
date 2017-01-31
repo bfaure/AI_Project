@@ -360,10 +360,11 @@ class main_window(QWidget):
 
 	def uniform_cost(self):
 		print("\nPerforming uniform_cost search...")
-		self.grid.verbose = False 
+		self.stop_executing = False # Ctrl+C calls clear which will set this to true
+		self.grid.verbose = False # Don't output all the render details
 
 		# indicate the refresh rate here
-		refresh_rate = 0.1 # seconds
+		refresh_rate = 0.01 # seconds
 		self.overall_start = time.time()
 
 		self.cells = self.grid.cells # current state of cells in grid
@@ -403,6 +404,10 @@ class main_window(QWidget):
 		start_time = time.time() # to log the amount of time taken
 
 		while True:
+
+			if self.stop_executing:
+				return True 
+
 			print("explored: "+str(len(self.explored))+", frontier: "+str(self.frontier.length())+", time: "+str(time.time()-self.overall_start)[:4]+", cost: "+str(self.path_cost)[:5],end="\r")
 
 			if self.frontier.length() == 0:
@@ -450,6 +455,8 @@ class main_window(QWidget):
 
 	def clear(self):
 		# clears the current grid
+		self.stop_executing = True
+		pyqt_app.processEvents()
 		self.grid.clear()
 		self.grid.repaint()
 
@@ -512,7 +519,7 @@ class main_window(QWidget):
 		#print(x,y)
 
 	def closeEvent(self,e):
-		sys.exti()
+		sys.exit()
 
 def main():
 	global pyqt_app 
