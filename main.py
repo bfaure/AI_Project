@@ -89,6 +89,7 @@ class eight_neighbor_grid(QWidget):
 		# is False then we will fill in the grid following the instructions in the
 		# assignment pdf 
 		self.cells = []
+		self.verbose = True # if true then the time to paint the grid will be printed to terminal
 		for x in range(self.num_columns):
 			for y in range(self.num_rows):
 				new_cell = cell(x,y)
@@ -671,7 +672,7 @@ class eight_neighbor_grid(QWidget):
 				qp.drawLine(x1,y1,x2,y2)
 				last_location = location
 
-		
+
 		# Drawing in solution swarm
 		pen = QPen(QColor(self.solution_swarm_color[0],self.solution_swarm_color[1],self.solution_swarm_color[2]),1.0,Qt.DashLine)
 		qp.setPen(pen)
@@ -704,8 +705,9 @@ class eight_neighbor_grid(QWidget):
 			qp.drawLine(x1,y1,x2,y2)
 			last_location = location
 
-		print("                                                                           ",end="\r")
-		print("Re-Drawing Grid: "+str(time.time()-start_time)[:5]+" seconds")
+		if self.verbose:
+			print("                                                                           ",end="\r")
+			print("Re-Drawing Grid: "+str(time.time()-start_time)[:5]+" seconds")
 
 	def set_cell_state(self,x_coord,y_coord,state,add_adjustment=True):
 		# updates a single cell in the grid with a new state then reloads the ui
@@ -1211,6 +1213,7 @@ class main_window(QWidget):
 
 	def uniform_cost(self):
 		print("Performing uniform_cost search...")
+		self.grid.verbose = False 
 
 		# indicate the refresh rate here
 		refresh_rate = 2 # seconds
@@ -1244,6 +1247,8 @@ class main_window(QWidget):
 			pyqt_app.processEvents()
 			if done:
 				break
+				
+		self.grid.verbose = True
 
 	def uniform_cost_step(self,refresh_rate):
 		# put uniform cost search implementation here
