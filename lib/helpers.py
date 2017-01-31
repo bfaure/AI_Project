@@ -1,4 +1,6 @@
-# python 2.7
+# Python 2.7
+# This file is automatically copied as helpers.pyx when main.py is run
+# and the user has an installation of Cython
 from __future__ import print_function
 import os
 import sys
