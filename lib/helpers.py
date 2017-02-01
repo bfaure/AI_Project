@@ -66,26 +66,31 @@ class eight_neighbor_grid(QWidget):
 	def init_ui(self):
 		# initialize ui elements
 		self.setMinimumSize(800,600) # ui pixel dimensions (w,h)
-		self.line_color = [0,0,0] # black for cell lines
+		self.grid_line_color = [0,0,0] # black for cell lines
 		self.free_cell_color = [255,255,255] # white for free cell
 		#self.free_cell_color = [1,166,17] # green for free cell
 		self.trans_cell_color = [128,128,128] # gray cell for partially blocked
 		self.blocked_cell_color = [0,0,0] # black cell for blocked
 		self.end_cell_color = [255,0,0] # red cell for end location
 		self.start_cell_color = [0,255,0] # green cell for start location
-		self.current_location_color = [0,0,255] # blue for current location
 		self.highway_color = [0,0,255] # blue for highway lines
 		self.solution_color = [0,255,0] # green for solution path
 		self.solution_swarm_color = [0,255,255] # green for path that has been tested so far
 		self.start_gradient = [255,0,0] # if gradient is used, the starting color 
 		self.end_gradient = [0,255,50] # if gradient is used, the ending color
 		self.trace_color = [128,128,128] # if trace is on, the color of the prior solution paths
+		
+		self.solution_swarm_render_density = 0.1 # width of the solution swarm lines (from ~0.1 to ~2.0 probably)
+		self.highway_render_width = 2.0 # width of the highways shown in window (2.0 is default)
+		self.solution_render_width = 5.0 # width of the solution path (5.0 is good default)
+
 
 		if self.using_game_character:
 			# trying to allow user to select an image to use as the current location on the grid
 			self.pic = character_image(os.getcwd()+"/resources/character.png",self)
 
-		self.draw_grid_lines = True # set to true by default
+		self.draw_outer_boundary = False # if true, an outer boundary is drawn in bottom right
+		self.draw_grid_lines = False # set to false by default
 		self.show_solution_swarm = True # set to true by default
 		self.show_path_trace = True # if true then show the prior tried paths
 		self.using_gradient = False # if true then solution swarm will be gradient
@@ -97,8 +102,8 @@ class eight_neighbor_grid(QWidget):
 		# assignment pdf 
 		self.cells = []
 		self.verbose = True # if true then the time to paint the grid will be printed to terminal
-		for x in range(self.num_columns):
-			for y in range(self.num_rows):
+		for y in range(self.num_rows):
+			for x in range(self.num_columns):
 				new_cell = cell(x,y)
 				self.cells.append(new_cell)
 
@@ -108,7 +113,6 @@ class eight_neighbor_grid(QWidget):
 		self.highways = [] # empty by default
 		self.solution_path = [] # the path eventually filled by one of the search algos
 		self.shortest_path = []
-		self.current_location = self.start_cell	
 		self.path_traces = [] # list of all paths tried (shown to user)			
 		if leave_empty: return 
 
@@ -135,13 +139,24 @@ class eight_neighbor_grid(QWidget):
 						return True
 		return False
 
-	def check_for_boundary(self,x,y):
-		# checks to see if the coordinates are along one of the grid boundaries
-		if x>=self.num_columns or x<0:
-			return True
-		if y>=self.num_rows or y<0:
-			return True
-		return False
+	def check_for_boundary(self,x,y,conservative=True):
+		# checks to see if the coordinates are along one of the grid boundaries,
+		# it actually will return false unless the coordinates are just outside
+		# the boundary because it is used by the get_highway function to create
+		# a river and it ensures the river coordinates extend to at least outside
+		# the grid to help with rendering
+		if conservative:
+			if x>=self.num_columns or x<0:
+				return True
+			if y>=self.num_rows or y<0:
+				return True
+			return False
+		else:
+			if x>=(self.num_columns-1) or x<=0:
+				return True
+			if y>=(self.num_rows-1) or y<=0:
+				return True
+			return False
 
 	def get_highway(self,head,edge,total_attempts):
 		# helper function for the init_highways function, returns True if it can
@@ -340,7 +355,6 @@ class eight_neighbor_grid(QWidget):
 
 				self.start_cell = temp_start
 				self.end_cell = temp_end
-				self.current_location = self.start_cell
 				return
 
 	def init_partially_blocked_cells(self):
@@ -397,32 +411,40 @@ class eight_neighbor_grid(QWidget):
 		for hard_cell in self.hard_to_traverse_regions:
 			f.write("hard:("+str(hard_cell[0])+","+str(hard_cell[1])+")\n")
 
-		row_ct = 0
-		index = 0
-		line_buf = ""
-		for cell in self.cells:
-			row_ct += 1			
+		cell_chars = [] # 2D list
+		# create 'grid' of cells, each cell represented by a character
+		for row in range(self.num_rows):
+			row_chars = []
+			for column in range(self.num_columns):
+				row_chars.append('0')
+			row_chars.append('\n')
+			cell_chars.append(row_chars)
 
-			cur_x = index % self.num_columns
-			cur_y = int(index/self.num_columns)
+		for cell in self.cells:		
+			x = cell.x 
+			y = cell.y 
 
 			if cell.state == "full":
-				line_buf+='0'
+				if self.check_for_highway(x,y):
+					print("WARNING: Blocked cell at: ("+str(x)+","+str(y)+"), is in the path of a highway")
+				continue
+
 			if cell.state == "free":
-				line_buf+='1' if self.check_for_highway(cur_x,cur_y)==False else 'a'
+				cell_chars[y][x] = '1' if self.check_for_highway(x,y)==False else 'a'
 			if cell.state == "partial":
-				line_buf+='2' if self.check_for_highway(cur_x,cur_y)==False else 'b'
+				cell_chars[y][x] = '2' if self.check_for_highway(x,y)==False else 'b'
 
-			if row_ct == self.num_columns:
-				line_buf+="\n"
-				f.write(line_buf)
-				line_buf = ""
-				row_ct = 0
-			index+=1
+		cell_chars_str = ""
+		for row in cell_chars:
+			for item in row:
+				cell_chars_str += item
+		f.write(cell_chars_str)
 
-	def is_finished_highway(self,highway):
+	def is_finished_highway(self,highway,conservative=True):
 		# checks if both of the endpoints of the highway
-		# are at the boundary of the grid
+		# are at the boundary of the grid. If conservative
+		# is set to True then it will ensure the highway runs
+		# until at least one outside the grid size
 		if highway==None:
 			return False
 		start_cell = highway[0]
@@ -431,7 +453,7 @@ class eight_neighbor_grid(QWidget):
 		if len(highway)<100:
 			return False
 
-		if self.check_for_boundary(start_cell[0],start_cell[1]) and self.check_for_boundary(end_cell[0],end_cell[1]):
+		if self.check_for_boundary(start_cell[0],start_cell[1],conservative) and self.check_for_boundary(end_cell[0],end_cell[1],conservative):
 			return True
 		return False
 
@@ -449,60 +471,80 @@ class eight_neighbor_grid(QWidget):
 				last = item
 				continue
 			dist = self.get_manhattan_distance(item,last)
-			if dist>1:
+			if dist>1: # if a coordinate for a different highway
+				# push all of the highway segment we found before this iteration onto the broken list
 				broken.append(coordinate_list[last_cut:coordinate_list.index(item)])
+				# save this location as the start of a new highway segment
 				last_cut = coordinate_list.index(item)
-			last = item
-		print(len(broken))
+			last = item # use this as the previous location on the next iteration
+
+		print("Initial hwy reconstruction converted "+str(len(coordinate_list))+" coordinates into "+str(len(broken))+" hwy segments...")
 
 		# now we have the broken list with partially reconstructed highway
 		# segments but they are most likely not complete, iterate over the 
 		# stuff in the broken list and connect any highway endpoints that
 		# are only a distance of 1 away from eachother
-		i = 0
 		iterations = 0
-		max_allowed = 1000
+		max_allowed = 10000
 		while True:
 			iterations+=1
 			if iterations>max_allowed:
-				print("Could not load the highways for this .grid file.")
+				print("ERROR: Could not load the highways for this .grid file.")
+				self.highways = broken # save the current reconstruction state for debuggging
 				return
 
-			segment = broken[i]
-			segment_start = segment[0]
-			segment_end = segment[len(segment)-1]
+			segment = broken[0] # start,end of highway segment (coordinate form)
+			if segment == None:
+				print("WARNING: Found NoneType object in broken list, removing.")
+				del broken[0]
+				continue
+
+			segment_start = segment[0] # coordinates of start
+			segment_end = segment[len(segment)-1] # coordinates of end
 
 			new_broken = []
 			for other_item in broken:
-				if broken.index(other_item)!=i:
+				if broken.index(other_item)!=0:
 					other_segment_start = other_item[0]
 					other_segment_end = other_item[len(other_item)-1]
 
 					segment_start = segment[0]
 					segment_end = segment[len(segment)-1]
 
-					if self.get_manhattan_distance(segment_start,other_segment_start)==1:
+					if self.get_manhattan_distance(segment_start,other_segment_start)<=1:
+						# reverse the current segment and attach the other_item segment to end
 						segment.reverse()
 						segment.extend(other_item)
-					elif self.get_manhattan_distance(segment_start,other_segment_end)==1:
-						segment = other_item.extend(segment)
-					elif self.get_manhattan_distance(segment_end,other_segment_start)==1:
+					elif self.get_manhattan_distance(segment_start,other_segment_end)<=1:
+						# add the current segment onto the end of the other_item segment
+						# and set the current item to be equal to other_item segment
+						segment.reverse()
+						other_segment.reverse()
+						segment.extend(other_segment)
+						
+					elif self.get_manhattan_distance(segment_end,other_segment_start)<=1:
+						# add the other_item segment onto the end of the current segment
 						segment.extend(other_item)
-					elif self.get_manhattan_distance(segment_end,other_segment_end)==1:
+					elif self.get_manhattan_distance(segment_end,other_segment_end)<=1:
+						# reverse the other_item segment and add it onto the end of this segment
 						other_item.reverse()
 						segment.extend(other_item)
-					else:	
+					else:
+						# not able to attach other_item to current highway segment	
 						new_broken.append(other_item)
-			new_broken.append(segment)
+			# add the current segment (now hopfully larger than before this iteration of
+			# the while lop) onto the end of the new_broken list so it wont be used
+			# as the current segment until all other segments have been used
+			new_broken.append(segment) 
 			broken = new_broken
 
-			if len(broken)==4:
+			# if we have reconstructed all highways
+			if len(broken)==4: 
 				self.highways = broken
+				for h in self.highways:
+					if self.is_finished_highway(h,False)==False:
+						print("WARNING: A Highway found in this file may be corrupted.")
 				return
-
-			#i+=1
-			if i>len(broken):
-				break
 
 	def load(self,filename):
 		# loads in a new set of cells from a file, see the assignment pdf for
@@ -566,7 +608,6 @@ class eight_neighbor_grid(QWidget):
 		self.cells 		= new_cells
 		self.start_cell = eval(start_cell)
 		self.end_cell 	= eval(end_cell)
-		self.current_location = self.start_cell
 		self.hard_to_traverse_regions 	= []
 		for item in hard_to_traverse_regions:
 			self.hard_to_traverse_regions.append(eval(item))
@@ -597,9 +638,15 @@ class eight_neighbor_grid(QWidget):
 		horizontal_step = int(round(width/self.num_columns)) # per cell width
 		vertical_step = int(round(height/self.num_rows)) # per cell height
 
+		grid_height = vertical_step*self.num_rows 
+		grid_width = horizontal_step*self.num_columns
+
 		last_color = None # save the color used for the last cell in case its the same for this one
 
 		index = 0
+
+		qp.setPen(Qt.NoPen)
+
 		for cell in self.cells:
 			# iterate over each cell and fill in the grid color, also we need
 			# to check several conditions such as whether the cell represents one
@@ -638,50 +685,31 @@ class eight_neighbor_grid(QWidget):
 			y_start = y*vertical_step # top of square 
 			qp.drawRect(x_start,y_start,horizontal_step,vertical_step)
 
-			# check if the current cell is the current location
-			if x==self.current_location[0] and y==self.current_location[1]:
-				if self.using_game_character:
-					# represent the current location with an image
-					self.pic.move(x,y)
-					self.pic.show()
-				else:
-					# represent the current location with a blue circle
-					cell_color = self.current_location_color
-					qp.setBrush(QColor(cell_color[0],cell_color[1],cell_color[2]))
-
-					# calculating the center of the cell...
-					x_center = x_start+(horizontal_step/2)
-					y_center = y_start+(vertical_step/2)
-					center = QPoint(x_center,y_center)
-					radius_x = horizontal_step/4
-					radius_y = vertical_step/4 
-					qp.drawEllipse(center,radius_x,radius_y) # draw the blue circle
-
 			index += 1
 			last_color = cell_color
 
-		# Drawing in grid lines...
-		pen = QPen(QColor(self.line_color[0],self.line_color[1],self.line_color[2]), 1, Qt.SolidLine)
-		qp.setPen(pen)
-		qp.setBrush(Qt.NoBrush)
-
 		# allow user to decide if grid lines should be rendered
 		if self.draw_grid_lines:
-		
+			# Drawing in grid lines...
+			pen = QPen(QColor(self.grid_line_color[0],self.grid_line_color[1],self.grid_line_color[2]), 1, Qt.SolidLine)
+			qp.setPen(pen)
+			qp.setBrush(Qt.NoBrush)
+
 			for x in range(self.num_columns):
-				qp.drawLine(x*horizontal_step,0,x*horizontal_step,height)
+				qp.drawLine(x*horizontal_step,0,x*horizontal_step,grid_height)
 
 			for y in range(self.num_rows):
-				qp.drawLine(0,y*vertical_step,width,y*vertical_step)
-		
-		# Drawing in outer boundaries
-		qp.drawLine(0,0,0,height-1)
-		qp.drawLine(0,0,width-1,0)
-		qp.drawLine(0,height-1,width-1,height-1)
-		qp.drawLine(width-1,0,width-1,height-1)
+				qp.drawLine(0,y*vertical_step,grid_width,y*vertical_step)
+
+		if self.draw_outer_boundary:
+			# Drawing in outer boundaries
+			qp.drawLine(0,0,0,height-1)
+			qp.drawLine(0,0,width-1,0)
+			qp.drawLine(0,height-1,width-1,height-1)
+			qp.drawLine(width-1,0,width-1,height-1)
 
 		# Drawing in highway lines
-		pen = QPen(QColor(self.highway_color[0],self.highway_color[1],self.highway_color[2]),2.0,Qt.SolidLine)
+		pen = QPen(QColor(self.highway_color[0],self.highway_color[1],self.highway_color[2]),self.highway_render_width,Qt.SolidLine)
 		qp.setPen(pen)
 		qp.setBrush(Qt.NoBrush)
 		for highway in self.highways:
@@ -719,7 +747,7 @@ class eight_neighbor_grid(QWidget):
 					last_location = None
 
 					for location in self.solution_path:
-						pen = QPen(QColor(int(cur_shade[0]),int(cur_shade[1]),int(cur_shade[2])),0.1,Qt.DashLine)
+						pen = QPen(QColor(int(cur_shade[0]),int(cur_shade[1]),int(cur_shade[2])),self.solution_swarm_render_density,Qt.DashLine)
 						qp.setPen(pen)
 						cur_shade = [cur_shade[0]+r_delta,cur_shade[1]+g_delta,cur_shade[2]+b_delta]
 						
@@ -734,7 +762,7 @@ class eight_neighbor_grid(QWidget):
 						last_location = location
 			
 			else: # solid color swarm
-				pen = QPen(QColor(self.solution_swarm_color[0],self.solution_swarm_color[1],self.solution_swarm_color[2]),0.1,Qt.DashLine)
+				pen = QPen(QColor(self.solution_swarm_color[0],self.solution_swarm_color[1],self.solution_swarm_color[2]),self.solution_swarm_render_density,Qt.DashLine)
 				qp.setPen(pen)
 				last_location = None
 				for location in self.solution_path:
@@ -767,7 +795,7 @@ class eight_neighbor_grid(QWidget):
 					last_location = location
 
 		# Drawing in solution path
-		pen = QPen(QColor(self.solution_color[0],self.solution_color[1],self.solution_color[2]),5.0,Qt.SolidLine)
+		pen = QPen(QColor(self.solution_color[0],self.solution_color[1],self.solution_color[2]),self.solution_render_width,Qt.SolidLine)
 		qp.setPen(pen)
 		last_location = None
 		for location in self.shortest_path:
@@ -862,8 +890,6 @@ class eight_neighbor_grid(QWidget):
 			self.start_cell_color = color 
 		elif attrib == "end":
 			self.end_cell_color = color 
-		elif attrib == "current_location":
-			self.current_location_color = color 
 		elif attrib == "solution_swarm":
 			self.solution_swarm_color = color 
 		elif attrib == "solution":

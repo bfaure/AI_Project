@@ -62,9 +62,9 @@ class attrib_color_window(QWidget):
 
 	def init_vars(self):
 		# initialize to default settings
-		self.attribs = ["free","highway","fully blocked","partially blocked","start","end","current location","solution_swarm","solution","start_gradient","end_gradient","path_trace"]
+		self.attribs = ["free","highway","fully blocked","partially blocked","start","end","solution_swarm","solution","start_gradient","end_gradient","path_trace"]
 		# default colors
-		self.colors = [[255,255,255],[0,0,255],[0,0,0],[128,128,128],[0,255,0],[255,0,0],[0,0,255],[0,255,255],[0,255,0],[255,255,0],[0,255,50],[128,128,128]]
+		self.colors = [[255,255,255],[0,0,255],[0,0,0],[128,128,128],[0,255,0],[255,0,0],[0,255,255],[0,255,0],[255,255,0],[0,255,50],[128,128,128]]
 		# default element being shown
 		self.attrib_index = 0
 		# current attribute value
@@ -244,7 +244,7 @@ class main_window(QWidget):
 		self.grids = [] # list of all grid elements
 		self.click = None # save click info
 		self.host_os = os.name 
-		self.show_grid_lines = True # true by default
+		self.show_grid_lines = False # true by default
 		self.show_solution_swarm = True # true by default
 		self.use_gradient = False # False by default
 		self.show_trace = True # true by default
@@ -293,7 +293,7 @@ class main_window(QWidget):
 		a_star_action = self.algo_menu.addAction("Run A*",self.a_star,QKeySequence("Ctrl+1"))
 		weighted_a_action = self.algo_menu.addAction("Run Weighted A",self.weighted_a,QKeySequence("Ctrl+2"))
 		uniform_cost_action = self.algo_menu.addAction("Run Uniform-cost Search",self.uniform_cost,QKeySequence("Ctrl+3"))
-		self.toggle_grid_lines_action = self.tools_menu.addAction("Turn Off Grid Lines",self.toggle_grid_lines,QKeySequence("Ctrl+G"))
+		self.toggle_grid_lines_action = self.tools_menu.addAction("Turn On Grid Lines",self.toggle_grid_lines,QKeySequence("Ctrl+G"))
 		self.toggle_solution_swarm_action = self.tools_menu.addAction("Turn Off Solution Swarm",self.toggle_solution_swarm,QKeySequence("Ctrl+T"))
 		self.toggle_gradient_action = self.tools_menu.addAction("Turn On Swarm Gradient",self.toggle_gradient)
 		self.toggle_trace_action = self.tools_menu.addAction("Turn Off Path Trace",self.toggle_trace)
@@ -399,7 +399,9 @@ class main_window(QWidget):
 		self.grid.verbose = False # Don't output all the render details
 
 		# indicate the refresh rate here
-		refresh_rate = 0.01 # seconds
+		refresh_rate = 0.1 # at least every this many seconds refresh
+		cost_refresh_rate = 1 # refresh if the algo has increased the current fringe cost by this much
+
 		self.overall_start = time.time()
 
 		self.cells = self.grid.cells # current state of cells in grid
@@ -423,7 +425,7 @@ class main_window(QWidget):
 		self.explored = [] # empty set
 
 		while True:
-			done = self.uniform_cost_step(refresh_rate)
+			done = self.uniform_cost_step(refresh_rate,cost_refresh_rate)
 			self.grid.solution_path = self.explored
 			self.grid.shortest_path = rectify_path(self.path_end)
 			self.tried_paths.append(self.grid.shortest_path)
@@ -435,9 +437,10 @@ class main_window(QWidget):
 				
 		self.grid.verbose = True
 
-	def uniform_cost_step(self,refresh_rate):
+	def uniform_cost_step(self,refresh_rate,cost_refresh_rate):
 		# helper function for uniform_cost search, performs only refresh_rate seconds then returns
 		start_time = time.time() # to log the amount of time taken
+		last_path_cost = self.path_cost 
 
 		while True:
 
@@ -477,9 +480,15 @@ class main_window(QWidget):
 					if self.frontier.get_cell_cost(neighbor)>(self.path_cost+transition_cost):
 						self.frontier.replace_cell(neighbor,self.path_cost+transition_cost,parent=cur_node)		
 
+			# refresh the display if the algorithm has increased the current cost by cost_refresh_rate 
+			if self.path_cost>(last_path_cost+cost_refresh_rate):
+				self.path_end = cur_node
+				return False # refresh the display
+			
+			# at least refresh every "refresh_rate" seconds
 			if int(time.time()-start_time)>refresh_rate:
 				self.path_end = cur_node
-				return False
+				return False # refresh the display
 
 		print("\nFinished uniform cost search in "+str(time.time()-self.overall_start)[:5]+" seconds, final cost: "+str(self.path_cost)+"\n")
 		return True
