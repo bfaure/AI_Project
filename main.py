@@ -401,6 +401,7 @@ class main_window(QWidget):
 		# indicate the refresh rate here
 		refresh_rate = 0.1 # at least every this many seconds refresh
 		cost_refresh_rate = 1 # refresh if the algo has increased the current fringe cost by this much
+		explored_refresh_rate = 100 # refresh if the algo has increased the explorted count by this much
 
 		self.overall_start = time.time()
 
@@ -425,7 +426,7 @@ class main_window(QWidget):
 		self.explored = [] # empty set
 
 		while True:
-			done = self.uniform_cost_step(refresh_rate,cost_refresh_rate)
+			done = self.uniform_cost_step(refresh_rate,cost_refresh_rate,explored_refresh_rate)
 			self.grid.solution_path = self.explored
 			self.grid.shortest_path = rectify_path(self.path_end)
 			self.tried_paths.append(self.grid.shortest_path)
@@ -437,10 +438,11 @@ class main_window(QWidget):
 				
 		self.grid.verbose = True
 
-	def uniform_cost_step(self,refresh_rate,cost_refresh_rate):
+	def uniform_cost_step(self,refresh_rate,cost_refresh_rate,explored_refresh_rate):
 		# helper function for uniform_cost search, performs only refresh_rate seconds then returns
 		start_time = time.time() # to log the amount of time taken
 		last_path_cost = self.path_cost 
+		initial_explored = len(self.explored)
 
 		while True:
 
@@ -479,6 +481,11 @@ class main_window(QWidget):
 					# if version in frontier has higher cost
 					if self.frontier.get_cell_cost(neighbor)>(self.path_cost+transition_cost):
 						self.frontier.replace_cell(neighbor,self.path_cost+transition_cost,parent=cur_node)		
+
+			# refresh the display if the algorithm has checked explored_refresh_rate cells
+			if len(self.explored)>(initial_explored+explored_refresh_rate):
+				self.path_end = cur_node
+				return False # refresh the display
 
 			# refresh the display if the algorithm has increased the current cost by cost_refresh_rate 
 			if self.path_cost>(last_path_cost+cost_refresh_rate):
