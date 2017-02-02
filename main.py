@@ -182,7 +182,7 @@ class attrib_color_window(QWidget):
 		# initialize to default settings
 		self.attribs = ["free","highway","fully blocked","partially blocked","start","end","solution_swarm","solution","start_gradient","end_gradient","path_trace"]
 		# default colors
-		self.colors = [[255,255,255],[0,0,255],[0,0,0],[128,128,128],[0,255,0],[255,0,0],[0,255,255],[0,255,0],[255,255,0],[0,255,50],[128,128,128]]
+		self.colors = [[255,255,255],[0,0,255],[0,0,0],[128,128,128],[0,255,0],[255,0,0],[0,255,255],[0,255,0],[255,0,0],[0,255,50],[128,128,128]]
 		# default element being shown
 		self.attrib_index = 0
 		# current attribute value
@@ -622,7 +622,7 @@ class main_window(QWidget):
 			print("explored: "+str(len(self.explored))+", frontier: "+str(self.frontier.length())+", time: "+str(time.time()-self.overall_start)[:4]+", cost: "+str(self.path_cost)[:5],end="\r")
 
 			if self.frontier.length() == 0:
-				print("Uniform cost search failed to find a solution path.")
+				print("ERROR: Uniform cost search failed to find a solution path.")
 				return True
 
 			cur_node = self.frontier.pop()

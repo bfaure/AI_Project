@@ -1206,10 +1206,12 @@ def get_transition_cost(current_cell,new_cell,highways):
 	# trying to traverse to blocked cell
 	elif new_state=="full":
 		cost = -1
+		return cost
 
 	else:
 		print("Could not decode cell transition from "+current_state+" to "+new_state)
 		cost = -1
+		return cost
 
 	# now need to check if both cells are in a highway
 	if orientation == "horizontal_or_vertical":
@@ -1312,7 +1314,7 @@ class uniform_cost_search(QThread):
 			print("explored: "+str(len(self.explored))+", frontier: "+str(self.frontier.length())+", time: "+str(time.time()-self.overall_start)[:4]+", cost: "+str(self.path_cost)[:5],end="\r")
 
 			if self.frontier.length() == 0:
-				print("Uniform cost search failed to find a solution path.")
+				print("ERROR: Uniform cost search failed to find a solution path.")
 				return True
 
 			cur_node = self.frontier.pop()
