@@ -21,7 +21,7 @@ import heapq # for priority queue implementation
 # installation that doesnt mean you need to change this, should
 # be used only for debugging and testing purposes.
 TURN_OFF_CYTHON = False
-USE_UCS_MULTITHREADED = False
+USE_UCS_MULTITHREADED = True
 
 try:
 	import Cython # test to see if Cython is installed
@@ -141,7 +141,6 @@ class attrib_value_window(QWidget):
 	def hide_window(self):
 		# called from the main_window
 		self.hide()
-
 
 class attrib_color_window(QWidget):
 	# small window that opens if the user wants to change an attribute color
@@ -673,6 +672,10 @@ class main_window(QWidget):
 	def set_end(self):
 		# called when user chooses item in right click menu
 		self.grid.set_cell_state(self.click.x(),self.click.y(),"end")
+
+		self.end_cell = [int(self.click.x()),int(self.click.y())]
+		if USE_UCS_MULTITHREADED:
+			self.ucs_agent.end_cell = self.end_cell
 
 	def set_free(self):
 		# called when user chooses item in right click menu

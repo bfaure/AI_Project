@@ -69,6 +69,11 @@ class eight_neighbor_grid(QWidget):
 		self.using_gradient = False # if true then solution swarm will be gradient
 		self.init_cells(leave_empty=True) # more instance variables that can be reset more easily from within instance
 
+		self.solution_swarm_line_type = "DashLine" # can be one of "SolidLine","DashLine","DotLine",
+		self.solution_line_type = "SolidLine" # "DashDotLine", or "DashDotDotLine"
+		self.solution_trace_line_type = "DotLine"
+		self.highway_line_type = "SolidLine"
+
 	def init_cells(self,leave_empty=False):
 		# creates the list of cells in the grid (all default to free), if leave_empty
 		# is False then we will fill in the grid following the instructions in the
@@ -222,7 +227,7 @@ class eight_neighbor_grid(QWidget):
 
 			num_attempts+=1
 
-		print("                                                                             ",end='\r')
+		#print("                                                                             ",end='\r')
 		print("Exhausted "+str(num_attempts)+" attempts, "+str(total_attempts)+" total.",end='\r')
 		return num_attempts
 
@@ -464,7 +469,7 @@ class eight_neighbor_grid(QWidget):
 		# stuff in the broken list and connect any highway endpoints that
 		# are only a distance of 1 away from eachother
 		iterations = 0
-		max_allowed = 1000000
+		max_allowed = 1000
 		while True:
 			iterations+=1
 			if iterations>max_allowed:
@@ -528,6 +533,7 @@ class eight_neighbor_grid(QWidget):
 				return
 
 	def get_closest_edge_and_distance(self,coordinates):
+		# get the closest wall and the distance to it
 		dist_to_top = coordinates[1]
 		dist_to_bottom = self.num_rows-coordinates[1]
 		dist_to_left = coordinates[0]
@@ -549,6 +555,11 @@ class eight_neighbor_grid(QWidget):
 		return ["None",-1]
 
 	def repair_highway(self,index):
+		# if a highway does not register as a legitimate highway using the is_highway_complete function
+		# when it is loaded this function is called to try to fix it. added this because sometimes the 
+		# last cell or two of a highway is lost in the loading process for some reason. if the amount
+		# needed to be added to the highway is greater than 5 then it will alert the user and will
+		# refrain from fixing it
 		broken_highway = self.highways[index]
 
 		start_cell = broken_highway[0]
@@ -806,7 +817,7 @@ class eight_neighbor_grid(QWidget):
 			qp.drawLine(width-1,0,width-1,height-1)
 
 		# Drawing in highway lines
-		pen = QPen(QColor(self.highway_color[0],self.highway_color[1],self.highway_color[2]),self.highway_render_width,Qt.SolidLine)
+		pen = QPen(QColor(self.highway_color[0],self.highway_color[1],self.highway_color[2]),self.highway_render_width,Qt.__dict__[self.highway_line_type])
 		qp.setPen(pen)
 		qp.setBrush(Qt.NoBrush)
 		for highway in self.highways:
@@ -844,7 +855,7 @@ class eight_neighbor_grid(QWidget):
 					last_location = None
 
 					for location in self.solution_path:
-						pen = QPen(QColor(int(cur_shade[0]),int(cur_shade[1]),int(cur_shade[2])),self.solution_swarm_render_density,Qt.DashLine)
+						pen = QPen(QColor(int(cur_shade[0]),int(cur_shade[1]),int(cur_shade[2])),self.solution_swarm_render_density,Qt.__dict__[self.solution_swarm_line_type])
 						qp.setPen(pen)
 						cur_shade = [cur_shade[0]+r_delta,cur_shade[1]+g_delta,cur_shade[2]+b_delta]
 						
@@ -858,15 +869,27 @@ class eight_neighbor_grid(QWidget):
 						if last_location == None:
 							last_location = location
 							continue
-						x1 = (last_location.x*horizontal_step)+(horizontal_step/2)
-						x2 = (location.x*horizontal_step)+(horizontal_step/2)
-						y1 = (last_location.y*vertical_step)+(vertical_step/2)
-						y2 = (location.y*vertical_step)+(vertical_step/2)
+
+						shorten_gradient = True 
+						if shorten_gradient:
+							x1 = (last_location.x*horizontal_step)+(horizontal_step/2)
+							y1 = (last_location.y*vertical_step)+(vertical_step/2)
+
+							x2 = (last_location.x*horizontal_step)+(horizontal_step/2)+((location.x*horizontal_step)*(0.01)) 
+							y2 = (last_location.y*vertical_step)+(vertical_step/2)+((location.y*vertical_step)*(0.01))
+
+						else:
+							x1 = (last_location.x*horizontal_step)+(horizontal_step/2)
+							y1 = (last_location.y*vertical_step)+(vertical_step/2)
+
+							x2 = (location.x*horizontal_step)+(horizontal_step/2)
+							y2 = (location.y*vertical_step)+(vertical_step/2)
+						
 						qp.drawLine(x1,y1,x2,y2)
 						last_location = location
 			
 			else: # solid color swarm
-				pen = QPen(QColor(self.solution_swarm_color[0],self.solution_swarm_color[1],self.solution_swarm_color[2]),self.solution_swarm_render_density,Qt.DashLine)
+				pen = QPen(QColor(self.solution_swarm_color[0],self.solution_swarm_color[1],self.solution_swarm_color[2]),self.solution_swarm_render_density,Qt.__dict__[self.solution_swarm_line_type])
 				qp.setPen(pen)
 				last_location = None
 				for location in self.solution_path:
@@ -874,16 +897,28 @@ class eight_neighbor_grid(QWidget):
 					if last_location == None:
 						last_location = location
 						continue
-					x1 = (last_location.x*horizontal_step)+(horizontal_step/2)
-					x2 = (location.x*horizontal_step)+(horizontal_step/2)
-					y1 = (last_location.y*vertical_step)+(vertical_step/2)
-					y2 = (location.y*vertical_step)+(vertical_step/2)
+
+					shorten_gradient = True 
+					if shorten_gradient:
+						x1 = (last_location.x*horizontal_step)+(horizontal_step/2)
+						y1 = (last_location.y*vertical_step)+(vertical_step/2)
+
+						x2 = (last_location.x*horizontal_step)+(horizontal_step/2)+((location.x*horizontal_step)*(0.01)) 
+						y2 = (last_location.y*vertical_step)+(vertical_step/2)+((location.y*vertical_step)*(0.01))
+
+					else:
+						x1 = (last_location.x*horizontal_step)+(horizontal_step/2)
+						y1 = (last_location.y*vertical_step)+(vertical_step/2)
+
+						x2 = (location.x*horizontal_step)+(horizontal_step/2)
+						y2 = (location.y*vertical_step)+(vertical_step/2)
+						
 					qp.drawLine(x1,y1,x2,y2)
 					last_location = location
 
 		# Drawing in the prior solution paths
 		if self.show_path_trace:
-			pen = QPen(QColor(self.trace_color[0],self.trace_color[1],self.trace_color[2]),self.trace_render_width,Qt.DashLine)
+			pen = QPen(QColor(self.trace_color[0],self.trace_color[1],self.trace_color[2]),self.trace_render_width,Qt.__dict__[self.solution_trace_line_type])
 			qp.setPen(pen)
 			for path in self.path_traces:
 				last_location = None
@@ -899,7 +934,7 @@ class eight_neighbor_grid(QWidget):
 					last_location = location
 
 		# Drawing in solution path
-		pen = QPen(QColor(self.solution_color[0],self.solution_color[1],self.solution_color[2]),self.solution_render_width,Qt.SolidLine)
+		pen = QPen(QColor(self.solution_color[0],self.solution_color[1],self.solution_color[2]),self.solution_render_width,Qt.__dict__[self.solution_line_type])
 		qp.setPen(pen)
 		last_location = None
 		for location in self.shortest_path:
