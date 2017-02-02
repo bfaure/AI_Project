@@ -65,8 +65,8 @@ class eight_neighbor_grid(QWidget):
 		self.draw_outer_boundary = False # if true, an outer boundary is drawn in bottom right
 		self.draw_grid_lines = False # set to false by default
 		self.show_solution_swarm = True # set to true by default
-		self.show_path_trace = True # if true then show the prior tried paths
-		self.using_gradient = False # if true then solution swarm will be gradient
+		self.show_path_trace = False # if true then show the prior tried paths
+		self.using_gradient = True # if true then solution swarm will be gradient
 		self.init_cells(leave_empty=True) # more instance variables that can be reset more easily from within instance
 
 		self.solution_swarm_line_type = "DashLine" # can be one of "SolidLine","DashLine","DotLine",
@@ -912,7 +912,7 @@ class eight_neighbor_grid(QWidget):
 
 						x2 = (location.x*horizontal_step)+(horizontal_step/2)
 						y2 = (location.y*vertical_step)+(vertical_step/2)
-						
+
 					qp.drawLine(x1,y1,x2,y2)
 					last_location = location
 

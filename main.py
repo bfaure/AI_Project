@@ -391,8 +391,8 @@ class main_window(QWidget):
 		uniform_cost_action = self.algo_menu.addAction("Run Uniform-cost Search",self.uniform_cost,QKeySequence("Ctrl+3"))
 		self.toggle_grid_lines_action = self.tools_menu.addAction("Turn On Grid Lines",self.toggle_grid_lines,QKeySequence("Ctrl+G"))
 		self.toggle_solution_swarm_action = self.tools_menu.addAction("Turn Off Solution Swarm",self.toggle_solution_swarm,QKeySequence("Ctrl+T"))
-		self.toggle_gradient_action = self.tools_menu.addAction("Turn On Swarm Gradient",self.toggle_gradient)
-		self.toggle_trace_action = self.tools_menu.addAction("Turn Off Path Trace",self.toggle_trace)
+		self.toggle_gradient_action = self.tools_menu.addAction("Turn Off Swarm Gradient",self.toggle_gradient)
+		self.toggle_trace_action = self.tools_menu.addAction("Turn On Path Trace",self.toggle_trace)
 		self.tools_menu.addSeparator()
 		change_attrib_color_action = self.tools_menu.addAction("Set Attribute Color...",self.change_attrib_color,QKeySequence("Ctrl+M"))
 		change_attrib_value_action = self.tools_menu.addAction("Set Attribute Value...",self.change_attrib_value,QKeySequence("Ctrl+V"))
@@ -641,19 +641,23 @@ class main_window(QWidget):
 
 	def save_as(self):
 		# allow user to save the current grid
-		filename = QFileDialog.getSaveFileName(self,"Save As")
+		current_location = os.getcwd()
+		filename = QFileDialog.getSaveFileName(self,"Save As", current_location+"/grids", "Grid Files (*.grid)")
 		if filename != "":
 			self.grid.save(filename)
 		print("Finished saving "+filename)
 
 	def load(self):
 		# load a new grid from file
-		filename = QFileDialog.getOpenFileName(self, "Select File")
+		current_location = os.getcwd()
+		filename = QFileDialog.getOpenFileName(self, "Select Grid File", current_location+"/grids", "Grid Files (*.grid)")
 		if filename != "":
 			print("Loading grid...")
 			self.grid.load(filename)
-		self.grid.repaint()
-		print("Finished loading "+filename)
+			self.grid.repaint()
+			print("Finished loading "+filename)
+		else:
+			print("Loading canceled.")
 
 	def quit(self):
 		# quits the application
