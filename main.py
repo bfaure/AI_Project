@@ -73,11 +73,10 @@ class attrib_value_window(QWidget):
 		self.attribs = ["Solution Swarm Density","Solution Path Width","Solution Trace Width","Highway Width"]
 		# default widths
 		self.values = [1.0,5.0,1.0,2.0]
-		# default element being shown
-		self.attrib_index = 0
-		# current attribute value
-		self.attrib_value = self.values[self.attrib_index]
-		self.backend = False
+
+		self.lines = ["Highway","Solution Path","Solution Trace","Solution Swarm"]
+		self.current_line_types = ["SolidLine","SolidLine","DotLine","DashLine"]
+		self.all_line_types = ["SolidLine","DashLine","DotLine","DashDotLine","DashDotDotLine"]
 
 	def init_ui(self):
 		# set up ui elements
@@ -85,9 +84,11 @@ class attrib_value_window(QWidget):
 
 		first_row = QHBoxLayout()
 		second_row = QHBoxLayout()
+		save_row = QHBoxLayout()
 
 		self.layout.addLayout(first_row)
 		self.layout.addLayout(second_row)
+		self.layout.addLayout(save_row)
 
 		self.setWindowTitle("Set Value Preferences")
 		# selection box
@@ -97,12 +98,13 @@ class attrib_value_window(QWidget):
 		first_row.addStretch()
 		selection_box_layout = QVBoxLayout()
 		first_row.addLayout(selection_box_layout)
-		selection_box_layout.addSpacing(5)
+		#selection_box_layout.addSpacing(5)
 		selection_box_layout.addWidget(self.selection_box)
 
 		# color elements
 		self.value_input = QDoubleSpinBox(self)
 		self.value_input.setDecimals(2)
+		self.value_input.setSingleStep(0.1)
 		self.value_input.setMaximum(10.0)
 		self.value_input.setMinimum(0.1)
 		self.value_input.valueChanged.connect(self.value_changed)
@@ -112,13 +114,40 @@ class attrib_value_window(QWidget):
 		first_row.addSpacing(37)
 		first_row.addStretch(1)
 
+		# line selection box
+		self.line_selection_box = QComboBox(self)
+		self.line_selection_box.addItems(self.lines)
+		self.line_selection_box.currentIndexChanged.connect(self.line_changed)
+		second_row.addStretch()
+		line_selection_layout = QVBoxLayout()
+		second_row.addLayout(line_selection_layout)
+		#line_selection_layout.addSpacing(5)
+		line_selection_layout.addWidget(self.line_selection_box)
+
+		self.line_type_input = QComboBox(self)
+		self.line_type_input.addItems(self.all_line_types)
+		self.line_type_input.currentIndexChanged.connect(self.line_type_changed)
+
+		second_row.addSpacing(48)
+		second_row.addWidget(self.line_type_input)
+		second_row.addSpacing(37)
+		second_row.addStretch(1)
+
 		# save prefs and return button
 		self.return_button = QPushButton("Save",self)
 		self.return_button.clicked.connect(self.save)
 
-		second_row.addStretch()
-		second_row.addWidget(self.return_button)
-		second_row.addStretch()
+		save_row.addStretch()
+		save_row.addWidget(self.return_button)
+		save_row.addStretch()
+
+	def line_changed(self):
+		# called when the user changes the current line in the second row
+		self.line_type_input.setCurrentIndex(self.line_selection_box.currentIndex())
+
+	def line_type_changed(self):
+		# called when the user changes the current line type
+		self.current_line_types[self.line_selection_box.currentIndex()] = str(self.line_type_input.currentText())
 
 	def save(self):
 		# fetches the current colors and sends a signal back to the main_window
@@ -131,8 +160,7 @@ class attrib_value_window(QWidget):
 
 	def value_changed(self):
 		# called by pyqt when one of the rgb boxes is changed
-		if self.backend==False: 
-			self.values[self.selection_box.currentIndex()] = self.value_input.value()
+		self.values[self.selection_box.currentIndex()] = self.value_input.value()
 
 	def open_window(self):
 		# called from the main_window
@@ -159,7 +187,7 @@ class attrib_color_window(QWidget):
 		self.attrib_index = 0
 		# current attribute value
 		self.attrib_value = self.colors[self.attrib_index]
-		self.backend = False
+		self.backend = False # if we are changing something backend, dont record it as user changed value
 
 	def init_ui(self):
 		# set up ui elements
@@ -381,6 +409,7 @@ class main_window(QWidget):
 		save_action = self.file_menu.addAction("Save As...",self.save_as,QKeySequence("Ctrl+S"))
 		self.file_menu.addSeparator()
 		clear_action = self.file_menu.addAction("Clear Grid",self.clear,QKeySequence("Ctrl+C"))
+		clear_path_action = self.file_menu.addAction("Clear Search Path", self.clear_path,"Ctrl+P")
 		create_action = self.file_menu.addAction("Create New Grid",self.create,QKeySequence("Ctrl+N"))
 		self.file_menu.addSeparator()
 		new_window_action = self.file_menu.addAction("Open New Window...",self.open_new_window,QKeySequence("Ctrl+Shift+N"))
@@ -408,6 +437,15 @@ class main_window(QWidget):
 		QtCore.QObject.connect(self.value_preferences_window, QtCore.SIGNAL("return_value_prefs()"), self.finished_changing_values)
 		self.show()
 
+	def clear_path(self):
+		# function called by pyqt when user selects "Clear Search Path" File menu item
+		self.stop_executing = True # tell search algo to stop
+		self.ucs_agent.stop_executing = True # if using multithreading, tell search ucs agent to stop
+		pyqt_app.processEvents() # force process events in event queue
+		time.sleep(0.1) # give time for execution thread to stop
+		self.grid.clear_path() # clear the path attributes
+		self.grid.repaint() # render the ui
+
 	def change_attrib_value(self):
 		# function called by pyqt when user chooses change_attrib_value_action menu item
 		self.value_preferences_window.open_window()
@@ -419,6 +457,12 @@ class main_window(QWidget):
 		new_value_attribs = self.value_preferences_window.attribs
 		for attrib,value in list(zip(new_value_attribs,new_value_prefs)):
 			self.grid.set_attrib_value(attrib,value)
+
+		new_line_types = self.value_preferences_window.current_line_types
+		line_names = self.value_preferences_window.lines 
+		for attrib,value in list(zip(line_names,new_line_types)):
+			self.grid.set_line_type(attrib,value)
+
 		self.grid.repaint()
 
 	def open_new_window(self):
@@ -628,6 +672,10 @@ class main_window(QWidget):
 
 	def create(self):
 		# clears the current grid and creates a new random one
+		self.stop_executing = True # if performing ucs w/o multhithreading, tell it to stop
+		self.ucs_agent.stop_executing = True # if using multithreading, tell usc_agent to stop executing
+		pyqt_app.processEvents()
+		self.grid.clear()
 		self.grid.random()
 		self.grid.repaint()
 

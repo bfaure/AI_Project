@@ -103,6 +103,12 @@ class eight_neighbor_grid(QWidget):
 		self.solution_path = [] # the path eventually filled by one of the search algos
 		print("Finished generating random grid, "+str(time.time()-start_time)+" seconds\n")
 
+	def clear_path(self):
+		# called from main_window when user selects appropriate File menu item
+		self.solution_path 	= []
+		self.shortest_path 	= []
+		self.path_traces 	= []
+
 	def check_for_highway(self,x_coord,y_coord,temp_highway=None):
 		# checks if the coordinates in question contain a highway, the temp_highway
 		# input is used by the get_highway function when it is attempting to place
@@ -1051,6 +1057,18 @@ class eight_neighbor_grid(QWidget):
 			self.solution_render_width = value
 		elif attrib == "Highway Width":
 			self.highway_render_width = value
+		else:
+			print("Unknown attribute: "+attrib)
+
+	def set_line_type(self,attrib,value):
+		if attrib == "Highway":
+			self.highway_line_type = value 
+		elif attrib == "Solution Path":
+			self.solution_line_type = value 
+		elif attrib == "Solution Trace":
+			self.solution_trace_line_type = value 
+		elif attrib == "Solution Swarm":
+			self.solution_swarm_line_type = value 
 		else:
 			print("Unknown attribute: "+attrib)
 
