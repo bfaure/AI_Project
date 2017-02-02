@@ -21,7 +21,7 @@ import heapq # for priority queue implementation
 # installation that doesnt mean you need to change this, should
 # be used only for debugging and testing purposes.
 TURN_OFF_CYTHON = False
-USE_UCS_MULTITHREADED = True
+USE_UCS_MULTITHREADED = False
 
 try:
 	import Cython # test to see if Cython is installed
@@ -361,6 +361,7 @@ class main_window(QWidget):
 		self.grids = [] # list of all grid elements
 		self.click = None # save click info
 		self.host_os = os.name # "nt" for windows distrubitions
+		print("Running Host OS: "+str(self.host_os))
 		self.show_grid_lines = False # true by default
 		self.show_solution_swarm = True # true by default
 		self.use_gradient = False # False by default
