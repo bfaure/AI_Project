@@ -20,7 +20,7 @@ import heapq # for priority queue implementation
 # set to true to disable Cython, if you don't have a Cython
 # installation that doesnt mean you need to change this, should
 # be used only for debugging and testing purposes.
-TURN_OFF_CYTHON = True
+TURN_OFF_CYTHON = False
 USE_UCS_MULTITHREADED = False
 
 try:
@@ -50,15 +50,98 @@ if using_cython:
 		os.system("python setup.py build_ext --inplace")
 
 	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message
-	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid,character_image
+	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid
 else:
 	print("Could not find Cython installation, using Python version of helpers.py")
 	lib_folder = "lib/"
 	sys.path.insert(0, lib_folder)
 	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message
-	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid,character_image
+	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid
 
 pyqt_app = ""
+
+class attrib_value_window(QWidget):
+	# small window that opens if the user wants to change an attribute value
+	def __init__(self):
+		# constructor
+		super(attrib_value_window,self).__init__()
+		self.init_vars()
+		self.init_ui()	
+
+	def init_vars(self):
+		# initialize to default settings
+		self.attribs = ["Solution Swarm Density","Solution Path Width","Solution Trace Width","Highway Width"]
+		# default widths
+		self.values = [1.0,5.0,1.0,2.0]
+		# default element being shown
+		self.attrib_index = 0
+		# current attribute value
+		self.attrib_value = self.values[self.attrib_index]
+		self.backend = False
+
+	def init_ui(self):
+		# set up ui elements
+		self.layout = QVBoxLayout(self)
+
+		first_row = QHBoxLayout()
+		second_row = QHBoxLayout()
+
+		self.layout.addLayout(first_row)
+		self.layout.addLayout(second_row)
+
+		self.setWindowTitle("Set Value Preferences")
+		# selection box
+		self.selection_box = QComboBox(self)
+		self.selection_box.addItems(self.attribs)
+		self.selection_box.currentIndexChanged.connect(self.attrib_changed)
+		first_row.addStretch()
+		selection_box_layout = QVBoxLayout()
+		first_row.addLayout(selection_box_layout)
+		selection_box_layout.addSpacing(5)
+		selection_box_layout.addWidget(self.selection_box)
+
+		# color elements
+		self.value_input = QDoubleSpinBox(self)
+		self.value_input.setDecimals(2)
+		self.value_input.setMaximum(10.0)
+		self.value_input.setMinimum(0.1)
+		self.value_input.valueChanged.connect(self.value_changed)
+		
+		first_row.addSpacing(10)
+		first_row.addWidget(self.value_input)
+		first_row.addSpacing(37)
+		first_row.addStretch(1)
+
+		# save prefs and return button
+		self.return_button = QPushButton("Save",self)
+		self.return_button.clicked.connect(self.save)
+
+		second_row.addStretch()
+		second_row.addWidget(self.return_button)
+		second_row.addStretch()
+
+	def save(self):
+		# fetches the current colors and sends a signal back to the main_window
+		self.emit(SIGNAL("return_value_prefs()"))
+		self.hide()
+
+	def attrib_changed(self):
+		# function called by pyqt when user changes the selection box attribute
+		self.value_input.setValue(self.values[self.selection_box.currentIndex()])
+
+	def value_changed(self):
+		# called by pyqt when one of the rgb boxes is changed
+		if self.backend==False: 
+			self.values[self.selection_box.currentIndex()] = self.value_input.value()
+
+	def open_window(self):
+		# called from the main_window
+		self.show()
+
+	def hide_window(self):
+		# called from the main_window
+		self.hide()
+
 
 class attrib_color_window(QWidget):
 	# small window that opens if the user wants to change an attribute color
@@ -81,7 +164,6 @@ class attrib_color_window(QWidget):
 
 	def init_ui(self):
 		# set up ui elements
-
 		self.layout = QVBoxLayout(self)
 
 		first_row = QHBoxLayout()
@@ -251,7 +333,7 @@ class main_window(QWidget):
 		# initialize all class variables here
 		self.grids = [] # list of all grid elements
 		self.click = None # save click info
-		self.host_os = os.name 
+		self.host_os = os.name # "nt" for windows distrubitions
 		self.show_grid_lines = False # true by default
 		self.show_solution_swarm = True # true by default
 		self.use_gradient = False # False by default
@@ -260,6 +342,7 @@ class main_window(QWidget):
 
 		self.child_windows = [] # to hold any extra windows opened by user
 		self.color_preferences_window = attrib_color_window()
+		self.value_preferences_window = attrib_value_window()
 
 		self.ucs_agent = uniform_cost_search() # separate thread for ucs execution
 
@@ -313,6 +396,7 @@ class main_window(QWidget):
 		self.toggle_trace_action = self.tools_menu.addAction("Turn Off Path Trace",self.toggle_trace)
 		self.tools_menu.addSeparator()
 		change_attrib_color_action = self.tools_menu.addAction("Set Attribute Color...",self.change_attrib_color,QKeySequence("Ctrl+M"))
+		change_attrib_value_action = self.tools_menu.addAction("Set Attribute Value...",self.change_attrib_value,QKeySequence("Ctrl+V"))
 		self.tools_menu.addSeparator()
 		regenerate_start_end_action = self.tools_menu.addAction("New Start/End Cells...",self.regenerate_start_end)
 
@@ -322,7 +406,21 @@ class main_window(QWidget):
 			self.resize(1323,764) # fits my macbook well
 
 		QtCore.QObject.connect(self.color_preferences_window, QtCore.SIGNAL("return_color_prefs()"), self.finished_changing_colors)
+		QtCore.QObject.connect(self.value_preferences_window, QtCore.SIGNAL("return_value_prefs()"), self.finished_changing_values)
 		self.show()
+
+	def change_attrib_value(self):
+		# function called by pyqt when user chooses change_attrib_value_action menu item
+		self.value_preferences_window.open_window()
+
+	def finished_changing_values(self):
+		# called by the value preferences window when the user is done
+		self.value_preferences_window.hide_window()
+		new_value_prefs = self.value_preferences_window.values 
+		new_value_attribs = self.value_preferences_window.attribs
+		for attrib,value in list(zip(new_value_attribs,new_value_prefs)):
+			self.grid.set_attrib_value(attrib,value)
+		self.grid.repaint()
 
 	def open_new_window(self):
 		# function called by pyqt when user chooses "Open New Window...", opens

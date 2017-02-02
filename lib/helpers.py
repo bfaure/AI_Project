@@ -16,34 +16,8 @@ from PyQt4.QtGui import *
 
 import heapq
 
-updating_ui = False 
-ui_update_time = 0.05
-
-# class to hold the image on the grid that represents the current location
-class character_image(QLabel):
-
-	def __init__(self, img, parent=None):
-		# constructor, pass the path to the image that will be used
-		super(character_image, self).__init__()
-		self.setFrameStyle(QtGui.QFrame.StyledPanel)
-		self.pixmap = QtGui.QPixmap(img)
-
-	def paintEvent(self, event):
-		# called whenever the image needs to be drawn
-		size = self.size()
-		painter = QtGui.QPainter(self)
-		point = QtCore.QPoint(0,0)
-		scaledPix = self.pixmap.scaled(size, Qt.KeepAspectRatio, transformMode = Qt.SmoothTransformation)
-		# start painting the label from left upper corner
-		point.setX((size.width() - scaledPix.width())/2)
-		point.setY((size.height() - scaledPix.height())/2)
-		print (point.x(), ' ', point.y())
-		painter.drawPixmap(point, scaledPix)
-
-	def changePixmap(self, img):
-    	# can change the image used
-		self.pixmap = QtGui.QPixmap(img)
-		self.repaint()
+updating_ui = False # will be set by eight_neighbor_grid.update_ui
+ui_update_time = 0.05 # will be set by eight_neighbor_grid.update_ui
 
 # class to hold details for a single cell
 class cell:
@@ -63,9 +37,8 @@ class eight_neighbor_grid(QWidget):
 		super(eight_neighbor_grid,self).__init__()		
 		self.num_columns = num_columns # width of the board
 		self.num_rows = num_rows # height of the board
-		self.using_game_character = False # leave as false, see init_ui line
+		self.pyqt_app = pyqt_app # allows this class to call parent functions
 		self.init_ui() # initialize a bunch of class instance variables
-		self.pyqt_app = pyqt_app
 
 	def init_ui(self):
 		# initialize ui elements
@@ -84,14 +57,10 @@ class eight_neighbor_grid(QWidget):
 		self.end_gradient = [0,255,50] # if gradient is used, the ending color
 		self.trace_color = [128,128,128] # if trace is on, the color of the prior solution paths
 		
-		self.solution_swarm_render_density = 0.1 # width of the solution swarm lines (from ~0.1 to ~2.0 probably)
+		self.solution_swarm_render_density = 1.0 # width of the solution swarm lines (from ~0.1 to ~2.0 probably)
 		self.highway_render_width = 2.0 # width of the highways shown in window (2.0 is default)
 		self.solution_render_width = 5.0 # width of the solution path (5.0 is good default)
-
-
-		if self.using_game_character:
-			# trying to allow user to select an image to use as the current location on the grid
-			self.pic = character_image(os.getcwd()+"/resources/character.png",self)
+		self.trace_render_width = 1.0 # width of the solution trace
 
 		self.draw_outer_boundary = False # if true, an outer boundary is drawn in bottom right
 		self.draw_grid_lines = False # set to false by default
@@ -914,7 +883,7 @@ class eight_neighbor_grid(QWidget):
 
 		# Drawing in the prior solution paths
 		if self.show_path_trace:
-			pen = QPen(QColor(self.trace_color[0],self.trace_color[1],self.trace_color[2]),0.1,Qt.DashLine)
+			pen = QPen(QColor(self.trace_color[0],self.trace_color[1],self.trace_color[2]),self.trace_render_width,Qt.DashLine)
 			qp.setPen(pen)
 			for path in self.path_traces:
 				last_location = None
@@ -1035,6 +1004,18 @@ class eight_neighbor_grid(QWidget):
 			self.end_gradient = color
 		elif attrib == "path_trace":
 			self.trace_color = color
+		else:
+			print("Unknown attribute: "+attrib)
+
+	def set_attrib_value(self,attrib,value):
+		if attrib == "Solution Swarm Density":
+			self.solution_swarm_render_density = value
+		elif attrib == "Solution Trace Width":
+			self.trace_render_width = value
+		elif attrib == "Solution Path Width":
+			self.solution_render_width = value
+		elif attrib == "Highway Width":
+			self.highway_render_width = value
 		else:
 			print("Unknown attribute: "+attrib)
 
@@ -1195,7 +1176,7 @@ def rectify_path(path_end):
 		path.append([cur.x,cur.y])
 	return path
 
-class message:
+class message: # used as a connnection between eight_neighbor_grid and uniform_cost_search
 	def __init__(self):
 		self.solution_path = []
 		self.shortest_path = []
@@ -1251,7 +1232,7 @@ class uniform_cost_search(QThread):
 			msg_to_main.path_traces = self.tried_paths 
 			msg_to_main.done = done 
 
-			if updating_ui:
+			if updating_ui: # allow for time for the ui to update
 				for _ in range(4):
 					if updating_ui:
 						time.sleep(ui_update_time*0.2)
@@ -1261,8 +1242,6 @@ class uniform_cost_search(QThread):
 			if done==True or updating_ui==False:
 				# if this is the last update or the ui is ready for another
 				self.emit(SIGNAL("send_update_to_ui(PyQt_PyObject)"),msg_to_main)
-			#self.app.processEvents()
-			#QApplication.processEvents()
 			if done:
 				break
 
