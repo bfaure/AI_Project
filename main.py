@@ -17,11 +17,19 @@ from PyQt4.QtGui import *
 
 import heapq # for priority queue implementation
 
+# set to true to disable Cython, if you don't have a Cython
+# installation that doesnt mean you need to change this, should
+# be used only for debugging and testing purposes.
+TURN_OFF_CYTHON = True
+USE_UCS_MULTITHREADED = False
+
 try:
 	import Cython # test to see if Cython is installed
 	using_cython = True # need to compile helpers.pyx and import it
 except:
 	using_cython = False # need to import lib/helpers.py to take the place of helpers.pyx
+
+if TURN_OFF_CYTHON: using_cython = False
 
 if using_cython:
 	print("Found Cython installation, copying helpers.py to helpers.pyx...")
@@ -41,13 +49,13 @@ if using_cython:
 		print("here")
 		os.system("python setup.py build_ext --inplace")
 
-	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway
+	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message
 	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid,character_image
 else:
 	print("Could not find Cython installation, using Python version of helpers.py")
 	lib_folder = "lib/"
 	sys.path.insert(0, lib_folder)
-	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway
+	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message
 	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid,character_image
 
 pyqt_app = ""
@@ -248,8 +256,12 @@ class main_window(QWidget):
 		self.show_solution_swarm = True # true by default
 		self.use_gradient = False # False by default
 		self.show_trace = True # true by default
+		self.updating_already = False 
 
+		self.child_windows = [] # to hold any extra windows opened by user
 		self.color_preferences_window = attrib_color_window()
+
+		self.ucs_agent = uniform_cost_search() # separate thread for ucs execution
 
 	def init_ui(self):
 		# initialize ui elements here
@@ -261,7 +273,7 @@ class main_window(QWidget):
 		if os.name == "nt":
 			self.layout.addSpacing(25)
 
-		self.grid = eight_neighbor_grid() 
+		self.grid = eight_neighbor_grid(160,120,pyqt_app) 
 		self.grid.setContextMenuPolicy(Qt.CustomContextMenu)
 		self.grid.customContextMenuRequested.connect(self.on_context_menu_request)
 		self.layout.addWidget(self.grid)
@@ -289,6 +301,8 @@ class main_window(QWidget):
 		clear_action = self.file_menu.addAction("Clear Grid",self.clear,QKeySequence("Ctrl+C"))
 		create_action = self.file_menu.addAction("Create New Grid",self.create,QKeySequence("Ctrl+N"))
 		self.file_menu.addSeparator()
+		new_window_action = self.file_menu.addAction("Open New Window...",self.open_new_window,QKeySequence("Ctrl+Shift+N"))
+		self.file_menu.addSeparator()
 		quit_action = self.file_menu.addAction("Quit", self.quit, QKeySequence("Ctrl+Q"))
 		a_star_action = self.algo_menu.addAction("Run A*",self.a_star,QKeySequence("Ctrl+1"))
 		weighted_a_action = self.algo_menu.addAction("Run Weighted A",self.weighted_a,QKeySequence("Ctrl+2"))
@@ -309,6 +323,12 @@ class main_window(QWidget):
 
 		QtCore.QObject.connect(self.color_preferences_window, QtCore.SIGNAL("return_color_prefs()"), self.finished_changing_colors)
 		self.show()
+
+	def open_new_window(self):
+		# function called by pyqt when user chooses "Open New Window...", opens
+		# a new instance of main_window and adds it to the self.child_list
+		new_window = main_window()
+		self.child_windows.append(new_window)
 
 	def toggle_solution_swarm(self):
 		# function called by pyqt when user chooses the appropriate menu item
@@ -415,6 +435,15 @@ class main_window(QWidget):
 
 		self.end_cell = self.grid.end_cell # current end cell
 		self.highways = self.grid.highways # current highways on grid
+
+		if USE_UCS_MULTITHREADED:
+			self.ucs_agent = uniform_cost_search()
+			self.ucs_agent.load_grid_data(self.cells,self.start_cell,self.end_cell,self.highways)
+			self.grid.connect_to_ucs_agent(self.ucs_agent)
+			self.ucs_agent.app = pyqt_app
+			self.ucs_agent.start() # start the thread
+			return
+
 		self.path_cost = 0 # overall path cost
 		self.tried_paths = [] # to hold all paths shown to user
 
@@ -508,6 +537,7 @@ class main_window(QWidget):
 	def clear(self):
 		# clears the current grid
 		self.stop_executing = True
+		self.ucs_agent.stop_executing = True
 		pyqt_app.processEvents()
 		self.grid.clear()
 		self.grid.repaint()

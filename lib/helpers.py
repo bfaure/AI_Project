@@ -16,6 +16,9 @@ from PyQt4.QtGui import *
 
 import heapq
 
+updating_ui = False 
+ui_update_time = 0.05
+
 # class to hold the image on the grid that represents the current location
 class character_image(QLabel):
 
@@ -55,13 +58,14 @@ class cell:
 # UI element (widget) that represents the interface with the grid
 class eight_neighbor_grid(QWidget):
 
-	def __init__(self,num_columns=160,num_rows=120,use_character=False):
+	def __init__(self,num_columns=160,num_rows=120,pyqt_app=None):
 		# constructor, pass the number of cols and rows
 		super(eight_neighbor_grid,self).__init__()		
 		self.num_columns = num_columns # width of the board
 		self.num_rows = num_rows # height of the board
-		self.using_game_character = use_character # leave as false, see init_ui line
+		self.using_game_character = False # leave as false, see init_ui line
 		self.init_ui() # initialize a bunch of class instance variables
+		self.pyqt_app = pyqt_app
 
 	def init_ui(self):
 		# initialize ui elements
@@ -420,6 +424,11 @@ class eight_neighbor_grid(QWidget):
 			row_chars.append('\n')
 			cell_chars.append(row_chars)
 
+		num_highway_coordinates = 0
+		for cell in self.cells:
+			if self.check_for_highway(cell.x,cell.y):
+				num_highway_coordinates+=1
+
 		for cell in self.cells:		
 			x = cell.x 
 			y = cell.y 
@@ -439,6 +448,7 @@ class eight_neighbor_grid(QWidget):
 			for item in row:
 				cell_chars_str += item
 		f.write(cell_chars_str)
+		print("Saved a total of "+str(num_highway_coordinates)+" highway coordinates.")
 
 	def is_finished_highway(self,highway,conservative=True):
 		# checks if both of the endpoints of the highway
@@ -485,7 +495,7 @@ class eight_neighbor_grid(QWidget):
 		# stuff in the broken list and connect any highway endpoints that
 		# are only a distance of 1 away from eachother
 		iterations = 0
-		max_allowed = 10000
+		max_allowed = 1000000
 		while True:
 			iterations+=1
 			if iterations>max_allowed:
@@ -503,35 +513,34 @@ class eight_neighbor_grid(QWidget):
 			segment_end = segment[len(segment)-1] # coordinates of end
 
 			new_broken = []
-			for other_item in broken:
-				if broken.index(other_item)!=0:
-					other_segment_start = other_item[0]
-					other_segment_end = other_item[len(other_item)-1]
+			for other_item in broken[1:]:
+				other_segment_start = other_item[0] # get coordinate of start of other segment
+				other_segment_end = other_item[len(other_item)-1] # get coordinate of end of other segment
 
-					segment_start = segment[0]
-					segment_end = segment[len(segment)-1]
+				segment_start = segment[0] # get coordinate of start of current segment
+				segment_end = segment[len(segment)-1] # get coordinate of end of current segment
 
-					if self.get_manhattan_distance(segment_start,other_segment_start)<=1:
-						# reverse the current segment and attach the other_item segment to end
-						segment.reverse()
-						segment.extend(other_item)
-					elif self.get_manhattan_distance(segment_start,other_segment_end)<=1:
-						# add the current segment onto the end of the other_item segment
-						# and set the current item to be equal to other_item segment
-						segment.reverse()
-						other_segment.reverse()
-						segment.extend(other_segment)
-						
-					elif self.get_manhattan_distance(segment_end,other_segment_start)<=1:
-						# add the other_item segment onto the end of the current segment
-						segment.extend(other_item)
-					elif self.get_manhattan_distance(segment_end,other_segment_end)<=1:
-						# reverse the other_item segment and add it onto the end of this segment
-						other_item.reverse()
-						segment.extend(other_item)
-					else:
-						# not able to attach other_item to current highway segment	
-						new_broken.append(other_item)
+				if self.get_manhattan_distance(segment_start,other_segment_start)<=1:
+					# reverse the current segment and attach the other_item segment to end
+					segment.reverse()
+					segment.extend(other_item)
+				elif self.get_manhattan_distance(segment_start,other_segment_end)<=1:
+					# add the current segment onto the end of the other_item segment
+					# and set the current item to be equal to other_item segment
+					segment.reverse()
+					other_item.reverse()
+					segment.extend(other_item)
+					
+				elif self.get_manhattan_distance(segment_end,other_segment_start)<=1:
+					# add the other_item segment onto the end of the current segment
+					segment.extend(other_item)
+				elif self.get_manhattan_distance(segment_end,other_segment_end)<=1:
+					# reverse the other_item segment and add it onto the end of this segment
+					other_item.reverse()
+					segment.extend(other_item)
+				else:
+					# not able to attach other_item to current highway segment	
+					new_broken.append(other_item)
 			# add the current segment (now hopfully larger than before this iteration of
 			# the while lop) onto the end of the new_broken list so it wont be used
 			# as the current segment until all other segments have been used
@@ -541,10 +550,125 @@ class eight_neighbor_grid(QWidget):
 			# if we have reconstructed all highways
 			if len(broken)==4: 
 				self.highways = broken
+				index = 0
 				for h in self.highways:
-					if self.is_finished_highway(h,False)==False:
-						print("WARNING: A Highway found in this file may be corrupted.")
+					if self.is_finished_highway(h,conservative=False)==False:
+						print("WARNING: A Highway found in this file may be corrupted, attempting repair.")
+						self.repair_highway(index)
+					index+=1
 				return
+
+	def get_closest_edge_and_distance(self,coordinates):
+		dist_to_top = coordinates[1]
+		dist_to_bottom = self.num_rows-coordinates[1]
+		dist_to_left = coordinates[0]
+		dist_to_right = self.num_columns-coordinates[0]
+
+		#print("Distance to... top:"+str(dist_to_top)+", bottom:"+str(dist_to_bottom)+", left:"+str(dist_to_left)+", right:"+str(dist_to_right))
+		if dist_to_top<dist_to_bottom and dist_to_top<dist_to_right and dist_to_top<dist_to_left:
+			return ["top",dist_to_top]
+
+		if dist_to_bottom<dist_to_top and dist_to_bottom<dist_to_right and dist_to_bottom<dist_to_left:
+			return ["bottom",dist_to_bottom]
+
+		if dist_to_left<dist_to_bottom and dist_to_left<dist_to_right and dist_to_left<dist_to_top:
+			return ["left",dist_to_left]
+
+		if dist_to_right<dist_to_bottom and dist_to_right<dist_to_top and dist_to_right<dist_to_left:
+			return ["right",dist_to_right]
+
+		return ["None",-1]
+
+	def repair_highway(self,index):
+		broken_highway = self.highways[index]
+
+		start_cell = broken_highway[0]
+		end_cell = broken_highway[len(broken_highway)-1]
+		if self.check_for_boundary(start_cell[0],start_cell[1],conservative=False)==False:
+			# extending the start of the highway to the wall
+			edge,distance = self.get_closest_edge_and_distance(start_cell)
+			if distance>5:
+				print("ERROR: Highway reperation was not possible.")
+				return
+			#print("Start cell ("+str(start_cell[0])+","+str(start_cell[1])+") detached from "+edge+" by ",str(distance))
+			if edge == "None":
+				print("WARNING: Could not repair highway.")
+				return
+			if edge == "top":
+				const = start_cell[0]
+				y_start = start_cell[1]
+				new_cells = []
+				for i in range(distance):
+					new_cells.append([const,i])
+				new_cells.extend(self.highways[index])
+				self.highways[index] = new_cells
+
+			if edge == "bottom":
+				const = start_cell[0]
+				y_start = start_cell[1]
+				new_cells = []
+				for i in range(distance):
+					new_cells.append([const,y_start+i])
+				new_cells.extend(self.highways[index])
+				self.highways[index] = new_cells
+
+			if edge == "left":
+				const = start_cell[1]
+				new_cells = []
+				for i in range(distance):
+					new_cells.append([i,const])
+				new_cells.extend(self.highways[index])
+				self.highways[index] = new_cells
+
+			if edge == "right":
+				const = start_cell[1]
+				x_start = start_cell[0]
+				new_cells = []
+				for i in range(distance):
+					new_cells.append([x_start+i,const])
+				new_cells.extend(self.highways[index])
+				self.highways[index] = new_cells
+
+		if self.check_for_boundary(end_cell[0],end_cell[1],conservative=False)==False:
+			# extending the end of the highway to the wall
+			edge,distance = self.get_closest_edge_and_distance(end_cell)
+			if distance>5:
+				print("ERROR: Highway reperation was not possible.")
+				return
+			#print("End cell ("+str(end_cell[0])+","+str(end_cell[1])+") detached from "+edge+" by ",distance)
+			if edge == "None":
+				print("WARNING: Could not repair highway.")
+				return
+
+			if edge == "top":
+				const = end_cell[0]
+				y_start = end_cell[1]
+				new_cells = []
+				for i in range(distance):
+					self.highways[index].append([const,i])
+
+			if edge == "bottom":
+				const = end_cell[0]
+				y_start = end_cell[1]
+				new_cells = []
+				for i in range(distance):
+					self.highways[index].append([const,y_start+i])
+
+			if edge == "left":
+				const = end_cell[1]
+				new_cells = []
+				for i in range(distance):
+					self.highways[index].append([i,const])
+
+			if edge == "right":
+				const = end_cell[1]
+				x_start = end_cell[0]
+				new_cells = []
+				for i in range(distance):
+					self.highways[index].append([x_start+i,const])
+
+		print("WARNING: Highway was repaired.")
+		return
 
 	def load(self,filename):
 		# loads in a new set of cells from a file, see the assignment pdf for
@@ -599,6 +723,10 @@ class eight_neighbor_grid(QWidget):
 						cell_state = "partial"
 						coord = (x,y)
 						highways.append(coord)
+					else:
+						print("WARNING: Came across invalid cell at location ("+str(x)+","+str(y)+") while loading file.")
+						cell_state = "free"
+
 					new_cell = cell(x,y)
 					new_cell.state = cell_state
 					new_cells.append(new_cell)
@@ -751,6 +879,13 @@ class eight_neighbor_grid(QWidget):
 						qp.setPen(pen)
 						cur_shade = [cur_shade[0]+r_delta,cur_shade[1]+g_delta,cur_shade[2]+b_delta]
 						
+						if cur_shade[0]<0: cur_shade[0] = 0
+						if cur_shade[0]>255: cur_shade[0] = 255
+						if cur_shade[1]<0: cur_shade[1] = 0
+						if cur_shade[1]>255: cur_shade[1] = 255
+						if cur_shade[2]<0: cur_shade[2] = 0
+						if cur_shade[2]>255: cur_shade[2] = 255
+
 						if last_location == None:
 							last_location = location
 							continue
@@ -903,6 +1038,29 @@ class eight_neighbor_grid(QWidget):
 		else:
 			print("Unknown attribute: "+attrib)
 
+	def get_update(self,new_attribs):
+		# slot called from the ucs_agent thread, updates the ui
+		global updating_ui
+		global ui_update_time
+		#print("\nGot signal")
+		if updating_ui:
+			#print("Already updating")
+			if new_attribs.done==False: return 
+		start_time = time.time()
+		updating_ui = True
+		self.solution_path = new_attribs.solution_path 
+		self.shortest_path = new_attribs.shortest_path
+		self.path_traces = new_attribs.path_traces 
+		self.repaint()
+		self.pyqt_app.processEvents()
+		QApplication.processEvents()
+		if new_attribs.done:
+			self.verbose = True 
+		ui_update_time = time.time()-start_time
+		updating_ui = False
+
+	def connect_to_ucs_agent(self,agent_handle):
+		QtCore.QObject.connect(agent_handle,QtCore.SIGNAL("send_update_to_ui(PyQt_PyObject)"),self.get_update)
 
 class PriorityQueue:
 	def __init__(self):
@@ -1037,136 +1195,135 @@ def rectify_path(path_end):
 		path.append([cur.x,cur.y])
 	return path
 
-
-class PriorityQueue:
+class message:
 	def __init__(self):
-		self._queue = []
-		self._index = 0
+		self.solution_path = []
+		self.shortest_path = []
+		self.path_traces = []
+		self.done = False
 
-	def push(self, item, cost, parent):
-		# Push element onto queue
-		item.cost = cost # save the cost to the cell struct
-		item.parent = parent
-		heapq.heappush(self._queue, (cost, self._index, item))
-		self._index += 1
+class uniform_cost_search(QThread):
+	def __init__(self):
+		QThread.__init__(self)
+		self.ready_to_start = False # if we have the data needed to start
+		self.stop_executing = False # if true then will stop the algorithm
+		self.app = None 
 
-	def pop(self):
-		# Return the item with the lowest cost
-		return heapq.heappop(self._queue)[-1]
+	def load_grid_data(self,cells,start_cell,end_cell,highways):
+		self.cells = cells 
+		self.start_cell = start_cell 
+		self.end_cell = end_cell 
+		self.highways = highways
+		self.ready_to_start = True
 
-	def length(self):
-		# Return the length of the queue
-		return len(self._queue)
+	def run(self):
+		# Called when the thread is started
+		self.uniform_cost()
 
-	def has_cell(self,cell):
-		# Returns True if the cell is in the queue, False if not
-		for item in self._queue:
-			queued_cell = item[2]
-			if cell.x==queued_cell.x and cell.y==queued_cell.y:
-				return True 
-		return False
+	def uniform_cost(self):
+		# threaded implementation of the uniform cost search
+		self.stop_executing = False # Ctrl+C calls clear which will set this to true
 
-	def replace_cell(self,cell,new_cost,parent):
-		i = 0
-		for item in self._queue:
-			queued_cell = item[2]
-			if queued_cell.x==cell.x and queued_cell.y==cell.y:
-				del self._queue[i]
+		# indicate the refresh rates here
+		refresh_rate = 0.1 # at least every this many seconds refresh
+		cost_refresh_rate = 1 # refresh if the algo has increased the current fringe cost by this much
+		explored_refresh_rate = 100 # refresh if the algo has increased the explorted count by this much
+
+		self.overall_start = time.time()
+
+		self.path_cost = 0 # overall path cost
+		self.tried_paths = [] # to hold all paths shown to user
+
+		self.frontier = PriorityQueue()
+		self.frontier.push(self.start_cell,0,parent=None)
+		self.path_end = self.start_cell
+		self.path_length = 1
+
+		self.explored = [] # empty set
+
+		msg_to_main = message()
+
+		while True:
+			done = self.uniform_cost_step(refresh_rate,cost_refresh_rate,explored_refresh_rate)
+			msg_to_main.solution_path = self.explored
+			msg_to_main.shortest_path = rectify_path(self.path_end)
+			self.tried_paths.append(msg_to_main.shortest_path)
+			msg_to_main.path_traces = self.tried_paths 
+			msg_to_main.done = done 
+
+			if updating_ui:
+				for _ in range(4):
+					if updating_ui:
+						time.sleep(ui_update_time*0.2)
+					else:
+						break
+
+			if done==True or updating_ui==False:
+				# if this is the last update or the ui is ready for another
+				self.emit(SIGNAL("send_update_to_ui(PyQt_PyObject)"),msg_to_main)
+			#self.app.processEvents()
+			#QApplication.processEvents()
+			if done:
 				break
-			i+=1
-		self.push(queued_cell,new_cost,parent)
 
-	def get_cell_cost(self,cell):
-		for item in self._queue:
-			if cell.x==item[2].x and cell.y==item[2].y:
-				return item[2].cost
+	def uniform_cost_step(self,refresh_rate,cost_refresh_rate,explored_refresh_rate):
+		# helper function for uniform_cost search, performs only refresh_rate seconds then returns
+		start_time = time.time() # to log the amount of time taken
+		last_path_cost = self.path_cost 
+		initial_explored = len(self.explored)
 
-def get_neighbors(current,cells):
-	# Returns a list of all 8 neighbor cells to "current"
-	x = current.x 
-	y = current.y 
-	neighbors = []
-	for cell in cells:
-		if cell.x in [x,x-1,x+1] and cell.y in [y,y-1,y+1]:
-			neighbors.append(cell)
-	return neighbors
+		while True:
 
-def cell_in_list(current,cells):
-	# Returns True if "current" is in the list, False if not
-	for cell in cells:
-		if current.x==cell.x and current.y==cell.y:
-			return True 
-	return False
-
-def cell_in_highway(current,highways):
-	for h in highways:
-		for item in h:
-			if item[0]==current.x and item[1]==current.y:
+			if self.stop_executing:
 				return True 
-	return False
 
-def get_transition_cost(current_cell,new_cell,highways):
-	# Calculates the cost of transitioning from current_cell to new_cell
-	# recall: state can be one of: "free", "partial", "full"
+			print("explored: "+str(len(self.explored))+", frontier: "+str(self.frontier.length())+", time: "+str(time.time()-self.overall_start)[:4]+", cost: "+str(self.path_cost)[:5],end="\r")
 
-	current_state = current_cell.state 
-	new_state = new_cell.state 
+			if self.frontier.length() == 0:
+				print("Uniform cost search failed to find a solution path.")
+				return True
 
-	if current_cell.x==new_cell.x or current_cell.y==new_cell.y:
-		orientation = "horizontal_or_vertical"
-	else:
-		orientation = "diagonal"
+			cur_node = self.frontier.pop()
+			self.path_cost = cur_node.cost # get the path cost so far
 
-	# move from free cell to free cell
-	if current_state=="free" and new_state=="free":
-		if orientation=="diagonal":
-			cost = sqrt(2)
-		else:
-			cost = 1
+			if cur_node.x==self.end_cell[0] and cur_node.y==self.end_cell[1]:
+				# if we have reached the goal node
+				self.path_end = cur_node
+				break
 
-	# move from "hard to traverse" cell to another "hard to traverse" cell
-	elif current_state=="partial" and new_state=="partial":
-		if orientation=="diagonal":
-			cost = sqrt(8)
-		else:
-			cost = 2
+			self.explored.append(cur_node) # add current node to explored list
+			node_neigbors = get_neighbors(cur_node,self.cells)
 
-	# move from free cell to "hard to traverse" cell
-	elif current_state=="free" and new_state=="partial":
-		if orientation=="diagonal":
-			cost = (sqrt(2)+sqrt(8))/2
-		else:
-			cost = 1.5 
+			for neighbor in node_neigbors:
+				transition_cost = get_transition_cost(cur_node,neighbor,self.highways)
 
-	# move from "hard to traverse" cell to free cell
-	elif current_state=="partial" and new_state=="free":
-		if orientation=="diagonal":
-			cost = (sqrt(2)+sqrt(8))/2
-		else:
-			cost = 1.5 
+				# if not explored yet and not in frontier already
+				if cell_in_list(neighbor,self.explored)==False and self.frontier.has_cell(neighbor)==False:
+					# if not a blocked cell
+					if transition_cost!=-1:
+						# add to frontier
+						self.frontier.push(neighbor,self.path_cost+transition_cost,parent=cur_node)
 
-	# trying to traverse to blocked cell
-	elif new_state=="full":
-		cost = -1
+				# if in the frontier already
+				elif self.frontier.has_cell(neighbor)==True: 
+					# if version in frontier has higher cost
+					if self.frontier.get_cell_cost(neighbor)>(self.path_cost+transition_cost):
+						self.frontier.replace_cell(neighbor,self.path_cost+transition_cost,parent=cur_node)		
+			
+			# refresh the display if the algorithm has checked explored_refresh_rate cells
+			if len(self.explored)>(initial_explored+explored_refresh_rate):
+				self.path_end = cur_node
+				return False # refresh the display
 
-	else:
-		print("Could not decode cell transition from "+current_state+" to "+new_state)
-		cost = -1
+			# refresh the display if the algorithm has increased the current cost by cost_refresh_rate 
+			if self.path_cost>(last_path_cost+cost_refresh_rate):
+				self.path_end = cur_node
+				return False # refresh the display
+			
+			# at least refresh every "refresh_rate" seconds
+			if int(time.time()-start_time)>refresh_rate:
+				self.path_end = cur_node
+				return False # refresh the display
 
-	# now need to check if both cells are in a highway
-	if orientation == "horizontal_or_vertical":
-		if cell_in_highway(current_cell,highways)==True and cell_in_highway(new_cell,highways)==True:
-			cost = cost*0.25
-
-	return cost
-
-def rectify_path(path_end):
-	path = []
-	cur = path_end
-	path.append([cur.x,cur.y])
-	while True:
-		cur = cur.parent
-		if cur == None:
-			break
-		path.append([cur.x,cur.y])
-	return path
+		print("\nFinished uniform cost search in "+str(time.time()-self.overall_start)[:5]+" seconds, final cost: "+str(self.path_cost)+"\n")
+		return True
