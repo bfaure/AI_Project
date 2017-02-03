@@ -483,7 +483,7 @@ class main_window(QWidget):
 
 		self.grid.toggle_solution_swarm(show_swarm=self.show_solution_swarm)
 		self.grid.repaint()
-		pyqt_app.processEvent()
+		pyqt_app.processEvents()
 
 	def toggle_gradient(self):
 		# function called by pyqt when user chooses the appropriate menu item
