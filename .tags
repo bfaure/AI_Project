@@ -140,9 +140,10 @@ cell_in_list	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import Pri
 cell_in_highway	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message$/;"	namespace	line:52
 uniform_cost_search	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message$/;"	namespace	line:52
 message	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message$/;"	namespace	line:52
-get_transition_cost	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid$/;"	namespace	line:53
-rectify_path	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid$/;"	namespace	line:53
-eight_neighbor_grid	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid$/;"	namespace	line:53
+get_transition_cost	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index$/;"	namespace	line:53
+rectify_path	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index$/;"	namespace	line:53
+eight_neighbor_grid	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index$/;"	namespace	line:53
+get_cell_index	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index$/;"	namespace	line:53
 lib_folder	/Users/Nikhil/Desktop/AI_Project/main.py	/^	lib_folder = "lib\/"$/;"	variable	line:56
 PriorityQueue	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message$/;"	namespace	line:58
 get_neighbors	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message$/;"	namespace	line:58
@@ -150,9 +151,10 @@ cell_in_list	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import Pri
 cell_in_highway	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message$/;"	namespace	line:58
 uniform_cost_search	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message$/;"	namespace	line:58
 message	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message$/;"	namespace	line:58
-get_transition_cost	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid$/;"	namespace	line:59
-rectify_path	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid$/;"	namespace	line:59
-eight_neighbor_grid	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid$/;"	namespace	line:59
+get_transition_cost	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index$/;"	namespace	line:59
+rectify_path	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index$/;"	namespace	line:59
+eight_neighbor_grid	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index$/;"	namespace	line:59
+get_cell_index	/Users/Nikhil/Desktop/AI_Project/main.py	/^	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index$/;"	namespace	line:59
 pyqt_app	/Users/Nikhil/Desktop/AI_Project/main.py	/^pyqt_app = ""$/;"	variable	line:61
 attrib_value_window	/Users/Nikhil/Desktop/AI_Project/main.py	/^class attrib_value_window(QWidget):$/;"	class	line:63
 __init__	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def __init__(self):$/;"	member	line:65	class:attrib_value_window
@@ -195,21 +197,21 @@ finished_changing_colors	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def finishe
 change_attrib_color	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def change_attrib_color(self):$/;"	member	line:534	class:main_window
 toggle_grid_lines	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def toggle_grid_lines(self):$/;"	member	line:538	class:main_window
 a_star	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def a_star(self):$/;"	member	line:550	class:main_window
-weighted_a	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def weighted_a(self):$/;"	member	line:594	class:main_window
-uniform_cost	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def uniform_cost(self):$/;"	member	line:598	class:main_window
-uniform_cost_step	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def uniform_cost_step(self,refresh_rate,cost_refresh_rate,explored_refresh_rate):$/;"	member	line:652	class:main_window
-create	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def create(self):$/;"	member	line:714	class:main_window
-clear	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def clear(self):$/;"	member	line:723	class:main_window
-save_as	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def save_as(self):$/;"	member	line:731	class:main_window
-load	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def load(self):$/;"	member	line:739	class:main_window
-quit	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def quit(self):$/;"	member	line:751	class:main_window
-on_context_menu_request	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def on_context_menu_request(self,point):$/;"	member	line:755	class:main_window
-set_start	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def set_start(self):$/;"	member	line:761	class:main_window
-set_end	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def set_end(self):$/;"	member	line:765	class:main_window
-set_free	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def set_free(self):$/;"	member	line:773	class:main_window
-set_partial	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def set_partial(self):$/;"	member	line:777	class:main_window
-set_full	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def set_full(self):$/;"	member	line:781	class:main_window
-resizeEvent	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def resizeEvent(self,e):$/;"	member	line:785	class:main_window
-mousePressEvent	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def mousePressEvent(self,e):$/;"	member	line:791	class:main_window
-closeEvent	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def closeEvent(self,e):$/;"	member	line:797	class:main_window
-main	/Users/Nikhil/Desktop/AI_Project/main.py	/^def main():$/;"	function	line:800
+weighted_a	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def weighted_a(self):$/;"	member	line:602	class:main_window
+uniform_cost	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def uniform_cost(self):$/;"	member	line:606	class:main_window
+uniform_cost_step	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def uniform_cost_step(self,refresh_rate,cost_refresh_rate,explored_refresh_rate):$/;"	member	line:660	class:main_window
+create	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def create(self):$/;"	member	line:722	class:main_window
+clear	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def clear(self):$/;"	member	line:731	class:main_window
+save_as	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def save_as(self):$/;"	member	line:739	class:main_window
+load	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def load(self):$/;"	member	line:747	class:main_window
+quit	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def quit(self):$/;"	member	line:759	class:main_window
+on_context_menu_request	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def on_context_menu_request(self,point):$/;"	member	line:763	class:main_window
+set_start	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def set_start(self):$/;"	member	line:769	class:main_window
+set_end	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def set_end(self):$/;"	member	line:773	class:main_window
+set_free	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def set_free(self):$/;"	member	line:781	class:main_window
+set_partial	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def set_partial(self):$/;"	member	line:785	class:main_window
+set_full	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def set_full(self):$/;"	member	line:789	class:main_window
+resizeEvent	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def resizeEvent(self,e):$/;"	member	line:793	class:main_window
+mousePressEvent	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def mousePressEvent(self,e):$/;"	member	line:799	class:main_window
+closeEvent	/Users/Nikhil/Desktop/AI_Project/main.py	/^	def closeEvent(self,e):$/;"	member	line:805	class:main_window
+main	/Users/Nikhil/Desktop/AI_Project/main.py	/^def main():$/;"	function	line:808

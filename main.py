@@ -50,13 +50,13 @@ if using_cython:
 		os.system("python setup.py build_ext --inplace")
 
 	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message
-	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid
+	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index
 else:
 	print("Could not find Cython installation, using Python version of helpers.py")
 	lib_folder = "lib/"
 	sys.path.insert(0, lib_folder)
 	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message
-	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid
+	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index
 
 pyqt_app = ""
 
@@ -564,18 +564,20 @@ class main_window(QWidget):
 		self.frontier = PriorityQueue()
 		self.explored = [] # empty set
 
-		cost_root = get_euclidean_distance(self.start_cell, self.end_cell);
+		cost_root = self.grid.get_euclidean_distance(self.grid.start_cell, self.grid.end_cell);
 		self.frontier.push(self.start_cell,cost_root,parent=None)
 
 		rootIndex = get_cell_index(self.start_cell, self.cells)
 		cost_list[rootIndex] = 0
 
-		while not frontier.empty():
+		while (self.frontier.length() != 0):
 			cur_node = self.frontier.pop()
+			print("\n")
 			self.explored.append(cur_node)
 
 			#If we're at the goal
 			if cur_node.x == self.end_cell[0] and cur_node.y == self.end_cell[1]:
+				self.path_end = cur_node
 				break
 
 			#get all the neighbors of the current node
@@ -588,8 +590,14 @@ class main_window(QWidget):
 				neighborIndex = get_cell_index(neighbor, self.cells)
 				if (neighborIndex not in cost_list or updated_cost < cost_list[neighborIndex]) and neighbor.state != "full":
 					cost_list[neighborIndex] = updated_cost
-					priority = updated_cost + euclidean_heuristic(neighbor, self.end_cell)
+					priority = updated_cost + self.grid.euclidean_heuristic(neighbor, self.grid.end_cell)
 					self.frontier.push(neighbor, priority, parent=cur_node)
+
+		self.grid.solution_path = self.explored
+		self.grid.shortest_path = rectify_path(self.path_end)
+		self.grid.update() # render grid with new solution path
+		pyqt_app.processEvents()
+
 
 	def weighted_a(self):
 		# put weighted a implementation here

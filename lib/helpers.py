@@ -1168,7 +1168,7 @@ def get_cell_index(current, cells):
 	#used to keep track of the costs of getting to each cell in the grid
 	for i in range(len(cells)):
 		matching_cell = cells[i]
-		if matching_cell.x==current.x and matching_cell.y==curent.y:
+		if matching_cell.x==current.x and matching_cell.y==current.y:
 			return i
 	return -1
 
