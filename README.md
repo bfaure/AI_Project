@@ -2,6 +2,7 @@
 ## Search Efficiency Comparison
 #### A\* Search Algorithm
 ![Alt text](https://github.com/bfaure/AI_Project/blob/master/screenshots/windows_astar.PNG)
+#### Uniform Cost Search Algorithm
 ![Alt text](https://github.com/bfaure/AI_Project/blob/master/screenshots/windows_ucs.PNG)
 ## Controls
 #### File Menu
