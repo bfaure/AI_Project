@@ -23,6 +23,13 @@
 `Ctrl+M`: Open color settings menu <br>
 `Ctrl+V`: Open value settings menu<br><br>
 
+## Customizability
+#### Color Settings
+![Alt text](https://github.com/bfaure/AI_Project/blob/master/screenshots/color_selection_window_alt.PNG)
+![Alt text](https://github.com/bfaure/AI_Project/blob/master/screenshots/color_selection_window.PNG)
+#### Line Type Settings
+![Alt text](https://github.com/bfaure/AI_Project/blob/master/screenshots/value_selection_window.PNG)
+
 ## Instructions
 Run `python main.py` (normal execution of Python 2.7) to open the UI. If you have Cython installed the lib/helpers.py file will automatically be copied to helpers.pyx and Cython will build this up to helpers.c. If Cython is not installed, the original helpers.py file will be used. Multi-threaded UCS can be enabled by setting `USE_UCS_MULTITHREADED` to True in main.py.
 
