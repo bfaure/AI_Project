@@ -66,7 +66,7 @@ class attrib_value_window(QWidget):
 		# constructor
 		super(attrib_value_window,self).__init__()
 		self.init_vars()
-		self.init_ui()	
+		self.init_ui()
 
 	def init_vars(self):
 		# initialize to default settings
@@ -108,7 +108,7 @@ class attrib_value_window(QWidget):
 		self.value_input.setMaximum(10.0)
 		self.value_input.setMinimum(0.1)
 		self.value_input.valueChanged.connect(self.value_changed)
-		
+
 		first_row.addSpacing(10)
 		first_row.addWidget(self.value_input)
 		first_row.addSpacing(37)
@@ -176,7 +176,7 @@ class attrib_color_window(QWidget):
 		# constructor
 		super(attrib_color_window,self).__init__()
 		self.init_vars()
-		self.init_ui()	
+		self.init_ui()
 
 	def init_vars(self):
 		# initialize to default settings
@@ -223,7 +223,7 @@ class attrib_color_window(QWidget):
 		self.green = QLineEdit("",self)
 		self.green.textChanged.connect(self.value_changed)
 		validator = QIntValidator(0,255)
-		self.green.setValidator(validator)		
+		self.green.setValidator(validator)
 		self.green.setFixedWidth(30)
 		self.green_label = QLabel("   G",self)
 		green_layout = QVBoxLayout()
@@ -238,7 +238,7 @@ class attrib_color_window(QWidget):
 		blue_layout = QVBoxLayout()
 		blue_layout.addWidget(self.blue_label)
 		blue_layout.addWidget(self.blue)
-		
+
 		first_row.addSpacing(10)
 		first_row.addLayout(red_layout)
 		first_row.addLayout(green_layout)
@@ -266,7 +266,7 @@ class attrib_color_window(QWidget):
 			self.sample_square_size = 27
 
 	def mousePressEvent(self,e):
-		# catch when the user clicks and see if its in the sample area, if so, 
+		# catch when the user clicks and see if its in the sample area, if so,
 		# open up the default PyQt color picker
 		x = e.x() # get x coordinate of click
 		y = e.y() # get y coordinate of click
@@ -278,14 +278,14 @@ class attrib_color_window(QWidget):
 				if color.isValid(): # if a value was returned
 					color = color.getRgb() # conver to rgb
 					color = list(color) # convert 3 length tuple to list
-					self.set_color_boxes(color) # set the color 
+					self.set_color_boxes(color) # set the color
 					self.value_changed() # record the change
 
 	def draw_sample_event(self,qp,color):
 		# function called when the sample color window needs to be redrawn, colors
 		# in the square with the current color
 		qp.setPen(QColor(0,0,0))
-		qp.setBrush(QColor(color[0],color[1],color[2])) 
+		qp.setBrush(QColor(color[0],color[1],color[2]))
 		qp.drawRect( # draw the square
 			self.sample_square_top_left[0],
 			self.sample_square_top_left[1],
@@ -334,10 +334,10 @@ class attrib_color_window(QWidget):
 
 	def value_changed(self):
 		# called by pyqt when one of the rgb boxes is changed
-		if self.backend==False: 
+		if self.backend==False:
 			color = self.get_current_color()
 			if color!=[-1,-1,-1]:
-				self.colors[self.selection_box.currentIndex()] = color 
+				self.colors[self.selection_box.currentIndex()] = color
 		self.repaint()
 
 	def open_window(self):
@@ -366,7 +366,7 @@ class main_window(QWidget):
 		self.show_solution_swarm = True # true by default
 		self.use_gradient = False # False by default
 		self.show_trace = True # true by default
-		self.updating_already = False 
+		self.updating_already = False
 
 		self.child_windows = [] # to hold any extra windows opened by user
 		self.color_preferences_window = attrib_color_window()
@@ -384,7 +384,7 @@ class main_window(QWidget):
 		if os.name == "nt":
 			self.layout.addSpacing(25)
 
-		self.grid = eight_neighbor_grid(160,120,pyqt_app) 
+		self.grid = eight_neighbor_grid(160,120,pyqt_app)
 		self.grid.setContextMenuPolicy(Qt.CustomContextMenu)
 		self.grid.customContextMenuRequested.connect(self.on_context_menu_request)
 		self.layout.addWidget(self.grid)
@@ -454,13 +454,13 @@ class main_window(QWidget):
 	def finished_changing_values(self):
 		# called by the value preferences window when the user is done
 		self.value_preferences_window.hide_window()
-		new_value_prefs = self.value_preferences_window.values 
+		new_value_prefs = self.value_preferences_window.values
 		new_value_attribs = self.value_preferences_window.attribs
 		for attrib,value in list(zip(new_value_attribs,new_value_prefs)):
 			self.grid.set_attrib_value(attrib,value)
 
 		new_line_types = self.value_preferences_window.current_line_types
-		line_names = self.value_preferences_window.lines 
+		line_names = self.value_preferences_window.lines
 		for attrib,value in list(zip(line_names,new_line_types)):
 			self.grid.set_line_type(attrib,value)
 
@@ -519,8 +519,8 @@ class main_window(QWidget):
 	def finished_changing_colors(self):
 		# called by the color preferences window when the user is done
 		self.color_preferences_window.hide_window()
-		new_color_prefs = self.color_preferences_window.colors 
-		new_color_attribs = self.color_preferences_window.attribs 
+		new_color_prefs = self.color_preferences_window.colors
+		new_color_attribs = self.color_preferences_window.attribs
 		for attrib,color in list(zip(new_color_attribs,new_color_prefs)):
 			if attrib == "fully blocked":
 				attrib = "full"
@@ -549,7 +549,47 @@ class main_window(QWidget):
 
 	def a_star(self):
 		# put a* implementation here
-		pass
+		self.cells = self.grid.cells #current state of grid cells
+		self.start_cell = self.grid.start_cell #current start cell
+
+		for item in self.cells:
+			if item.x==self.start_cell[0] and item.y==self.start_cell[1]:
+				self.start_cell = item
+				break
+
+		self.end_cell = self.grid.end_cell # current end cell
+		self.highways = self.grid.highways # current highways on grid
+		cost_list = {}; #initialize set that contains the cost to visit coordinates
+
+		self.frontier = PriorityQueue()
+		self.explored = [] # empty set
+
+		cost_root = get_euclidean_distance(self.start_cell, self.end_cell);
+		self.frontier.push(self.start_cell,cost_root,parent=None)
+
+		rootIndex = get_cell_index(self.start_cell, self.cells)
+		cost_list[rootIndex] = 0
+
+		while not frontier.empty():
+			cur_node = self.frontier.pop()
+			self.explored.append(cur_node)
+
+			#If we're at the goal
+			if cur_node.x == self.end_cell[0] and cur_node.y == self.end_cell[1]:
+				break
+
+			#get all the neighbors of the current node
+			neighbor_list = get_neighbors(cur_node,self.cells)
+
+			current_node_index = get_cell_index(cur_node, self.cells)
+			for neighbor in neighbor_list:
+				transition_cost = get_transition_cost(cur_node,neighbor,self.highways)
+				updated_cost = cost_list[current_node_index] + transition_cost
+				neighborIndex = get_cell_index(neighbor, self.cells)
+				if (neighborIndex not in cost_list or updated_cost < cost_list[neighborIndex]) and neighbor.state != "full":
+					cost_list[neighborIndex] = updated_cost
+					priority = updated_cost + euclidean_heuristic(neighbor, self.end_cell)
+					self.frontier.push(neighbor, priority, parent=cur_node)
 
 	def weighted_a(self):
 		# put weighted a implementation here
@@ -568,11 +608,11 @@ class main_window(QWidget):
 		self.overall_start = time.time()
 
 		self.cells = self.grid.cells # current state of cells in grid
-		self.start_cell = self.grid.start_cell  # current start cell 
+		self.start_cell = self.grid.start_cell  # current start cell
 
 		for item in self.cells:
 			if item.x==self.start_cell[0] and item.y==self.start_cell[1]:
-				self.start_cell = item 
+				self.start_cell = item
 				break
 
 		self.end_cell = self.grid.end_cell # current end cell
@@ -606,19 +646,19 @@ class main_window(QWidget):
 			pyqt_app.processEvents()
 			if done:
 				break
-				
+
 		self.grid.verbose = True
 
 	def uniform_cost_step(self,refresh_rate,cost_refresh_rate,explored_refresh_rate):
 		# helper function for uniform_cost search, performs only refresh_rate seconds then returns
 		start_time = time.time() # to log the amount of time taken
-		last_path_cost = self.path_cost 
+		last_path_cost = self.path_cost
 		initial_explored = len(self.explored)
 
 		while True:
 
 			if self.stop_executing:
-				return True 
+				return True
 
 			print("explored: "+str(len(self.explored))+", frontier: "+str(self.frontier.length())+", time: "+str(time.time()-self.overall_start)[:4]+", cost: "+str(self.path_cost)[:5],end="\r")
 
@@ -648,21 +688,21 @@ class main_window(QWidget):
 						self.frontier.push(neighbor,self.path_cost+transition_cost,parent=cur_node)
 
 				# if in the frontier already
-				elif self.frontier.has_cell(neighbor)==True: 
+				elif self.frontier.has_cell(neighbor)==True:
 					# if version in frontier has higher cost
 					if self.frontier.get_cell_cost(neighbor)>(self.path_cost+transition_cost):
-						self.frontier.replace_cell(neighbor,self.path_cost+transition_cost,parent=cur_node)		
+						self.frontier.replace_cell(neighbor,self.path_cost+transition_cost,parent=cur_node)
 
 			# refresh the display if the algorithm has checked explored_refresh_rate cells
 			if len(self.explored)>(initial_explored+explored_refresh_rate):
 				self.path_end = cur_node
 				return False # refresh the display
 
-			# refresh the display if the algorithm has increased the current cost by cost_refresh_rate 
+			# refresh the display if the algorithm has increased the current cost by cost_refresh_rate
 			if self.path_cost>(last_path_cost+cost_refresh_rate):
 				self.path_end = cur_node
 				return False # refresh the display
-			
+
 			# at least refresh every "refresh_rate" seconds
 			if int(time.time()-start_time)>refresh_rate:
 				self.path_end = cur_node
@@ -758,11 +798,11 @@ class main_window(QWidget):
 		sys.exit()
 
 def main():
-	global pyqt_app 
+	global pyqt_app
 
 	pyqt_app = QtGui.QApplication(sys.argv)
 	_ = main_window()
-	sys.exit(pyqt_app.exec_())	
+	sys.exit(pyqt_app.exec_())
 
 
 if __name__ == '__main__':

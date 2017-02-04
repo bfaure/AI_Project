@@ -34,7 +34,7 @@ class eight_neighbor_grid(QWidget):
 
 	def __init__(self,num_columns=160,num_rows=120,pyqt_app=None):
 		# constructor, pass the number of cols and rows
-		super(eight_neighbor_grid,self).__init__()		
+		super(eight_neighbor_grid,self).__init__()
 		self.num_columns = num_columns # width of the board
 		self.num_rows = num_rows # height of the board
 		self.pyqt_app = pyqt_app # allows this class to call parent functions
@@ -53,10 +53,10 @@ class eight_neighbor_grid(QWidget):
 		self.highway_color = [0,0,255] # blue for highway lines
 		self.solution_color = [0,255,0] # green for solution path
 		self.solution_swarm_color = [0,255,255] # green for path that has been tested so far
-		self.start_gradient = [255,0,0] # if gradient is used, the starting color 
+		self.start_gradient = [255,0,0] # if gradient is used, the starting color
 		self.end_gradient = [0,255,50] # if gradient is used, the ending color
 		self.trace_color = [128,128,128] # if trace is on, the color of the prior solution paths
-		
+
 		self.solution_swarm_render_density = 1.0 # width of the solution swarm lines (from ~0.1 to ~2.0 probably)
 		self.highway_render_width = 2.0 # width of the highways shown in window (2.0 is default)
 		self.solution_render_width = 5.0 # width of the solution path (5.0 is good default)
@@ -77,7 +77,7 @@ class eight_neighbor_grid(QWidget):
 	def init_cells(self,leave_empty=False):
 		# creates the list of cells in the grid (all default to free), if leave_empty
 		# is False then we will fill in the grid following the instructions in the
-		# assignment pdf 
+		# assignment pdf
 		self.cells = []
 		self.verbose = True # if true then the time to paint the grid will be printed to terminal
 		for y in range(self.num_rows):
@@ -91,8 +91,8 @@ class eight_neighbor_grid(QWidget):
 		self.highways = [] # empty by default
 		self.solution_path = [] # the path eventually filled by one of the search algos
 		self.shortest_path = []
-		self.path_traces = [] # list of all paths tried (shown to user)			
-		if leave_empty: return 
+		self.path_traces = [] # list of all paths tried (shown to user)
+		if leave_empty: return
 
 		print("\nGenerating a random grid...")
 		start_time = time.time()
@@ -145,27 +145,27 @@ class eight_neighbor_grid(QWidget):
 	def get_highway(self,head,edge,total_attempts):
 		# helper function for the init_highways function, returns True if it can
 		# create a highway starting at head that does not intersect with any others
-		# that have already been placed on the map. Either max_attempts tries are 
+		# that have already been placed on the map. Either max_attempts tries are
 		# used or less, if a highway can be placed the function will break out.
 
-		highway_path = [] 
+		highway_path = []
 		highway_path.append(head)
 
 		start_x = head[0] # starting x coordinate
 		start_y = head[1] # starting y coordinate
 
-		num_attempts = 0 
+		num_attempts = 0
 		max_attempts = 10 # number of attempts to try before choosing a new head
 
-		while num_attempts<max_attempts:			
-			
-			# figure out which direction we are starting with 
+		while num_attempts<max_attempts:
+
+			# figure out which direction we are starting with
 			# based on the edge we are starting from...
 			if edge == "top": direction = "down"
 			if edge == "right": direction = "left"
 			if edge == "bottom": direction = "up"
 			if edge == "left": direction = "right"
-			
+
 			x = start_x
 			y = start_y
 			highway_path = [] # list of tuples representing the path of the highway
@@ -187,26 +187,26 @@ class eight_neighbor_grid(QWidget):
 					if direction == "up":
 						cur_y = cur_y-1
 					if direction == "right":
-						cur_x = cur_x+1 
+						cur_x = cur_x+1
 
-					# check if we hit a boundary, if so and the length of the 
+					# check if we hit a boundary, if so and the length of the
 					# highway is over 100 then we can add it to self.highways and return
 					if self.check_for_boundary(cur_x,cur_y)==True:
 						new_coord = (x,y)
 						highway_path.append(new_coord)
-						if len(highway_path) >= 100: 
+						if len(highway_path) >= 100:
 							self.highways.append(highway_path) # append the finished highway and return
 							return num_attempts
 						else:
-							loop = False # break from the 
+							loop = False # break from the
 							break
 
 					# check if we hit another highway, if not, add it to the current
 					# highway, if so, break out (clearing the current highway) and start
 					# over from the same head location.
 					if self.check_for_highway(cur_x,cur_y,highway_path)==False:
-						x = cur_x 
-						y = cur_y 
+						x = cur_x
+						y = cur_y
 						new_coord = (x,y)
 						highway_path.append(new_coord)
 					else:
@@ -218,7 +218,7 @@ class eight_neighbor_grid(QWidget):
 					if next_direction <= 6: # 60% chance same direction
 						# keep going same direction
 						direction = direction
-					elif next_direction in [7,8]: # 20% chance perpendicular direction 
+					elif next_direction in [7,8]: # 20% chance perpendicular direction
 						# go perpendicular direction...
 						if direction in ["up","down"]:
 							direction = "left"
@@ -241,7 +241,7 @@ class eight_neighbor_grid(QWidget):
 		print("Placing highways...")
 		# see Sakai Asisgnment PDF for more explanation.
 		self.highways = []
-		# select 4 random highway start locations 
+		# select 4 random highway start locations
 		num_highways = 4
 		total_attempts = 0
 		while len(self.highways)<num_highways:
@@ -268,7 +268,7 @@ class eight_neighbor_grid(QWidget):
 				return
 			total_attempts+=self.get_highway(coord,edge,total_attempts) # try to place highway from that head
 		print("\n",end='\r') # save the last entry output from the get_highway() function
-			
+
 	def init_blocked_cells(self):
 		# choose 20% of the remaining cells to mark as fully blocked, Sakai PDF
 		print("Creating fully blocked cells...")
@@ -278,7 +278,7 @@ class eight_neighbor_grid(QWidget):
 			x_coord = random.randint(0,self.num_columns-1)
 			y_coord = random.randint(0,self.num_rows-1)
 			if self.check_for_highway(x_coord,y_coord)==False:
-				
+
 				if self.start_cell[0]==x_coord and self.start_cell[1]==y_coord:
 					continue # skip if already used as start cell
 				if self.end_cell[0]==x_coord and self.end_cell[1]==y_coord:
@@ -289,13 +289,20 @@ class eight_neighbor_grid(QWidget):
 
 	def get_euclidean_distance(self,cell1,cell2):
 		# calculates the length of the straight line distance between two cells
-		x_run = abs(cell1[0]-cell2[0]) 
+		x_run = abs(cell1[0]-cell2[0])
 		y_run = abs(cell1[1]-cell2[1])
+		return sqrt((x_run**2)+(y_run**2))
+
+	def euclidean_heuristic(self, start, end):
+		#end referes to end cell
+		#start refers to the node form which euclidean distance is being calculated
+		x_run = abs(start.x - end[0])
+		y_run = abs(start.y - end[1])
 		return sqrt((x_run**2)+(y_run**2))
 
 	def get_manhattan_distance(self,cell1,cell2):
 		# calculates manhattan distance
-		x_run = abs(cell1[0]-cell2[0]) 
+		x_run = abs(cell1[0]-cell2[0])
 		y_run = abs(cell1[1]-cell2[1])
 		return x_run+y_run
 
@@ -364,7 +371,7 @@ class eight_neighbor_grid(QWidget):
 			region_center_y = region_center[1]
 
 			# top left corner coordinates...
-			region_start_x = region_center_x - 15 
+			region_start_x = region_center_x - 15
 			region_start_y = region_center_y - 15
 
 			# iterate over every cell in range and select with 50%
@@ -409,9 +416,9 @@ class eight_neighbor_grid(QWidget):
 			if self.check_for_highway(cell.x,cell.y):
 				num_highway_coordinates+=1
 
-		for cell in self.cells:		
-			x = cell.x 
-			y = cell.y 
+		for cell in self.cells:
+			x = cell.x
+			y = cell.y
 
 			if cell.state == "full":
 				if self.check_for_highway(x,y):
@@ -451,7 +458,7 @@ class eight_neighbor_grid(QWidget):
 		# takes in an unordered list of coordinates and reconstructs the 4 highways,
 		# called from the load function below
 		broken = [] # list of highway segments
-		last = None 
+		last = None
 		last_cut = 0
 		# iterate over the list of highway coordinates and if any consecutive
 		# coordinates are greater than a distance of 1 away then cut the the
@@ -471,7 +478,7 @@ class eight_neighbor_grid(QWidget):
 		print("Initial hwy reconstruction converted "+str(len(coordinate_list))+" coordinates into "+str(len(broken))+" hwy segments...")
 
 		# now we have the broken list with partially reconstructed highway
-		# segments but they are most likely not complete, iterate over the 
+		# segments but they are most likely not complete, iterate over the
 		# stuff in the broken list and connect any highway endpoints that
 		# are only a distance of 1 away from eachother
 		iterations = 0
@@ -510,7 +517,7 @@ class eight_neighbor_grid(QWidget):
 					segment.reverse()
 					other_item.reverse()
 					segment.extend(other_item)
-					
+
 				elif self.get_manhattan_distance(segment_end,other_segment_start)<=1:
 					# add the other_item segment onto the end of the current segment
 					segment.extend(other_item)
@@ -519,16 +526,16 @@ class eight_neighbor_grid(QWidget):
 					other_item.reverse()
 					segment.extend(other_item)
 				else:
-					# not able to attach other_item to current highway segment	
+					# not able to attach other_item to current highway segment
 					new_broken.append(other_item)
 			# add the current segment (now hopfully larger than before this iteration of
 			# the while lop) onto the end of the new_broken list so it wont be used
 			# as the current segment until all other segments have been used
-			new_broken.append(segment) 
+			new_broken.append(segment)
 			broken = new_broken
 
 			# if we have reconstructed all highways
-			if len(broken)==4: 
+			if len(broken)==4:
 				self.highways = broken
 				index = 0
 				for h in self.highways:
@@ -562,7 +569,7 @@ class eight_neighbor_grid(QWidget):
 
 	def repair_highway(self,index):
 		# if a highway does not register as a legitimate highway using the is_highway_complete function
-		# when it is loaded this function is called to try to fix it. added this because sometimes the 
+		# when it is loaded this function is called to try to fix it. added this because sometimes the
 		# last cell or two of a highway is lost in the loading process for some reason. if the amount
 		# needed to be added to the highway is greater than 5 then it will alert the user and will
 		# refrain from fixing it
@@ -662,7 +669,7 @@ class eight_neighbor_grid(QWidget):
 		f 			= open(filename,'r') # open the file
 		lines 		= f.read().split('\n') # split file into lines
 		new_cells 	= [] # to hold the new cells
-		start_cell 	= None # string (x,y) 
+		start_cell 	= None # string (x,y)
 		end_cell 	= None # string (x,y)
 		hard_to_traverse_regions = [] # to hold (x,y) locations of hard to traverse cells
 		highways 	= [] # list of disparate highway coordinates
@@ -672,8 +679,8 @@ class eight_neighbor_grid(QWidget):
 		for line in lines: # iterate over each line of file
 
 			# parse the start cell
-			if line.find("s_start:")!=-1: 
-				start_cell = line.split(":")[1] 
+			if line.find("s_start:")!=-1:
+				start_cell = line.split(":")[1]
 
 			# parse the end cell
 			elif line.find("s_goal:")!=-1:
@@ -752,7 +759,7 @@ class eight_neighbor_grid(QWidget):
 		horizontal_step = int(round(width/self.num_columns)) # per cell width
 		vertical_step = int(round(height/self.num_rows)) # per cell height
 
-		grid_height = vertical_step*self.num_rows 
+		grid_height = vertical_step*self.num_rows
 		grid_width = horizontal_step*self.num_columns
 
 		last_color = None # save the color used for the last cell in case its the same for this one
@@ -770,7 +777,7 @@ class eight_neighbor_grid(QWidget):
 			# calculate the cell coordinates from list index
 			#x = index % self.num_columns # x coordinate
 			#y = int(index/self.num_columns) # get the y coordinate
-			x = cell.x 
+			x = cell.x
 			y = cell.y
 
 			# check if cell is free, partially blocked, or fully blocked
@@ -783,7 +790,7 @@ class eight_neighbor_grid(QWidget):
 			else:
 				print("Need to create brushes for cell status:",cell.state)
 				cell_color = self.free_cell_color # for now
-			
+
 			# check if cell is the start or end cell
 			if x==self.start_cell[0] and y==self.start_cell[1]:
 				cell_color = self.start_cell_color
@@ -793,10 +800,10 @@ class eight_neighbor_grid(QWidget):
 			# check if the cell_color is the same as last time because, if so, dont need to re-set it
 			if cell_color != last_color or last_color==None:
 				# set the QPainter brush color
-				qp.setBrush(QColor(cell_color[0],cell_color[1],cell_color[2])) 
+				qp.setBrush(QColor(cell_color[0],cell_color[1],cell_color[2]))
 
 			x_start = x*horizontal_step # left of square
-			y_start = y*vertical_step # top of square 
+			y_start = y*vertical_step # top of square
 			qp.drawRect(x_start,y_start,horizontal_step,vertical_step)
 
 			index += 1
@@ -864,7 +871,7 @@ class eight_neighbor_grid(QWidget):
 						pen = QPen(QColor(int(cur_shade[0]),int(cur_shade[1]),int(cur_shade[2])),self.solution_swarm_render_density,Qt.__dict__[self.solution_swarm_line_type])
 						qp.setPen(pen)
 						cur_shade = [cur_shade[0]+r_delta,cur_shade[1]+g_delta,cur_shade[2]+b_delta]
-						
+
 						if cur_shade[0]<0: cur_shade[0] = 0
 						if cur_shade[0]>255: cur_shade[0] = 255
 						if cur_shade[1]<0: cur_shade[1] = 0
@@ -876,12 +883,12 @@ class eight_neighbor_grid(QWidget):
 							last_location = location
 							continue
 
-						shorten_gradient = True 
+						shorten_gradient = True
 						if shorten_gradient:
 							x1 = (last_location.x*horizontal_step)+(horizontal_step/2)
 							y1 = (last_location.y*vertical_step)+(vertical_step/2)
 
-							x2 = (last_location.x*horizontal_step)+(horizontal_step/2)+((location.x*horizontal_step)*(0.01)) 
+							x2 = (last_location.x*horizontal_step)+(horizontal_step/2)+((location.x*horizontal_step)*(0.01))
 							y2 = (last_location.y*vertical_step)+(vertical_step/2)+((location.y*vertical_step)*(0.01))
 
 						else:
@@ -890,10 +897,10 @@ class eight_neighbor_grid(QWidget):
 
 							x2 = (location.x*horizontal_step)+(horizontal_step/2)
 							y2 = (location.y*vertical_step)+(vertical_step/2)
-						
+
 						qp.drawLine(x1,y1,x2,y2)
 						last_location = location
-			
+
 			else: # solid color swarm
 				pen = QPen(QColor(self.solution_swarm_color[0],self.solution_swarm_color[1],self.solution_swarm_color[2]),self.solution_swarm_render_density,Qt.__dict__[self.solution_swarm_line_type])
 				qp.setPen(pen)
@@ -904,12 +911,12 @@ class eight_neighbor_grid(QWidget):
 						last_location = location
 						continue
 
-					shorten_gradient = True 
+					shorten_gradient = True
 					if shorten_gradient:
 						x1 = (last_location.x*horizontal_step)+(horizontal_step/2)
 						y1 = (last_location.y*vertical_step)+(vertical_step/2)
 
-						x2 = (last_location.x*horizontal_step)+(horizontal_step/2)+((location.x*horizontal_step)*(0.01)) 
+						x2 = (last_location.x*horizontal_step)+(horizontal_step/2)+((location.x*horizontal_step)*(0.01))
 						y2 = (last_location.y*vertical_step)+(vertical_step/2)+((location.y*vertical_step)*(0.01))
 
 					else:
@@ -996,7 +1003,7 @@ class eight_neighbor_grid(QWidget):
 
 			if x==cell.x and y==cell.y:
 				#print("Changing cell to "+state)
-				self.cells[index].state = state 
+				self.cells[index].state = state
 				return
 
 			index += 1
@@ -1007,10 +1014,10 @@ class eight_neighbor_grid(QWidget):
 		for cell in self.cells:
 
 			if x_coord==cell.x and y_coord==cell.y:
-				return cell.state 
-			
+				return cell.state
+
 	def toggle_grid_lines(self,grid_lines):
-		self.draw_grid_lines = grid_lines 
+		self.draw_grid_lines = grid_lines
 
 	def toggle_solution_swarm(self,show_swarm):
 		self.show_solution_swarm = show_swarm
@@ -1024,21 +1031,21 @@ class eight_neighbor_grid(QWidget):
 	def set_attrib_color(self,attrib="free",color=[0,0,0]):
 		# called by the main_window, sets the color of a certain attribute
 		if attrib == "free":
-			self.free_cell_color = color 
+			self.free_cell_color = color
 		elif attrib == "highway":
-			self.highway_color = color 
+			self.highway_color = color
 		elif attrib == "full":
-			self.blocked_cell_color = color 
+			self.blocked_cell_color = color
 		elif attrib == "partial":
-			self.trans_cell_color = color 
+			self.trans_cell_color = color
 		elif attrib == "start":
-			self.start_cell_color = color 
+			self.start_cell_color = color
 		elif attrib == "end":
-			self.end_cell_color = color 
+			self.end_cell_color = color
 		elif attrib == "solution_swarm":
-			self.solution_swarm_color = color 
+			self.solution_swarm_color = color
 		elif attrib == "solution":
-			self.solution_color = color 
+			self.solution_color = color
 		elif attrib == "start_gradient":
 			self.start_gradient = color
 		elif attrib == "end_gradient":
@@ -1062,13 +1069,13 @@ class eight_neighbor_grid(QWidget):
 
 	def set_line_type(self,attrib,value):
 		if attrib == "Highway":
-			self.highway_line_type = value 
+			self.highway_line_type = value
 		elif attrib == "Solution Path":
-			self.solution_line_type = value 
+			self.solution_line_type = value
 		elif attrib == "Solution Trace":
-			self.solution_trace_line_type = value 
+			self.solution_trace_line_type = value
 		elif attrib == "Solution Swarm":
-			self.solution_swarm_line_type = value 
+			self.solution_swarm_line_type = value
 		else:
 			print("Unknown attribute: "+attrib)
 
@@ -1079,17 +1086,17 @@ class eight_neighbor_grid(QWidget):
 		#print("\nGot signal")
 		if updating_ui:
 			#print("Already updating")
-			if new_attribs.done==False: return 
+			if new_attribs.done==False: return
 		start_time = time.time()
 		updating_ui = True
-		self.solution_path = new_attribs.solution_path 
+		self.solution_path = new_attribs.solution_path
 		self.shortest_path = new_attribs.shortest_path
-		self.path_traces = new_attribs.path_traces 
+		self.path_traces = new_attribs.path_traces
 		self.repaint()
 		self.pyqt_app.processEvents()
 		QApplication.processEvents()
 		if new_attribs.done:
-			self.verbose = True 
+			self.verbose = True
 		ui_update_time = time.time()-start_time
 		updating_ui = False
 
@@ -1121,7 +1128,7 @@ class PriorityQueue:
 		for item in self._queue:
 			queued_cell = item[2]
 			if cell.x==queued_cell.x and cell.y==queued_cell.y:
-				return True 
+				return True
 		return False
 
 	def replace_cell(self,cell,new_cost,parent):
@@ -1141,8 +1148,8 @@ class PriorityQueue:
 
 def get_neighbors(current,cells):
 	# Returns a list of all 8 neighbor cells to "current"
-	x = current.x 
-	y = current.y 
+	x = current.x
+	y = current.y
 	neighbors = []
 	for cell in cells:
 		if cell.x in [x,x-1,x+1] and cell.y in [y,y-1,y+1]:
@@ -1153,22 +1160,31 @@ def cell_in_list(current,cells):
 	# Returns True if "current" is in the list, False if not
 	for cell in cells:
 		if current.x==cell.x and current.y==cell.y:
-			return True 
+			return True
 	return False
+
+def get_cell_index(current, cells):
+ 	#Returns the index of where a given cell is in the global cells list
+	#used to keep track of the costs of getting to each cell in the grid
+	for i in range(len(cells)):
+		matching_cell = cells[i]
+		if matching_cell.x==current.x and matching_cell.y==curent.y:
+			return i
+	return -1
 
 def cell_in_highway(current,highways):
 	for h in highways:
 		for item in h:
 			if item[0]==current.x and item[1]==current.y:
-				return True 
+				return True
 	return False
 
 def get_transition_cost(current_cell,new_cell,highways):
 	# Calculates the cost of transitioning from current_cell to new_cell
 	# recall: state can be one of: "free", "partial", "full"
 
-	current_state = current_cell.state 
-	new_state = new_cell.state 
+	current_state = current_cell.state
+	new_state = new_cell.state
 
 	if current_cell.x==new_cell.x or current_cell.y==new_cell.y:
 		orientation = "horizontal_or_vertical"
@@ -1194,14 +1210,14 @@ def get_transition_cost(current_cell,new_cell,highways):
 		if orientation=="diagonal":
 			cost = (sqrt(2)+sqrt(8))/2
 		else:
-			cost = 1.5 
+			cost = 1.5
 
 	# move from "hard to traverse" cell to free cell
 	elif current_state=="partial" and new_state=="free":
 		if orientation=="diagonal":
 			cost = (sqrt(2)+sqrt(8))/2
 		else:
-			cost = 1.5 
+			cost = 1.5
 
 	# trying to traverse to blocked cell
 	elif new_state=="full":
@@ -1243,12 +1259,12 @@ class uniform_cost_search(QThread):
 		QThread.__init__(self)
 		self.ready_to_start = False # if we have the data needed to start
 		self.stop_executing = False # if true then will stop the algorithm
-		self.app = None 
+		self.app = None
 
 	def load_grid_data(self,cells,start_cell,end_cell,highways):
-		self.cells = cells 
-		self.start_cell = start_cell 
-		self.end_cell = end_cell 
+		self.cells = cells
+		self.start_cell = start_cell
+		self.end_cell = end_cell
 		self.highways = highways
 		self.ready_to_start = True
 
@@ -1284,8 +1300,8 @@ class uniform_cost_search(QThread):
 			msg_to_main.solution_path = self.explored
 			msg_to_main.shortest_path = rectify_path(self.path_end)
 			self.tried_paths.append(msg_to_main.shortest_path)
-			msg_to_main.path_traces = self.tried_paths 
-			msg_to_main.done = done 
+			msg_to_main.path_traces = self.tried_paths
+			msg_to_main.done = done
 
 			if updating_ui: # allow for time for the ui to update
 				for _ in range(4):
@@ -1303,13 +1319,13 @@ class uniform_cost_search(QThread):
 	def uniform_cost_step(self,refresh_rate,cost_refresh_rate,explored_refresh_rate):
 		# helper function for uniform_cost search, performs only refresh_rate seconds then returns
 		start_time = time.time() # to log the amount of time taken
-		last_path_cost = self.path_cost 
+		last_path_cost = self.path_cost
 		initial_explored = len(self.explored)
 
 		while True:
 
 			if self.stop_executing:
-				return True 
+				return True
 
 			print("explored: "+str(len(self.explored))+", frontier: "+str(self.frontier.length())+", time: "+str(time.time()-self.overall_start)[:4]+", cost: "+str(self.path_cost)[:5],end="\r")
 
@@ -1339,21 +1355,21 @@ class uniform_cost_search(QThread):
 						self.frontier.push(neighbor,self.path_cost+transition_cost,parent=cur_node)
 
 				# if in the frontier already
-				elif self.frontier.has_cell(neighbor)==True: 
+				elif self.frontier.has_cell(neighbor)==True:
 					# if version in frontier has higher cost
 					if self.frontier.get_cell_cost(neighbor)>(self.path_cost+transition_cost):
-						self.frontier.replace_cell(neighbor,self.path_cost+transition_cost,parent=cur_node)		
-			
+						self.frontier.replace_cell(neighbor,self.path_cost+transition_cost,parent=cur_node)
+
 			# refresh the display if the algorithm has checked explored_refresh_rate cells
 			if len(self.explored)>(initial_explored+explored_refresh_rate):
 				self.path_end = cur_node
 				return False # refresh the display
 
-			# refresh the display if the algorithm has increased the current cost by cost_refresh_rate 
+			# refresh the display if the algorithm has increased the current cost by cost_refresh_rate
 			if self.path_cost>(last_path_cost+cost_refresh_rate):
 				self.path_end = cur_node
 				return False # refresh the display
-			
+
 			# at least refresh every "refresh_rate" seconds
 			if int(time.time()-start_time)>refresh_rate:
 				self.path_end = cur_node
