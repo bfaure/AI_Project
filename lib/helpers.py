@@ -1374,6 +1374,20 @@ class uniform_cost_search(QThread):
 			if int(time.time()-start_time)>refresh_rate:
 				self.path_end = cur_node
 				return False # refresh the display
-
+		print("\nFinished uniform cost search in "+str(time.time()-self.overall_start)[:6]+" seconds, final cost: "+str(self.path_cost)+", checked "+str(len(explored))+" cells\n")
 		print("\nFinished uniform cost search in "+str(time.time()-self.overall_start)[:6]+" seconds, final cost: "+str(self.path_cost)+"\n")
 		return True
+
+def get_path_cost(node,highways):
+	# given an node, this function will traverse up all of the node parents
+	# and keep a tally of the cost of traverse up until the last parent
+	total_cost = 0
+	current_node = node 
+	next_node = None
+	while True:
+		next_node = current_node.parent
+		if next_node == None:
+			return total_cost
+		total_cost += get_transition_cost(current_node,next_node,highways)
+		current_node = next_node
+	print("ERROR: Got to end of get_path_cost without reaching a node w/o a parent")

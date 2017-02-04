@@ -50,13 +50,13 @@ if using_cython:
 		os.system("python setup.py build_ext --inplace")
 
 	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message
-	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index
+	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index, get_path_cost
 else:
 	print("Could not find Cython installation, using Python version of helpers.py")
 	lib_folder = "lib/"
 	sys.path.insert(0, lib_folder)
 	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message
-	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index
+	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index, get_path_cost
 
 pyqt_app = ""
 
@@ -550,6 +550,7 @@ class main_window(QWidget):
 	def a_star(self):
 		# put a* implementation here
 		self.grid.verbose = False # dont print render update info to terminal during execution
+		self.stop_executing = False
 		self.cells = self.grid.cells #current state of grid cells
 		self.start_cell = self.grid.start_cell #current start cell
 
@@ -576,6 +577,9 @@ class main_window(QWidget):
 		overall_start = time.time() # used for saving execution time
 
 		while (self.frontier.length() != 0):
+
+			if self.stop_executing:
+				return # return if user cancelled execution
 
 			# printing current state information to terminal
 			print("explored: "+str(len(self.explored))+", frontier: "+str(self.frontier.length())+", time: "+str(time.time()-start_time)[:6],end="\r")
@@ -613,8 +617,9 @@ class main_window(QWidget):
 		self.grid.shortest_path = rectify_path(self.path_end)
 		self.grid.update() # render grid with new solution path
 		pyqt_app.processEvents()
+		final_solution_cost = get_path_cost(self.path_end,self.highways)
 
-		print("\nFinished uniform cost search in "+str(time.time()-overall_start)[:6]+" seconds\n")
+		print("\nFinished uniform cost search in "+str(time.time()-overall_start)[:6]+" seconds, final cost: "+str(final_solution_cost)+", checked "+str(len(self.explored))+" cells\n")
 		self.grid.verbose = True # resume printing render timing info for the window
 
 
@@ -735,7 +740,7 @@ class main_window(QWidget):
 				self.path_end = cur_node
 				return False # refresh the display
 
-		print("\nFinished uniform cost search in "+str(time.time()-self.overall_start)[:6]+" seconds, final cost: "+str(self.path_cost)+"\n")
+		print("\nFinished uniform cost search in "+str(time.time()-self.overall_start)[:6]+" seconds, final cost: "+str(self.path_cost)+", checked "+str(len(self.explored))+" cells\n")
 		return True
 
 	def create(self):
