@@ -619,7 +619,7 @@ class main_window(QWidget):
 		pyqt_app.processEvents()
 		final_solution_cost = get_path_cost(self.path_end,self.highways)
 
-		print("\nFinished uniform cost search in "+str(time.time()-overall_start)[:6]+" seconds, final cost: "+str(final_solution_cost)+", checked "+str(len(self.explored))+" cells\n")
+		print("\nFinished a* search in "+str(time.time()-overall_start)[:6]+" seconds, final cost: "+str(final_solution_cost)+", checked "+str(len(self.explored))+" cells\n")
 		self.grid.verbose = True # resume printing render timing info for the window
 
 
