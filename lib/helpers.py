@@ -58,6 +58,7 @@ class eight_neighbor_grid(QWidget):
 		self.trace_color = [128,128,128] # if trace is on, the color of the prior solution paths
 
 		self.solution_swarm_render_density = 1.0 # width of the solution swarm lines (from ~0.1 to ~2.0 probably)
+		if os.name == "nt": self.solution_swarm_render_density = 2.0 # better for windows
 		self.highway_render_width = 2.0 # width of the highways shown in window (2.0 is default)
 		self.solution_render_width = 5.0 # width of the solution path (5.0 is good default)
 		self.trace_render_width = 1.0 # width of the solution trace

@@ -60,6 +60,7 @@ else:
 
 pyqt_app = ""
 
+
 class attrib_value_window(QWidget):
 	# small window that opens if the user wants to change an attribute value
 	def __init__(self):
@@ -72,7 +73,10 @@ class attrib_value_window(QWidget):
 		# initialize to default settings
 		self.attribs = ["Solution Swarm Density","Solution Path Width","Solution Trace Width","Highway Width"]
 		# default widths
-		self.values = [1.0,5.0,1.0,2.0]
+		self.values = [1.00,5.00,1.00,2.00]
+
+		if os.name == "nt": # better for windows
+			self.values[0] = 2.0 
 
 		self.lines = ["Highway","Solution Path","Solution Trace","Solution Swarm"]
 		self.current_line_types = ["SolidLine","SolidLine","DotLine","DashLine"]
@@ -103,7 +107,7 @@ class attrib_value_window(QWidget):
 
 		# color elements
 		self.value_input = QDoubleSpinBox(self)
-		self.value_input.setDecimals(2)
+		self.value_input.setDecimals(1)
 		self.value_input.setSingleStep(0.1)
 		self.value_input.setMaximum(10.0)
 		self.value_input.setMinimum(0.1)
@@ -140,6 +144,9 @@ class attrib_value_window(QWidget):
 		save_row.addStretch()
 		save_row.addWidget(self.return_button)
 		save_row.addStretch()
+
+		self.value_input.setValue(self.values[0])
+		self.selection_box.setCurrentIndex(0)
 
 	def line_changed(self):
 		# called when the user changes the current line in the second row
@@ -347,6 +354,7 @@ class attrib_color_window(QWidget):
 	def hide_window(self):
 		# called from the main_window
 		self.hide()
+
 
 class main_window(QWidget):
 
