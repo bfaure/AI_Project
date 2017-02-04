@@ -1327,7 +1327,7 @@ class uniform_cost_search(QThread):
 			if self.stop_executing:
 				return True
 
-			print("explored: "+str(len(self.explored))+", frontier: "+str(self.frontier.length())+", time: "+str(time.time()-self.overall_start)[:4]+", cost: "+str(self.path_cost)[:5],end="\r")
+			print("explored: "+str(len(self.explored))+", frontier: "+str(self.frontier.length())+", time: "+str(time.time()-self.overall_start)[:6]+", cost: "+str(self.path_cost)[:6],end="\r")
 
 			if self.frontier.length() == 0:
 				print("ERROR: Uniform cost search failed to find a solution path.")
@@ -1375,5 +1375,5 @@ class uniform_cost_search(QThread):
 				self.path_end = cur_node
 				return False # refresh the display
 
-		print("\nFinished uniform cost search in "+str(time.time()-self.overall_start)[:5]+" seconds, final cost: "+str(self.path_cost)+"\n")
+		print("\nFinished uniform cost search in "+str(time.time()-self.overall_start)[:6]+" seconds, final cost: "+str(self.path_cost)+"\n")
 		return True

@@ -549,6 +549,7 @@ class main_window(QWidget):
 
 	def a_star(self):
 		# put a* implementation here
+		self.grid.verbose = False # dont print render update info to terminal during execution
 		self.cells = self.grid.cells #current state of grid cells
 		self.start_cell = self.grid.start_cell #current start cell
 
@@ -570,10 +571,25 @@ class main_window(QWidget):
 		rootIndex = get_cell_index(self.start_cell, self.cells)
 		cost_list[rootIndex] = 0
 
+		refresh_rate = 0.1 # update the ui window after this many seconds
+		start_time = time.time() # used for updating the ui
+		overall_start = time.time() # used for saving execution time
+
 		while (self.frontier.length() != 0):
+
+			# printing current state information to terminal
+			print("explored: "+str(len(self.explored))+", frontier: "+str(self.frontier.length())+", time: "+str(time.time()-start_time)[:6],end="\r")
+
 			cur_node = self.frontier.pop()
-			print("\n")
 			self.explored.append(cur_node)
+
+			# update the ui window
+			if time.time()-start_time > refresh_rate:
+				start_time = time.time()
+				self.grid.solution_path = self.explored 
+				self.grid.shortest_path = rectify_path(cur_node)
+				self.grid.update()
+				pyqt_app.processEvents()
 
 			#If we're at the goal
 			if cur_node.x == self.end_cell[0] and cur_node.y == self.end_cell[1]:
@@ -598,6 +614,9 @@ class main_window(QWidget):
 		self.grid.update() # render grid with new solution path
 		pyqt_app.processEvents()
 
+		print("\nFinished uniform cost search in "+str(time.time()-overall_start)[:6]+" seconds\n")
+		self.grid.verbose = True # resume printing render timing info for the window
+
 
 	def weighted_a(self):
 		# put weighted a implementation here
@@ -618,7 +637,7 @@ class main_window(QWidget):
 		self.cells = self.grid.cells # current state of cells in grid
 		self.start_cell = self.grid.start_cell  # current start cell
 
-		for item in self.cells:
+		for item in self.cells: 
 			if item.x==self.start_cell[0] and item.y==self.start_cell[1]:
 				self.start_cell = item
 				break
@@ -668,7 +687,7 @@ class main_window(QWidget):
 			if self.stop_executing:
 				return True
 
-			print("explored: "+str(len(self.explored))+", frontier: "+str(self.frontier.length())+", time: "+str(time.time()-self.overall_start)[:4]+", cost: "+str(self.path_cost)[:5],end="\r")
+			print("explored: "+str(len(self.explored))+", frontier: "+str(self.frontier.length())+", time: "+str(time.time()-self.overall_start)[:6]+", cost: "+str(self.path_cost)[:5],end="\r")
 
 			if self.frontier.length() == 0:
 				print("ERROR: Uniform cost search failed to find a solution path.")
@@ -716,7 +735,7 @@ class main_window(QWidget):
 				self.path_end = cur_node
 				return False # refresh the display
 
-		print("\nFinished uniform cost search in "+str(time.time()-self.overall_start)[:5]+" seconds, final cost: "+str(self.path_cost)+"\n")
+		print("\nFinished uniform cost search in "+str(time.time()-self.overall_start)[:6]+" seconds, final cost: "+str(self.path_cost)+"\n")
 		return True
 
 	def create(self):
