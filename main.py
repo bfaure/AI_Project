@@ -500,7 +500,7 @@ class main_window(QWidget):
 			#self.resize(1623,1249) # large monitor size
 			self.resize(1623,1278) # large monitor size
 		else:
-			self.resize(1323,764) # fits my macbook well
+			self.resize(1323,793) # fits my macbook well
 
 		QtCore.QObject.connect(self.color_preferences_window, QtCore.SIGNAL("return_color_prefs()"), self.finished_changing_colors)
 		QtCore.QObject.connect(self.value_preferences_window, QtCore.SIGNAL("return_value_prefs()"), self.finished_changing_values)
