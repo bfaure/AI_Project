@@ -750,6 +750,12 @@ class eight_neighbor_grid(QWidget):
 
 	def init_ui(self):
 		# initialize ui elements
+		self.mouse_location = None # the current location of the mouse over the widget
+		self.mouse_color = [128,0,128] # purple for cell under cursor
+
+		self.horizontal_step = 1 # set later
+		self.vertical_step = 1 # set later
+
 		self.setMinimumSize(800,600) # ui pixel dimensions (w,h)
 		self.grid_line_color = [0,0,0] # black for cell lines
 		self.free_cell_color = [255,255,255] # white for free cell
@@ -811,6 +817,27 @@ class eight_neighbor_grid(QWidget):
 		self.init_start_end_cells() # initialize the start/end locations
 		self.solution_path = [] # the path eventually filled by one of the search algos
 		print("Finished generating random grid, "+str(time.time()-start_time)+" seconds\n")
+
+	def mouseMoveEvent(self, event):
+		x = event.x() 
+		y = event.y() 
+		self.mouse_location = [x/self.horizontal_step,y/self.vertical_step]
+		self.repaint()
+
+	def enterEvent(self,event):
+		# called if the mouse cursor goes over the widget
+		print("Mouse entered widget")
+		self.verbose = False
+		self.has_mouse = True
+		self.setMouseTracking(True)
+
+	def leaveEvent(self,event):
+		# called if the mouse cursor leaves the widget
+		print("Mouse left widget")
+		self.verbose = True
+		self.has_mouse = False
+		self.setMouseTracking(False)
+		self.mouse_location = None
 
 	def clear_path(self):
 		# called from main_window when user selects appropriate File menu item
@@ -1483,6 +1510,9 @@ class eight_neighbor_grid(QWidget):
 		horizontal_step = int(round(width/self.num_columns)) # per cell width
 		vertical_step = int(round(height/self.num_rows)) # per cell height
 
+		self.horizontal_step = horizontal_step
+		self.vertical_step = vertical_step
+
 		grid_height = vertical_step*self.num_rows
 		grid_width = horizontal_step*self.num_columns
 
@@ -1684,6 +1714,16 @@ class eight_neighbor_grid(QWidget):
 			y2 = (location[1]*vertical_step)+(vertical_step/2)
 			qp.drawLine(x1,y1,x2,y2)
 			last_location = location
+
+		if self.mouse_location!=None:
+			qp.setBrush(QColor(self.mouse_color[0],self.mouse_color[1],self.mouse_color[2]))
+			qp.setPen(Qt.NoPen)
+			for cell in self.cells:
+				if cell.x == self.mouse_location[0] and cell.y == self.mouse_location[1]:
+					x_start = cell.x
+					y_start = cell.y
+					qp.drawRect(x_start*horizontal_step,y_start*horizontal_step,horizontal_step,vertical_step)
+					break
 
 		if self.verbose:
 			print("                                                                           ",end="\r")

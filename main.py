@@ -20,7 +20,7 @@ import heapq # for priority queue implementation
 # set to true to disable Cython, if you don't have a Cython
 # installation that doesnt mean you need to change this, should
 # be used only for debugging and testing purposes.
-TURN_OFF_CYTHON = False
+TURN_OFF_CYTHON = True
 USE_UCS_MULTITHREADED = False
 
 try:
