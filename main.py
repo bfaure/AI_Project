@@ -52,7 +52,7 @@ if using_cython:
 	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message
 	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index, get_path_cost
 
-	from helpers import non_gui_eight_neighbor_grid, neighbor_index_list, prune_neighbors
+	from helpers import non_gui_eight_neighbor_grid
 
 	from helpers import non_gui_eight_neighbor_grid, cell
 
@@ -63,7 +63,7 @@ else:
 	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message
 	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index, get_path_cost
 
-	from helpers import non_gui_eight_neighbor_grid, neighbor_index_list, prune_neighbors
+	from helpers import non_gui_eight_neighbor_grid
 	from helpers import non_gui_eight_neighbor_grid, cell
 
 pyqt_app = ""
@@ -498,8 +498,8 @@ class main_window(QWidget):
 		regenerate_start_end_action = self.tools_menu.addAction("New Start/End Cells...",self.regenerate_start_end)
 
 		# algorithm
-		a_star_action = self.algo_menu.addAction("Run A*",self.a_star,QKeySequence("Ctrl+1"))
-		weighted_a_action = self.algo_menu.addAction("Run Weighted A",self.weighted_astar_wrapper,QKeySequence("Ctrl+2"))
+		a_star_action = self.algo_menu.addAction("Run A*",self.astar_wrapper,QKeySequence("Ctrl+1"))
+		weighted_a_action = self.algo_menu.addAction("Run Weighted A*",self.weighted_astar_wrapper,QKeySequence("Ctrl+2"))
 		uniform_cost_action = self.algo_menu.addAction("Run Uniform-cost Search",self.uniform_cost,QKeySequence("Ctrl+3"))
 		self.algo_menu.addSeparator()
 		stop_algorithm_action = self.algo_menu.addAction("Stop Algorithm",self.stop_algorithm)
@@ -693,9 +693,15 @@ class main_window(QWidget):
 	def weighted_astar_wrapper(self):
 		self.grid.render_mouse = False
 		inputweight, ok = QInputDialog.getText(self, "Input Dialog", "Enter Weight: ")
-		self.a_star(weight=inputweight)
+		inputcode, ok2 = QInputDialog.getText(self, "Input Dialog", "Enter Heuristic Code: ")
+		self.a_star(weight=inputweight, code=inputcode)
 
-	def a_star(self, weight=1):
+	def astar_wrapper(self):
+		self.grid.render_mouse = False
+		inputcode, ok = QInputDialog.getText(self, "Input Dialog", "Enter Heuristic Code: ")
+		self.a_star(weight=1, code=inputcode)
+
+	def a_star(self, weight=1, code=0):
 		# put a* implementation here
 		self.grid.render_mouse = False
 		self.grid.verbose = False # dont print render update info to terminal during execution
@@ -716,7 +722,7 @@ class main_window(QWidget):
 		self.explored = [] # empty set
 		visited = [False] * len(self.cells)
 
-		cost_root = self.grid.euclidean_heuristic(self.grid.start_cell, self.grid.end_cell);
+		cost_root = float(self.grid.heuristic_manager(self.start_cell, self.end_cell, code))
 		self.frontier.push(self.start_cell,cost_root,parent=None)
 
 		rootIndex = get_cell_index(self.start_cell, self.cells)
@@ -767,7 +773,7 @@ class main_window(QWidget):
 
 				if (neighborIndex not in cost_list or updated_cost < cost_list[neighborIndex]) and (neighbor.state != "full") and visited[neighborIndex] == False:
 					cost_list[neighborIndex] = updated_cost
-					priority = updated_cost + (float(weight) * self.grid.euclidean_heuristic(neighbor, self.grid.end_cell))
+					priority = updated_cost + (float(weight) * float(self.grid.heuristic_manager(neighbor, self.end_cell, code)))
 					self.frontier.push(neighbor, priority, parent=cur_node)
 
 		self.last_cost_list = cost_list
@@ -1043,7 +1049,7 @@ def main():
 					temp_grid.save(filename)
 			print("\nFinished saving "+str(count)+" randomized grids.")
 			return
-			
+
 		else:
 			print("Did not recognize command line parameters.")
 

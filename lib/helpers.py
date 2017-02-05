@@ -1079,6 +1079,24 @@ class eight_neighbor_grid(QWidget):
 			y_run = abs(start.y - end[1])
 			return sqrt((x_run**2)+(y_run**2))
 
+	def approximate_euclidean_heuristic(self, start, end):
+		if (type(start) is tuple) and (type(end) is tuple):
+			x_run = abs(start[0] - end[0])
+			y_run = abs(start[1] - end[1])
+			return 0.41*x_run + 0.94126*y_run
+		else:
+			x_run = abs(start.x - end[0])
+			y_run = abs(start.y - end[1])
+			return 0.41*x_run + 0.94126*y_run
+
+	def heuristic_manager(self, start, end, code):
+		if code == 0:
+			return euclidean_heuristic(start, end)
+		elif code == 1:
+			return approximate_euclidean_heuristic(start, end)
+		else:
+			return 0
+
 	def get_manhattan_distance(self,cell1,cell2):
 		# calculates manhattan distance
 		x_run = abs(cell1[0]-cell2[0])
@@ -1961,24 +1979,6 @@ class PriorityQueue:
 		for item in self._queue:
 			if cell.x==item[2].x and cell.y==item[2].y:
 				return item[2].cost
-
-def neighbor_index_list(neighbors, cells):
-	indexList = []
-	for neighbor in neighbors:
-		indexList.append(get_cell_index(neighbor, cells))
-	return indexList
-
-def prune_neighbors(neighbors, visited, indexList):
-	pruned_neighbors = []
-	for i in range(len(indexList)):
-		if visited[indexList[i]] == False:
-			pruned_neighbors.append(neighbors[i])
-
-	if len(pruned_neighbors) == 0:
-		return neighbors
-	else:
-		return pruned_neighbors
-
 
 def get_neighbors(current,cells):
 	# Returns a list of all 8 neighbor cells to "current"
