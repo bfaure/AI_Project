@@ -51,12 +51,14 @@ if using_cython:
 
 	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message
 	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index, get_path_cost
+	from helpers import non_gui_eight_neighbor_grid
 else:
 	print("Could not find Cython installation, using Python version of helpers.py")
 	lib_folder = "lib/"
 	sys.path.insert(0, lib_folder)
 	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message
 	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index, get_path_cost
+	from helpers import non_gui_eight_neighbor_grid
 
 pyqt_app = ""
 
@@ -857,10 +859,40 @@ class main_window(QWidget):
 
 def main():
 	global pyqt_app
+	if len(sys.argv)==1:
+		pyqt_app = QtGui.QApplication(sys.argv)
+		_ = main_window()
+		sys.exit(pyqt_app.exec_())
+	elif len(sys.argv)==3:
+		action = sys.argv[1]
+		parameter = sys.argv[2]
 
-	pyqt_app = QtGui.QApplication(sys.argv)
-	_ = main_window()
-	sys.exit(pyqt_app.exec_())
+		if action in ["-g","--grid","--g","-grid"]:
+			# user wants to create a certain number of random .grid files
+			try:
+				count = int(parameter)
+			except:
+				print("Did not recognize grid count input ("+str(parameter)+"), should be a >0 integer.")
+				return
+
+			if count <=0:
+				print("Please provide a >0 integer for count paramter.")
+				return
+
+			print("Generating "+str(parameter)+" randomized grids...")
+			temp_grid = non_gui_eight_neighbor_grid() # default size
+			current_location = os.getcwd()
+			for i in range(count):
+				print("Building grid "+str(i+1)+"...",end="\r")
+				filename = current_location+"/grids/"+str(i)+".grid"
+				temp_grid.clear()
+				temp_grid.random()
+				temp_grid.save(filename)
+			print("\nFinished saving "+str(count)+" randomized grids.")
+			return
+		else:
+			print("Did not recognize command line parameters, try -h for help")
+
 
 
 if __name__ == '__main__':
