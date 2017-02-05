@@ -27,6 +27,7 @@ class cell:
 		self.y = y_coordinate # not using anymore
 		self.cost = 0 # used for Priority Queue to remember cost
 		self.parent = None
+		self.render_coordinate = None
 
 # similar to eight_neigbor_grid but is only used if the user provides
 # command line arguments and is just trying to utilize those functions
@@ -732,11 +733,12 @@ class eight_neighbor_grid(QWidget):
 	def init_ui(self):
 		# initialize ui elements
 		self.mouse_location = None # the current location of the mouse over the widget
-		self.mouse_color = [128,0,128] # purple for cell under cursor
+		self.mouse_color = [243,243,21] # purple for cell under cursor
 
 		self.horizontal_step = 1 # set later
 		self.vertical_step = 1 # set later
 		self.render_mouse = True
+		self.allow_render_mouse = True # to allow for self.render_mouse override
 
 		self.setMinimumSize(800,600) # ui pixel dimensions (w,h)
 		self.grid_line_color = [0,0,0] # black for cell lines
@@ -801,27 +803,70 @@ class eight_neighbor_grid(QWidget):
 		print("Finished generating random grid, "+str(time.time()-start_time)+" seconds\n")
 
 	def mouseMoveEvent(self, event):
+
 		if self.render_mouse:
 			x = event.x()
 			y = event.y()
 
-			self.mouse_location = [x/self.horizontal_step,y/self.vertical_step]
+		self.verbose = False # dont print render information
+		if self.render_mouse and self.allow_render_mouse:
+			x = event.x()
+			y = event.y()
+
+
+			self.mouse_location = [x,y]
 			self.repaint()
+
+			current_cell_attributes = cell_information()
+			current_cell_attributes.coordinates = self.base_coordinates(x,y)
+			if current_cell_attributes.coordinates == [-1,-1]:
+				current_cell_attributes.is_valid = False
+				return
+
+			current_cell_attributes.is_valid = True
+			current_cell_attributes.state = self.get_cell_state(current_cell_attributes.coordinates[0],current_cell_attributes.coordinates[1])
+			current_cell_attributes.h = self.get_h_value(x,y)
+			current_cell_attributes.g = self.get_g_value(x,y)
+			current_cell_attributes.f = current_cell_attributes.h+current_cell_attributes.g
+			self.emit(SIGNAL("return_current_cell_attributes(PyQt_PyObject)"),current_cell_attributes)
+		else:
+			self.setMouseTracking(False)
 
 	def enterEvent(self,event):
 		# called if the mouse cursor goes over the widget
-		print("Mouse entered widget")
-		self.verbose = False
+		#print("Mouse entered widget")
+		#self.verbose = False
 		self.has_mouse = True
-		self.setMouseTracking(True)
+		if self.render_mouse:
+			self.setMouseTracking(True)
 
 	def leaveEvent(self,event):
 		# called if the mouse cursor leaves the widget
-		print("Mouse left widget")
-		self.verbose = True
+		#print("Mouse left widget")
+		#self.verbose = True
 		self.has_mouse = False
 		self.setMouseTracking(False)
 		self.mouse_location = None
+
+	def get_h_value(self,x,y):
+		# gets the heuristic vlaue
+		return 0
+
+	def get_g_value(self,x,y):
+		# gets the cost of the path from the start node to (x,y)
+		return 0
+
+	def base_coordinates(self,x_coord,y_coord):
+		# takes in coordinates of pixel location and returns x and y of closest cell
+		x = -1
+		y = -1
+		for cell in self.cells:
+			if x_coord>=cell.render_coordinate[0] and x_coord<(cell.render_coordinate[0]+cell.render_coordinate[2]):
+				if y_coord>=cell.render_coordinate[1] and y_coord<(cell.render_coordinate[1]+cell.render_coordinate[3]):
+					return [cell.x,cell.y]
+		if x==-1 and y==-1:
+			#print("ERROR: Could not locate cell in question ("+str(x)+","+str(y)+")")
+			return [-1,-1]
 
 	def clear_path(self):
 		# called from main_window when user selects appropriate File menu item
@@ -1545,6 +1590,7 @@ class eight_neighbor_grid(QWidget):
 
 			index += 1
 			last_color = cell_color
+			cell.render_coordinate = [x_start,y_start,horizontal_step,vertical_step]
 
 		# allow user to decide if grid lines should be rendered
 		if self.draw_grid_lines:
@@ -1698,15 +1744,20 @@ class eight_neighbor_grid(QWidget):
 			qp.drawLine(x1,y1,x2,y2)
 			last_location = location
 
-		if self.mouse_location!=None:
-			qp.setBrush(QColor(self.mouse_color[0],self.mouse_color[1],self.mouse_color[2]))
-			qp.setPen(Qt.NoPen)
-			for cell in self.cells:
-				if cell.x == self.mouse_location[0] and cell.y == self.mouse_location[1]:
-					x_start = cell.x
-					y_start = cell.y
-					qp.drawRect(x_start*horizontal_step,y_start*horizontal_step,horizontal_step,vertical_step)
-					break
+		if self.render_mouse:
+			if self.mouse_location!=None:
+				qp.setBrush(QColor(self.mouse_color[0],self.mouse_color[1],self.mouse_color[2]))
+				pen = QPen(QColor(0,0,0),1,Qt.SolidLine)
+				qp.setPen(pen)
+
+				x = self.mouse_location[0] # = (x coordinate of mouse) / self.horizontal_step
+				y = self.mouse_location[1] # = (y coordinate of mouse) / self.vertical_step
+
+				for cell in self.cells:
+					if x>=(cell.render_coordinate[0]) and x<(cell.render_coordinate[0]+horizontal_step):
+						if y>=(cell.render_coordinate[1]) and y<(cell.render_coordinate[1]+vertical_step):
+							qp.drawRect(cell.render_coordinate[0],cell.render_coordinate[1],horizontal_step,vertical_step)
+							break
 
 		if self.verbose:
 			print("                                                                           ",end="\r")
@@ -1718,18 +1769,21 @@ class eight_neighbor_grid(QWidget):
 		# if the coordinates are sent from the UI main_window instance they may
 		# not align exactly with the cell coordinates in the grid so we need to adjust
 		if add_adjustment:
-			size = self.size()
-			width = size.width()
-			height = size.height()
+			# need to iterate over the cells in the self.cells list and check their self.render_coordinate
+			# values to match them to the ones provided (x_coord,y_coord)
 
-			x_coord = x_coord - 1.0
-			y_coord = y_coord - 1.0
+			x = -1
+			y = -1
 
-			if x_coord<0: x_coord = 0
-			if y_coord<0: y_coord = 0
+			for cell in self.cells:
+				if x_coord>=cell.render_coordinate[0] and x_coord<(cell.render_coordinate[0]+cell.render_coordinate[2]):
+					if y_coord>=cell.render_coordinate[1] and y_coord<(cell.render_coordinate[1]+cell.render_coordinate[3]):
+						x = cell.x
+						y = cell.y
+						break
 
-			x = int(round(float((float(x_coord)/float(width))*float(self.num_columns))))
-			y = int(round(float((float(y_coord)/float(height))*float(self.num_rows))))
+			if x==-1 and y==-1:
+				print("ERROR: Could not locate ("+str(x_coord)+","+str(y_coord)+") coordinates in set_cell_state().")
 
 		else:
 			x = x_coord
@@ -1755,13 +1809,22 @@ class eight_neighbor_grid(QWidget):
 
 			index += 1
 
-	def get_cell_state(self,x_coord,y_coord):
+	def get_cell_state(self,x_coord,y_coord,add_adjustment=False):
 		# locates the cell in question and returns the state
-		#index = 0
-		for cell in self.cells:
-
-			if x_coord==cell.x and y_coord==cell.y:
-				return cell.state
+		if add_adjustment:
+			x = -1
+			y = -1
+			for cell in self.cells:
+				if x_coord>=cell.render_coordinate[0] and x_coord<(cell.render_coordinate[0]+cell.render_coordinate[2]):
+					if y_coord>=cell.render_coordinate[1] and y_coord<(cell.render_coordinate[1]+cell.render_coordinate[3]):
+						return cell.state
+			if x==-1 and y==-1:
+				print("ERROR: Could not locate cell in question ("+str(x)+","+str(y)+")")
+				return "ERROR"
+		else:
+			for cell in self.cells:
+				if x_coord==cell.x and y_coord==cell.y:
+					return cell.state
 
 	def toggle_grid_lines(self,grid_lines):
 		self.draw_grid_lines = grid_lines
@@ -1774,6 +1837,9 @@ class eight_neighbor_grid(QWidget):
 
 	def toggle_trace(self,use_trace):
 		self.show_path_trace = use_trace
+
+	def toggle_mouse(self,track):
+		self.allow_render_mouse = track
 
 	def set_attrib_color(self,attrib="free",color=[0,0,0]):
 		# called by the main_window, sets the color of a certain attribute
@@ -2021,6 +2087,15 @@ class message: # used as a connnection between eight_neighbor_grid and uniform_c
 		self.shortest_path = []
 		self.path_traces = []
 		self.done = False
+
+class cell_information: # used as a message between eight_neighbor_grid and main_window for updating cell information
+	def __init__(self):
+		self.state = ""
+		self.h = ""
+		self.g = ""
+		self.f = ""
+		self.coordinates = ""
+		self.is_valid = False
 
 class uniform_cost_search(QThread):
 	def __init__(self):
