@@ -417,7 +417,7 @@ class main_window(QWidget):
 		self.file_menu.addSeparator()
 		quit_action = self.file_menu.addAction("Quit", self.quit, QKeySequence("Ctrl+Q"))
 		a_star_action = self.algo_menu.addAction("Run A*",self.a_star,QKeySequence("Ctrl+1"))
-		weighted_a_action = self.algo_menu.addAction("Run Weighted A",self.weighted_a,QKeySequence("Ctrl+2"))
+		weighted_a_action = self.algo_menu.addAction("Run Weighted A*",self.weighted_astar_wrapper,QKeySequence("Ctrl+2"))
 		uniform_cost_action = self.algo_menu.addAction("Run Uniform-cost Search",self.uniform_cost,QKeySequence("Ctrl+3"))
 		self.toggle_grid_lines_action = self.tools_menu.addAction("Turn On Grid Lines",self.toggle_grid_lines,QKeySequence("Ctrl+G"))
 		self.toggle_solution_swarm_action = self.tools_menu.addAction("Turn Off Solution Swarm",self.toggle_solution_swarm,QKeySequence("Ctrl+T"))
@@ -547,7 +547,11 @@ class main_window(QWidget):
 		self.grid.toggle_grid_lines(grid_lines=self.show_grid_lines)
 		self.grid.repaint()
 
-	def a_star(self):
+	def weighted_astar_wrapper(self):
+		inputweight, ok = QInputDialog.getText(self, "Input Dialog", "Enter Weight: ")
+		self.a_star(weight=inputweight)
+
+	def a_star(self, weight=1):
 		# put a* implementation here
 		self.grid.verbose = False # dont print render update info to terminal during execution
 		self.stop_executing = False
@@ -590,7 +594,7 @@ class main_window(QWidget):
 			# update the ui window
 			if time.time()-start_time > refresh_rate:
 				start_time = time.time()
-				self.grid.solution_path = self.explored 
+				self.grid.solution_path = self.explored
 				self.grid.shortest_path = rectify_path(cur_node)
 				self.grid.update()
 				pyqt_app.processEvents()
@@ -610,7 +614,7 @@ class main_window(QWidget):
 				neighborIndex = get_cell_index(neighbor, self.cells)
 				if (neighborIndex not in cost_list or updated_cost < cost_list[neighborIndex]) and neighbor.state != "full":
 					cost_list[neighborIndex] = updated_cost
-					priority = updated_cost + self.grid.euclidean_heuristic(neighbor, self.grid.end_cell)
+					priority = updated_cost + (float(weight) * self.grid.euclidean_heuristic(neighbor, self.grid.end_cell))
 					self.frontier.push(neighbor, priority, parent=cur_node)
 
 		self.grid.solution_path = self.explored
@@ -621,11 +625,6 @@ class main_window(QWidget):
 
 		print("\nFinished a* search in "+str(time.time()-overall_start)[:6]+" seconds, final cost: "+str(final_solution_cost)+", checked "+str(len(self.explored))+" cells\n")
 		self.grid.verbose = True # resume printing render timing info for the window
-
-
-	def weighted_a(self):
-		# put weighted a implementation here
-		pass
 
 	def uniform_cost(self):
 		print("\nPerforming uniform_cost search...")
@@ -642,7 +641,7 @@ class main_window(QWidget):
 		self.cells = self.grid.cells # current state of cells in grid
 		self.start_cell = self.grid.start_cell  # current start cell
 
-		for item in self.cells: 
+		for item in self.cells:
 			if item.x==self.start_cell[0] and item.y==self.start_cell[1]:
 				self.start_cell = item
 				break

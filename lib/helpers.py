@@ -1382,7 +1382,7 @@ def get_path_cost(node,highways):
 	# given an node, this function will traverse up all of the node parents
 	# and keep a tally of the cost of traverse up until the last parent
 	total_cost = 0
-	current_node = node 
+	current_node = node
 	next_node = None
 	while True:
 		next_node = current_node.parent
