@@ -143,6 +143,21 @@ class eight_neighbor_grid(QWidget):
 				return True
 			return False
 
+	def check_for_highway_wrapper(self,x_coord,y_coord,temp_highway):
+		# called by the get_highway function, will do regular check_for_highway
+		# then do check_for_highway with excluding the temp_highway but with checking
+		# all neighboring cells of the x_coord and y_coord. This is because we were
+		# having a problem loading .grid files if they had segments of highway next
+		# to eachother (<=1) cell away because the loading process would just think
+		# that these cells were part of the same highway when, in reality, they were
+		# just two highways next to eachother.
+		if self.check_for_highway(x_coord,y_coord,temp_highway): return True
+		temp_cell = cell(x_coord,y_coord)
+		neighbors = get_neighbors(temp_cell,self.cells)
+		for neighbor in neighbors:
+			if self.check_for_highway(neighbor.x,neighbor.y): return True 
+		return False
+
 	def get_highway(self,head,edge,total_attempts):
 		# helper function for the init_highways function, returns True if it can
 		# create a highway starting at head that does not intersect with any others
@@ -205,7 +220,7 @@ class eight_neighbor_grid(QWidget):
 					# check if we hit another highway, if not, add it to the current
 					# highway, if so, break out (clearing the current highway) and start
 					# over from the same head location.
-					if self.check_for_highway(cur_x,cur_y,highway_path)==False:
+					if self.check_for_highway_wrapper(cur_x,cur_y,highway_path)==False:
 						x = cur_x
 						y = cur_y
 						new_coord = (x,y)
