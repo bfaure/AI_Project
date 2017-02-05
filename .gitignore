@@ -45,3 +45,11 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+
+build/
+helpers.pyx
+helpers.pyd
+lib/helpers.pyc
+.tags1
+.tags
+helpers.so
