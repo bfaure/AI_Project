@@ -426,9 +426,7 @@ class main_window(QWidget):
 		new_window_action = self.file_menu.addAction("Open New Window...",self.open_new_window,QKeySequence("Ctrl+Shift+N"))
 		self.file_menu.addSeparator()
 		quit_action = self.file_menu.addAction("Quit", self.quit, QKeySequence("Ctrl+Q"))
-		a_star_action = self.algo_menu.addAction("Run A*",self.a_star,QKeySequence("Ctrl+1"))
-		weighted_a_action = self.algo_menu.addAction("Run Weighted A*",self.weighted_astar_wrapper,QKeySequence("Ctrl+2"))
-		uniform_cost_action = self.algo_menu.addAction("Run Uniform-cost Search",self.uniform_cost,QKeySequence("Ctrl+3"))
+
 		self.toggle_grid_lines_action = self.tools_menu.addAction("Turn On Grid Lines",self.toggle_grid_lines,QKeySequence("Ctrl+G"))
 		self.toggle_solution_swarm_action = self.tools_menu.addAction("Turn Off Solution Swarm",self.toggle_solution_swarm,QKeySequence("Ctrl+T"))
 		self.toggle_gradient_action = self.tools_menu.addAction("Turn Off Swarm Gradient",self.toggle_gradient)
@@ -439,6 +437,13 @@ class main_window(QWidget):
 		self.tools_menu.addSeparator()
 		regenerate_start_end_action = self.tools_menu.addAction("New Start/End Cells...",self.regenerate_start_end)
 
+		# algorithm
+		a_star_action = self.algo_menu.addAction("Run A*",self.a_star,QKeySequence("Ctrl+1"))
+		weighted_a_action = self.algo_menu.addAction("Run Weighted A",self.weighted_a,QKeySequence("Ctrl+2"))
+		uniform_cost_action = self.algo_menu.addAction("Run Uniform-cost Search",self.uniform_cost,QKeySequence("Ctrl+3"))
+		self.algo_menu.addSeparator()
+		stop_algorithm_action = self.algo_menu.addAction("Stop Algorithm",self.stop_algorithm)
+
 		if os.name == "nt":
 			self.resize(1623,1249) # large monitor size
 		else:
@@ -447,6 +452,10 @@ class main_window(QWidget):
 		QtCore.QObject.connect(self.color_preferences_window, QtCore.SIGNAL("return_color_prefs()"), self.finished_changing_colors)
 		QtCore.QObject.connect(self.value_preferences_window, QtCore.SIGNAL("return_value_prefs()"), self.finished_changing_values)
 		self.show()
+
+	def stop_algorithm(self):
+		# called from menu item
+		self.stop_executing = True 
 
 	def save_screenshot(self):
 		# takes a screenshot of the current grid and saves as png
