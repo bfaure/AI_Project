@@ -8,6 +8,7 @@
 #### File Menu
 `Ctrl+L`: Load grid from file <br>
 `Ctrl+S`: Save current grid <br>
+`Ctrl+Shit+S`: Save screenshot of current window<br>
 `Ctrl+C`: Clear grid (stop search execution also)<br>
 `Ctrl+P`: Clear the current search path<br>
 `Ctrl+N`: Create new, random grid <br>
