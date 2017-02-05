@@ -1744,7 +1744,7 @@ class eight_neighbor_grid(QWidget):
 			qp.drawLine(x1,y1,x2,y2)
 			last_location = location
 
-		if self.render_mouse:
+		if self.render_mouse and self.allow_render_mouse:
 			if self.mouse_location!=None:
 				qp.setBrush(QColor(self.mouse_color[0],self.mouse_color[1],self.mouse_color[2]))
 				pen = QPen(QColor(0,0,0),1,Qt.SolidLine)
