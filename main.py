@@ -20,7 +20,7 @@ import heapq # for priority queue implementation
 # set to true to disable Cython, if you don't have a Cython
 # installation that doesnt mean you need to change this, should
 # be used only for debugging and testing purposes.
-TURN_OFF_CYTHON = True
+TURN_OFF_CYTHON = False
 USE_UCS_MULTITHREADED = False
 
 try:
@@ -51,14 +51,14 @@ if using_cython:
 
 	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message
 	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index, get_path_cost
-	from helpers import non_gui_eight_neighbor_grid
+	from helpers import non_gui_eight_neighbor_grid, cell
 else:
 	print("Could not find Cython installation, using Python version of helpers.py")
 	lib_folder = "lib/"
 	sys.path.insert(0, lib_folder)
 	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message
 	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index, get_path_cost
-	from helpers import non_gui_eight_neighbor_grid
+	from helpers import non_gui_eight_neighbor_grid, cell
 
 pyqt_app = ""
 
@@ -357,7 +357,6 @@ class attrib_color_window(QWidget):
 		# called from the main_window
 		self.hide()
 
-
 class main_window(QWidget):
 
 	def __init__(self):
@@ -394,10 +393,61 @@ class main_window(QWidget):
 		if os.name == "nt":
 			self.layout.addSpacing(25)
 
+
+		# creating UI elements to show current cell state
+		top_row_layout = QHBoxLayout() # layout to hold top row
+		self.layout.addLayout(top_row_layout) # add layout to overall layout
+		title_label = QLabel("Cell Information",self)
+		top_row_layout.addWidget(title_label)
+		top_row_layout.addSpacing(40)
+		
+		coordinates_label = QLabel("Coordinate:",self)
+		top_row_layout.addWidget(coordinates_label)
+		self.coordinates_value = QLineEdit("(0,0)",self)
+		self.coordinates_value.setEnabled(False)
+		self.coordinates_value.setFixedWidth(100)
+		top_row_layout.addWidget(self.coordinates_value)
+		top_row_layout.addSpacing(20)
+
+		state_label = QLabel("State:",self)
+		top_row_layout.addWidget(state_label)
+		self.state_value = QLineEdit("FREE",self)
+		self.state_value.setEnabled(False)
+		self.state_value.setFixedWidth(100)
+		top_row_layout.addWidget(self.state_value)
+		top_row_layout.addSpacing(20)
+
+		f_label = QLabel("f:",self)
+		top_row_layout.addWidget(f_label)
+		self.f_value = QLineEdit("0",self)
+		self.f_value.setEnabled(False)
+		self.f_value.setFixedWidth(100)
+		top_row_layout.addWidget(self.f_value)
+		top_row_layout.addSpacing(20)
+
+		g_label = QLabel("g:",self)
+		top_row_layout.addWidget(g_label)
+		self.g_value = QLineEdit("0",self)
+		self.g_value.setEnabled(False)
+		self.g_value.setFixedWidth(100)
+		top_row_layout.addWidget(self.g_value)
+		top_row_layout.addSpacing(20)
+
+		h_label = QLabel("h:",self)
+		top_row_layout.addWidget(h_label)
+		self.h_value = QLineEdit("0",self)
+		self.h_value.setEnabled(False)
+		self.h_value.setFixedWidth(100)
+		top_row_layout.addWidget(self.h_value)
+		top_row_layout.addSpacing(20)
+
+		top_row_layout.addStretch()
+
+
 		self.grid = eight_neighbor_grid(160,120,pyqt_app)
 		self.grid.setContextMenuPolicy(Qt.CustomContextMenu)
 		self.grid.customContextMenuRequested.connect(self.on_context_menu_request)
-		self.layout.addWidget(self.grid)
+		self.layout.addWidget(self.grid,2)
 
 		# context menu stuff, opens on right click
 		self.context_menu = QMenu(self)
@@ -447,13 +497,54 @@ class main_window(QWidget):
 		stop_algorithm_action = self.algo_menu.addAction("Stop Algorithm",self.stop_algorithm)
 
 		if os.name == "nt":
-			self.resize(1623,1249) # large monitor size
+			#self.resize(1623,1249) # large monitor size
+			self.resize(1623,1278) # large monitor size
 		else:
 			self.resize(1323,764) # fits my macbook well
 
 		QtCore.QObject.connect(self.color_preferences_window, QtCore.SIGNAL("return_color_prefs()"), self.finished_changing_colors)
 		QtCore.QObject.connect(self.value_preferences_window, QtCore.SIGNAL("return_value_prefs()"), self.finished_changing_values)
+		QtCore.QObject.connect(self.grid, QtCore.SIGNAL("return_current_cell_attributes(PyQt_PyObject)"), self.update_current_cell_info)
 		self.show()
+
+	def update_current_cell_info(self,cell_attributes):
+		# automatically called when the grid sends info
+		if cell_attributes.is_valid:
+			self.coordinates_value.setText("("+str(cell_attributes.coordinates[0])+","+str(cell_attributes.coordinates[1])+")")
+
+			if cell_attributes.state == "full":
+				self.state_value.setText("Fully Blocked")
+			elif cell_attributes.state == "free":
+				self.state_value.setText("Free")
+			elif cell_attributes.state == "partial":
+				self.state_value.setText("Partially Blocked")
+			else:
+				self.state_value.setText("None")
+
+			if hasattr(self,"last_cost_list"):
+				# if we have run an a* algorithm
+				temp = cell(cell_attributes.coordinates[0],cell_attributes.coordinates[1])
+				i = get_cell_index(temp,self.cells)
+				try:
+					cost = self.last_cost_list[i]
+				except:
+					cost = "None"
+
+				self.f_value.setText(str(cost))
+
+				if cost != "None":
+					h = self.grid.euclidean_heuristic(temp, self.grid.end_cell)
+					self.h_value.setText(str(h))
+					self.g_value.setText(str(cost-h))
+				else:
+					self.h_value.setText("None")
+					self.g_value.setText("None")
+
+			else:
+				self.f_value.setText("None")
+				self.g_value.setText("None")
+				self.h_value.setText("None")
+
 
 	def stop_algorithm(self):
 		# called from menu item
@@ -649,6 +740,7 @@ class main_window(QWidget):
 					priority = updated_cost + (float(weight) * self.grid.euclidean_heuristic(neighbor, self.grid.end_cell))
 					self.frontier.push(neighbor, priority, parent=cur_node)
 
+		self.last_cost_list = cost_list
 		self.grid.solution_path = self.explored
 		self.grid.shortest_path = rectify_path(self.path_end)
 		self.grid.update() # render grid with new solution path
