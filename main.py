@@ -417,6 +417,8 @@ class main_window(QWidget):
 		load_action = self.file_menu.addAction("Load...",self.load,QKeySequence("Ctrl+L"))
 		save_action = self.file_menu.addAction("Save As...",self.save_as,QKeySequence("Ctrl+S"))
 		self.file_menu.addSeparator()
+		screenshot_action = self.file_menu.addAction("Save Screenshot...",self.save_screenshot,QKeySequence("Ctrl+Shift+S"))
+		self.file_menu.addSeparator()
 		clear_action = self.file_menu.addAction("Clear Grid",self.clear,QKeySequence("Ctrl+C"))
 		clear_path_action = self.file_menu.addAction("Clear Search Path", self.clear_path,"Ctrl+P")
 		create_action = self.file_menu.addAction("Create New Grid",self.create,QKeySequence("Ctrl+N"))
@@ -445,6 +447,14 @@ class main_window(QWidget):
 		QtCore.QObject.connect(self.color_preferences_window, QtCore.SIGNAL("return_color_prefs()"), self.finished_changing_colors)
 		QtCore.QObject.connect(self.value_preferences_window, QtCore.SIGNAL("return_value_prefs()"), self.finished_changing_values)
 		self.show()
+
+	def save_screenshot(self):
+		# takes a screenshot of the current grid and saves as png
+		current_location = os.getcwd()
+		filename = QFileDialog.getSaveFileName(self, "Save Picture As",current_location+"/screenshots","Picture (*.png)")
+		if filename != "":
+			QPixmap.grabWindow(self.winId()).save(filename, 'png')
+			print("Saved screenshot to"+filename)
 
 	def clear_path(self):
 		# function called by pyqt when user selects "Clear Search Path" File menu item
