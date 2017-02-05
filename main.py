@@ -6,6 +6,9 @@ import sys
 import time
 import random
 
+from os import listdir
+from os.path import isfile,join
+
 import shutil # for copying helpers.py to helpers.pyx
 import filecmp
 
@@ -67,7 +70,6 @@ else:
 	from helpers import non_gui_eight_neighbor_grid, cell
 
 pyqt_app = ""
-
 
 class attrib_value_window(QWidget):
 	# small window that opens if the user wants to change an attribute value
@@ -383,6 +385,7 @@ class main_window(QWidget):
 		self.show_trace = True # true by default
 		self.updating_already = False
 		self.mouse_tracking = True
+		self.is_benchmark = False # true if benchmarking right now
 
 		self.child_windows = [] # to hold any extra windows opened by user
 		self.color_preferences_window = attrib_color_window()
@@ -466,10 +469,16 @@ class main_window(QWidget):
 
 		# menubar
 		self.menu_bar = QMenuBar(self)
-		self.menu_bar.setMinimumWidth(170)
+		self.menu_bar.setMinimumWidth(250)
 		self.file_menu = self.menu_bar.addMenu("File")
 		self.algo_menu = self.menu_bar.addMenu("Algorithm")
 		self.tools_menu = self.menu_bar.addMenu("Tools")
+		self.benchmark_menu = self.menu_bar.addMenu("Benchmark")
+
+		# benchmark actions
+		a_star_benchmark_action = self.benchmark_menu.addAction("Benchmark A* Search",self.a_star_benchmark)
+		weighted_a_star_benchmark_action = self.benchmark_menu.addAction("Benchmark Weighted A* Search",self.weighted_a_star_benchmark_wrapper)
+		uniform_cost_benchmark_action = self.benchmark_menu.addAction("Benchmark Uniform-Cost Search",self.uniform_cost_benchmark)
 
 		# menubar actions
 		load_action = self.file_menu.addAction("Load...",self.load,QKeySequence("Ctrl+L"))
@@ -498,9 +507,15 @@ class main_window(QWidget):
 		regenerate_start_end_action = self.tools_menu.addAction("New Start/End Cells...",self.regenerate_start_end)
 
 		# algorithm
+
 		a_star_action = self.algo_menu.addAction("Run A*",self.astar_wrapper,QKeySequence("Ctrl+1"))
 		weighted_a_action = self.algo_menu.addAction("Run Weighted A*",self.weighted_astar_wrapper,QKeySequence("Ctrl+2"))
 		uniform_cost_action = self.algo_menu.addAction("Run Uniform-cost Search",self.uniform_cost,QKeySequence("Ctrl+3"))
+
+		a_star_action = self.algo_menu.addAction("Run A* Search",self.a_star,QKeySequence("Ctrl+1"))
+		weighted_a_action = self.algo_menu.addAction("Run Weighted A* Search",self.weighted_astar_wrapper,QKeySequence("Ctrl+2"))
+		uniform_cost_action = self.algo_menu.addAction("Run Uniform-Cost Search",self.uniform_cost,QKeySequence("Ctrl+3"))
+
 		self.algo_menu.addSeparator()
 		stop_algorithm_action = self.algo_menu.addAction("Stop Algorithm",self.stop_algorithm)
 
@@ -514,6 +529,203 @@ class main_window(QWidget):
 		QtCore.QObject.connect(self.value_preferences_window, QtCore.SIGNAL("return_value_prefs()"), self.finished_changing_values)
 		QtCore.QObject.connect(self.grid, QtCore.SIGNAL("return_current_cell_attributes(PyQt_PyObject)"), self.update_current_cell_info)
 		self.show()
+
+	def get_all_grids(self):
+		# gets all grid filenames in /grids directory
+		grids = [f for f in listdir("grids") if isfile(join("grids",f))]
+		grid_filenames = []
+		for g in grids:
+			grid_filenames.append("grids/"+g)
+		return grid_filenames
+
+	def a_star_benchmark(self):
+		# benchmark the efficiency of the A* algorithm on all files in /grids
+		self.is_benchmark = True
+		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
+
+		f = open("a_star-benchmark.txt","w")
+		grids = self.get_all_grids()
+		print("Benchmarking A* on "+str(len(grids))+" .grid files...")
+		print("Writing results to a_star-benchmark.txt...")
+		f.write("A* Benchmark on "+str(len(grids))+" .grid files:\n\n")
+
+		# turning off all UI interaction
+		self.grid.allow_render_mouse = False
+		self.grid.verbose = False
+		self.grid.draw_grid_lines = False
+		self.grid.draw_outer_boundary = False
+		self.grid.show_path_trace = False
+
+		overall_start = time.time()
+		total_execution_time = time.time()
+
+		total_explored = 0
+		total_cost = 0
+		total_frontier = 0
+
+		for grid in grids:
+			print("Running A* on "+grid+"...")
+			self.grid.load(grid)
+			start_time = time.time()
+			self.a_star()
+			end_time = time.time()
+			total_execution_time += (end_time-start_time)
+
+			last_cost = self.latest_search_cost
+			total_cost += last_cost
+
+			frontier_length = self.latest_frontier_length
+			total_frontier += frontier_length
+
+			explored_length = self.latest_num_explored
+			total_explored += explored_length
+
+			f.write("\n"+grid+":\t time: "+str(end_time-start_time)+", cost: "+str(last_cost)+", frontier: "+str(frontier_length)+", explored: "+str(explored_length))
+
+		f.write("\n\nTotal algorithm time: "+str(total_execution_time))
+		f.write("\nTotal cells explored: "+str(total_explored))
+		f.write("\nTotal cost: "+str(total_cost))
+		f.write("\nTotal frontier length: "+str(total_frontier))
+
+		f.write("\n\nAverage algorithm time: "+str(total_execution_time/len(grids)))
+		f.write("\nAverage cells explored: "+str(total_explored/len(grids)))
+		f.write("\nAverage cost: "+str(total_cost/len(grids)))
+		f.write("\nAverage frontier length: "+str(total_frontier/len(grids)))
+
+		f.write("\n\nTotal benchmark time: "+str(time.time()-overall_start))
+
+		self.grid.allow_render_mouse = True
+		self.is_benchmark = False
+		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+")")
+
+	def weighted_a_star_benchmark_wrapper(self):
+		# benchmark on multiple weight values for Weighted A*
+		benchmark_weights = [1.25,2.0]
+		print("Benchmarking Weighted A* on "+str(len(benchmark_weights))+" weights: ",benchmark_weights)
+		i = 0
+		for weight in benchmark_weights:
+			self.weighted_a_star_benchmark(weight,i)
+			i+=1
+
+	def weighted_a_star_benchmark(self,weight,benchmark_index):
+		# benchmark the efficiency of the Weighted A* algorithm on all files in /grids
+		self.is_benchmark = True
+		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
+
+		f = open("weighted_a_star-benchmark"+str(benchmark_index)+".txt","w")
+		grids = self.get_all_grids()
+		print("Benchmarking Weighted A* on "+str(len(grids))+" .grid files with weight: "+str(weight)+"...")
+		print("Writing results to weighted_a_star-benchmark"+str(benchmark_index)+".txt...")
+		f.write("Weighted A* Benchmark on "+str(len(grids))+" .grid files with weight: "+str(weight)+":\n")
+
+		# turning off all UI interaction
+		self.grid.allow_render_mouse = False
+		self.grid.verbose = False
+		self.grid.draw_grid_lines = False
+		self.grid.draw_outer_boundary = False
+		self.grid.show_path_trace = False
+
+		overall_start = time.time()
+		total_execution_time = time.time()
+
+		total_explored = 0
+		total_cost = 0
+		total_frontier = 0
+
+		for grid in grids:
+			print("Running Weighted A* on "+grid+" with weight: "+str(weight)+"...")
+			self.grid.load(grid)
+			start_time = time.time()
+			self.a_star(weight)
+			end_time = time.time()
+			total_execution_time += (end_time-start_time)
+
+			last_cost = self.latest_search_cost
+			total_cost += last_cost
+
+			frontier_length = self.latest_frontier_length
+			total_frontier += frontier_length
+
+			explored_length = self.latest_num_explored
+			total_explored += explored_length
+
+			f.write("\n"+grid+":\t time: "+str(end_time-start_time)+", cost: "+str(last_cost)+", frontier: "+str(frontier_length)+", explored: "+str(explored_length))
+
+		f.write("\n\nTotal algorithm time: "+str(total_execution_time))
+		f.write("\nTotal cells explored: "+str(total_explored))
+		f.write("\nTotal cost: "+str(total_cost))
+		f.write("\nTotal frontier length: "+str(total_frontier))
+
+		f.write("\n\nAverage algorithm time: "+str(total_execution_time/len(grids)))
+		f.write("\nAverage cells explored: "+str(total_explored/len(grids)))
+		f.write("\nAverage cost: "+str(total_cost/len(grids)))
+		f.write("\nAverage frontier length: "+str(total_frontier/len(grids)))
+
+		f.write("\n\nTotal benchmark time: "+str(time.time()-overall_start))
+
+		self.grid.allow_render_mouse = True
+		self.is_benchmark = False
+		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+")")
+
+	def uniform_cost_benchmark(self):
+		# benchmark the efficiency of the Uniform Cost Search algorithm on all files in /grids
+		self.is_benchmark = True
+		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
+
+		f = open("ucs-benchmark.txt","w")
+		grids = self.get_all_grids()
+		print("Benchmarking A* on "+str(len(grids))+" .grid files...")
+		print("Writing results to ucs-benchmark.txt...")
+		f.write("Uniform-Cost Search Benchmark on "+str(len(grids))+" .grid files:\n")
+
+		# turning off all UI interaction
+		self.grid.allow_render_mouse = False
+		self.grid.verbose = False
+		self.grid.draw_grid_lines = False
+		self.grid.draw_outer_boundary = False
+		self.grid.show_path_trace = False
+
+		overall_start = time.time()
+		total_execution_time = time.time()
+
+		total_explored = 0
+		total_cost = 0
+		total_frontier = 0
+
+		for grid in grids:
+			print("Running Uniform-Cost Search on "+grid+"...")
+			self.grid.load(grid)
+			start_time = time.time()
+			self.uniform_cost()
+			end_time = time.time()
+			total_execution_time += (end_time-start_time)
+
+			last_cost = self.latest_search_cost
+			total_cost += last_cost
+
+			frontier_length = self.latest_frontier_length
+			total_frontier += frontier_length
+
+			explored_length = self.latest_num_explored
+			total_explored += explored_length
+
+			f.write("\n"+grid+":\t time: "+str(end_time-start_time)+", cost: "+str(last_cost)+", frontier: "+str(frontier_length)+", explored: "+str(explored_length))
+
+		f.write("\n\nTotal algorithm time: "+str(total_execution_time))
+		f.write("\nTotal cells explored: "+str(total_explored))
+		f.write("\nTotal cost: "+str(total_cost))
+		f.write("\nTotal frontier length: "+str(total_frontier))
+
+		f.write("\n\nAverage algorithm time: "+str(total_execution_time/len(grids)))
+		f.write("\nAverage cells explored: "+str(total_explored/len(grids)))
+		f.write("\nAverage cost: "+str(total_cost/len(grids)))
+		f.write("\nAverage frontier length: "+str(total_frontier/len(grids)))
+
+		f.write("\n\nTotal benchmark time: "+str(time.time()-overall_start))
+
+		self.grid.allow_render_mouse = True
+		self.is_benchmark = False
+		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+")")
 
 	def toggle_mouse_tracking(self):
 		# function called by pyqt when user chooses the appropriate menu item
@@ -783,6 +995,12 @@ class main_window(QWidget):
 		pyqt_app.processEvents()
 		final_solution_cost = get_path_cost(self.path_end,self.highways)
 		print("\nFinished a* search in "+str(time.time()-overall_start)[:6]+" seconds, final cost: "+str(final_solution_cost)+", checked "+str(len(self.explored))+" cells\n")
+
+		if self.is_benchmark:
+			self.latest_search_cost = final_solution_cost
+			self.latest_num_explored = len(self.explored)
+			self.latest_frontier_length = self.frontier.length()
+
 		self.grid.verbose = True # resume printing render timing info for the window
 		self.grid.render_mouse = True
 
@@ -839,6 +1057,12 @@ class main_window(QWidget):
 			pyqt_app.processEvents()
 			if done:
 				break
+
+		# used for benchmarking
+		if self.is_benchmark:
+			self.latest_search_cost = self.path_cost
+			self.latest_num_explored = len(self.explored)
+			self.latest_frontier_length = self.frontier.length()
 
 		self.grid.verbose = True
 		self.grid.render_mouse = True
@@ -978,9 +1202,11 @@ class main_window(QWidget):
 
 	def resizeEvent(self,e):
 		# called when user resizes the window
-		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+")")
-		return # skip printing information
-		print(self.size().width(),self.size().height())
+		if self.is_benchmark:
+			self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
+		else:
+			self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+")")
+		#print(self.size().width(),self.size().height())
 
 	def mousePressEvent(self,e):
 		# called when user clicks somewhere in window
