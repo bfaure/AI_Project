@@ -757,6 +757,7 @@ class eight_neighbor_grid(QWidget):
 		self.horizontal_step = 1 # set later
 		self.vertical_step = 1 # set later
 		self.render_mouse = True
+		self.allow_render_mouse = True # to allow for self.render_mouse override
 
 		self.setMinimumSize(800,600) # ui pixel dimensions (w,h)
 		self.grid_line_color = [0,0,0] # black for cell lines
@@ -822,7 +823,7 @@ class eight_neighbor_grid(QWidget):
 
 	def mouseMoveEvent(self, event):
 		self.verbose = False # dont print render information
-		if self.render_mouse:
+		if self.render_mouse and self.allow_render_mouse:
 			x = event.x() 
 			y = event.y() 
 
@@ -1850,6 +1851,9 @@ class eight_neighbor_grid(QWidget):
 
 	def toggle_trace(self,use_trace):
 		self.show_path_trace = use_trace
+
+	def toggle_mouse(self,track):
+		self.allow_render_mouse = track
 
 	def set_attrib_color(self,attrib="free",color=[0,0,0]):
 		# called by the main_window, sets the color of a certain attribute

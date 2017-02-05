@@ -376,6 +376,7 @@ class main_window(QWidget):
 		self.use_gradient = False # False by default
 		self.show_trace = True # true by default
 		self.updating_already = False
+		self.mouse_tracking = True
 
 		self.child_windows = [] # to hold any extra windows opened by user
 		self.color_preferences_window = attrib_color_window()
@@ -484,6 +485,8 @@ class main_window(QWidget):
 		self.toggle_gradient_action = self.tools_menu.addAction("Turn Off Swarm Gradient",self.toggle_gradient)
 		self.toggle_trace_action = self.tools_menu.addAction("Turn On Path Trace",self.toggle_trace)
 		self.tools_menu.addSeparator()
+		self.toggle_mouse_tracking_action = self.tools_menu.addAction("Turn Off Mouse Tracking",self.toggle_mouse_tracking)
+		self.tools_menu.addSeparator()
 		change_attrib_color_action = self.tools_menu.addAction("Set Attribute Color...",self.change_attrib_color,QKeySequence("Ctrl+M"))
 		change_attrib_value_action = self.tools_menu.addAction("Set Attribute Value...",self.change_attrib_value,QKeySequence("Ctrl+V"))
 		self.tools_menu.addSeparator()
@@ -507,8 +510,22 @@ class main_window(QWidget):
 		QtCore.QObject.connect(self.grid, QtCore.SIGNAL("return_current_cell_attributes(PyQt_PyObject)"), self.update_current_cell_info)
 		self.show()
 
+	def toggle_mouse_tracking(self):
+		# function called by pyqt when user chooses the appropriate menu item
+		if self.mouse_tracking == True:
+			self.mouse_tracking = False
+			self.toggle_mouse_tracking_action.setText("Turn On Mouse Tracking")
+		else:
+			self.mouse_tracking = True
+			self.toggle_mouse_tracking_action.setText("Turn Off Mouse Tracking")
+
+		self.grid.toggle_mouse(track=self.mouse_tracking)
+		self.grid.repaint()
+		pyqt_app.processEvents()
+
 	def update_current_cell_info(self,cell_attributes):
 		# automatically called when the grid sends info
+		self.cells = self.grid.cells 
 		if cell_attributes.is_valid:
 			self.coordinates_value.setText("("+str(cell_attributes.coordinates[0])+","+str(cell_attributes.coordinates[1])+")")
 
@@ -520,6 +537,12 @@ class main_window(QWidget):
 				self.state_value.setText("Partially Blocked")
 			else:
 				self.state_value.setText("None")
+
+			temp = cell(cell_attributes.coordinates[0],cell_attributes.coordinates[1])
+			i = get_cell_index(temp,self.cells)
+
+			heuristic_value = self.grid.euclidean_heuristic(temp,self.grid.end_cell)
+			self.h_value.setText(str(heuristic_value))
 
 			if hasattr(self,"last_cost_list"):
 				# if we have run an a* algorithm
@@ -533,18 +556,13 @@ class main_window(QWidget):
 				self.f_value.setText(str(cost))
 
 				if cost != "None":
-					h = self.grid.euclidean_heuristic(temp, self.grid.end_cell)
-					self.h_value.setText(str(h))
-					self.g_value.setText(str(cost-h))
+					self.g_value.setText(str(cost-heuristic_value))
 				else:
-					self.h_value.setText("None")
 					self.g_value.setText("None")
 
 			else:
 				self.f_value.setText("None")
 				self.g_value.setText("None")
-				self.h_value.setText("None")
-
 
 	def stop_algorithm(self):
 		# called from menu item
