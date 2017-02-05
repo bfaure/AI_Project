@@ -755,6 +755,7 @@ class eight_neighbor_grid(QWidget):
 
 		self.horizontal_step = 1 # set later
 		self.vertical_step = 1 # set later
+		self.render_mouse = True
 
 		self.setMinimumSize(800,600) # ui pixel dimensions (w,h)
 		self.grid_line_color = [0,0,0] # black for cell lines
@@ -819,10 +820,12 @@ class eight_neighbor_grid(QWidget):
 		print("Finished generating random grid, "+str(time.time()-start_time)+" seconds\n")
 
 	def mouseMoveEvent(self, event):
-		x = event.x() 
-		y = event.y() 
-		self.mouse_location = [x/self.horizontal_step,y/self.vertical_step]
-		self.repaint()
+		if self.render_mouse:
+			x = event.x() 
+			y = event.y() 
+
+			self.mouse_location = [x/self.horizontal_step,y/self.vertical_step]
+			self.repaint()
 
 	def enterEvent(self,event):
 		# called if the mouse cursor goes over the widget
