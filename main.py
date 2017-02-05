@@ -20,7 +20,7 @@ import heapq # for priority queue implementation
 # set to true to disable Cython, if you don't have a Cython
 # installation that doesnt mean you need to change this, should
 # be used only for debugging and testing purposes.
-TURN_OFF_CYTHON = True
+TURN_OFF_CYTHON = False
 USE_UCS_MULTITHREADED = False
 
 try:
@@ -51,14 +51,14 @@ if using_cython:
 
 	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message
 	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index, get_path_cost
-	from helpers import non_gui_eight_neighbor_grid
+	from helpers import non_gui_eight_neighbor_grid, neighbor_index_list, prune_neighbors
 else:
 	print("Could not find Cython installation, using Python version of helpers.py")
 	lib_folder = "lib/"
 	sys.path.insert(0, lib_folder)
 	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message
 	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index, get_path_cost
-	from helpers import non_gui_eight_neighbor_grid
+	from helpers import non_gui_eight_neighbor_grid, neighbor_index_list, prune_neighbors
 
 pyqt_app = ""
 
@@ -78,7 +78,7 @@ class attrib_value_window(QWidget):
 		self.values = [1.00,5.00,1.00,2.00]
 
 		if os.name == "nt": # better for windows
-			self.values[0] = 2.0 
+			self.values[0] = 2.0
 
 		self.lines = ["Highway","Solution Path","Solution Trace","Solution Swarm"]
 		self.current_line_types = ["SolidLine","SolidLine","DotLine","DashLine"]
@@ -457,7 +457,7 @@ class main_window(QWidget):
 
 	def stop_algorithm(self):
 		# called from menu item
-		self.stop_executing = True 
+		self.stop_executing = True
 
 	def save_screenshot(self):
 		# takes a screenshot of the current grid and saves as png
@@ -600,12 +600,14 @@ class main_window(QWidget):
 
 		self.frontier = PriorityQueue()
 		self.explored = [] # empty set
+		visited = [False] * len(self.cells)
 
-		cost_root = self.grid.get_euclidean_distance(self.grid.start_cell, self.grid.end_cell);
+		cost_root = self.grid.euclidean_heuristic(self.grid.start_cell, self.grid.end_cell);
 		self.frontier.push(self.start_cell,cost_root,parent=None)
 
 		rootIndex = get_cell_index(self.start_cell, self.cells)
 		cost_list[rootIndex] = 0
+		visited[rootIndex] = rootIndex
 
 		refresh_rate = 0.1 # update the ui window after this many seconds
 		start_time = time.time() # used for updating the ui
@@ -623,6 +625,7 @@ class main_window(QWidget):
 			cur_node = self.frontier.pop()
 			self.explored.append(cur_node)
 
+
 			# update the ui window
 			if time.time()-start_time > refresh_rate:
 				start_time = time.time()
@@ -638,13 +641,17 @@ class main_window(QWidget):
 
 			#get all the neighbors of the current node
 			neighbor_list = get_neighbors(cur_node,self.cells)
-
+			#index_list = neighbor_index_list(neighbor_list, self.cells)
+			#pruned_list = prune_neighbors(neighbor_list, visited, index_list)
 			current_node_index = get_cell_index(cur_node, self.cells)
+			visited[current_node_index] = True
+			#self.frontier.clear()
 			for neighbor in neighbor_list:
 				transition_cost = get_transition_cost(cur_node,neighbor,self.highways)
 				updated_cost = cost_list[current_node_index] + transition_cost
 				neighborIndex = get_cell_index(neighbor, self.cells)
-				if (neighborIndex not in cost_list or updated_cost < cost_list[neighborIndex]) and neighbor.state != "full":
+
+				if (neighborIndex not in cost_list or updated_cost < cost_list[neighborIndex]) and (neighbor.state != "full") and visited[neighborIndex] == False:
 					cost_list[neighborIndex] = updated_cost
 					priority = updated_cost + (float(weight) * self.grid.euclidean_heuristic(neighbor, self.grid.end_cell))
 					self.frontier.push(neighbor, priority, parent=cur_node)
