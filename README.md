@@ -32,7 +32,13 @@
 ![Alt text](https://github.com/bfaure/AI_Project/blob/master/screenshots/value_selection_window.PNG)
 
 ## Instructions
-Run `python main.py` (normal execution of Python 2.7) to open the UI. If you have Cython installed the lib/helpers.py file will automatically be copied to helpers.pyx and Cython will build this up to helpers.c. If Cython is not installed, the original helpers.py file will be used. Multi-threaded UCS can be enabled by setting `USE_UCS_MULTITHREADED` to True in main.py.
+`python main.py`: Open main GUI window.<br>
+`python main.py -g XXX`: Generate XXX random grids, saved in the /grids directory.<br>
+
+## Compilation Details
+At the top of the main.py file there are two global variables...<br>
+`TURN_OFF_CYTHON`: If true, this will disable the Cython feature. Note: the program will figure out if you have a Cython installation automatically and set this to False programmmatically so only use this feature if you HAVE Cython and wish to avoid using it.<br>
+`USE_UCE_MULTITHREADED`: False by default, if set to True this will use an experimental version of the uniform cost search algorithm running on a thread separate from the UI thread.
 
 ## Dependencies
 Python 2.7, PyQt4
