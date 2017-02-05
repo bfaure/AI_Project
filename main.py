@@ -583,7 +583,7 @@ class main_window(QWidget):
 
 	def a_star(self, weight=1):
 		# put a* implementation here
-		self.render_mouse = False
+		self.grid.render_mouse = False
 		self.grid.verbose = False # dont print render update info to terminal during execution
 		self.stop_executing = False
 		self.cells = self.grid.cells #current state of grid cells
@@ -614,11 +614,11 @@ class main_window(QWidget):
 		while (self.frontier.length() != 0):
 
 			if self.stop_executing:
-				self.render_mouse = True
+				self.grid.render_mouse = True
 				return # return if user cancelled execution
 
 			# printing current state information to terminal
-			print("explored: "+str(len(self.explored))+", frontier: "+str(self.frontier.length())+", time: "+str(time.time()-start_time)[:6],end="\r")
+			print("explored: "+str(len(self.explored))+", frontier: "+str(self.frontier.length())+", time: "+str(time.time()-overall_start)[:6],end="\r")
 
 			cur_node = self.frontier.pop()
 			self.explored.append(cur_node)
@@ -654,14 +654,13 @@ class main_window(QWidget):
 		self.grid.update() # render grid with new solution path
 		pyqt_app.processEvents()
 		final_solution_cost = get_path_cost(self.path_end,self.highways)
-		self.render_mouse = True
-
 		print("\nFinished a* search in "+str(time.time()-overall_start)[:6]+" seconds, final cost: "+str(final_solution_cost)+", checked "+str(len(self.explored))+" cells\n")
 		self.grid.verbose = True # resume printing render timing info for the window
+		self.grid.render_mouse = True
 
 	def uniform_cost(self):
 		print("\nPerforming uniform_cost search...")
-		self.render_mouse = False
+		self.grid.render_mouse = False
 		self.stop_executing = False # Ctrl+C calls clear which will set this to true
 		self.grid.verbose = False # Don't output all the render details
 
@@ -689,7 +688,7 @@ class main_window(QWidget):
 			self.grid.connect_to_ucs_agent(self.ucs_agent)
 			self.ucs_agent.app = pyqt_app
 			self.ucs_agent.start() # start the thread
-			self.render_mouse = True
+			self.grid.render_mouse = True
 			return
 
 		self.path_cost = 0 # overall path cost
@@ -714,7 +713,7 @@ class main_window(QWidget):
 				break
 
 		self.grid.verbose = True
-		self.render_mouse = True
+		self.grid.render_mouse = True
 
 	def uniform_cost_step(self,refresh_rate,cost_refresh_rate,explored_refresh_rate):
 		# helper function for uniform_cost search, performs only refresh_rate seconds then returns

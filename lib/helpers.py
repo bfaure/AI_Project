@@ -27,6 +27,7 @@ class cell:
 		self.y = y_coordinate # not using anymore
 		self.cost = 0 # used for Priority Queue to remember cost
 		self.parent = None
+		self.render_coordinate = None
 
 # similar to eight_neigbor_grid but is only used if the user provides 
 # command line arguments and is just trying to utilize those functions
@@ -820,24 +821,28 @@ class eight_neighbor_grid(QWidget):
 		print("Finished generating random grid, "+str(time.time()-start_time)+" seconds\n")
 
 	def mouseMoveEvent(self, event):
+		self.verbose = False # dont print render information
 		if self.render_mouse:
 			x = event.x() 
 			y = event.y() 
 
-			self.mouse_location = [x/self.horizontal_step,y/self.vertical_step]
+			self.mouse_location = [x,y]
 			self.repaint()
+		else:
+			self.setMouseTracking(False)
 
 	def enterEvent(self,event):
 		# called if the mouse cursor goes over the widget
-		print("Mouse entered widget")
-		self.verbose = False
+		#print("Mouse entered widget")
+		#self.verbose = False
 		self.has_mouse = True
-		self.setMouseTracking(True)
+		if self.render_mouse:
+			self.setMouseTracking(True)
 
 	def leaveEvent(self,event):
 		# called if the mouse cursor leaves the widget
-		print("Mouse left widget")
-		self.verbose = True
+		#print("Mouse left widget")
+		#self.verbose = True
 		self.has_mouse = False
 		self.setMouseTracking(False)
 		self.mouse_location = None
@@ -1565,6 +1570,7 @@ class eight_neighbor_grid(QWidget):
 
 			index += 1
 			last_color = cell_color
+			cell.render_coordinate = [x_start,y_start,horizontal_step,vertical_step]
 
 		# allow user to decide if grid lines should be rendered
 		if self.draw_grid_lines:
@@ -1718,15 +1724,20 @@ class eight_neighbor_grid(QWidget):
 			qp.drawLine(x1,y1,x2,y2)
 			last_location = location
 
-		if self.mouse_location!=None:
-			qp.setBrush(QColor(self.mouse_color[0],self.mouse_color[1],self.mouse_color[2]))
-			qp.setPen(Qt.NoPen)
-			for cell in self.cells:
-				if cell.x == self.mouse_location[0] and cell.y == self.mouse_location[1]:
-					x_start = cell.x
-					y_start = cell.y
-					qp.drawRect(x_start*horizontal_step,y_start*horizontal_step,horizontal_step,vertical_step)
-					break
+		if self.render_mouse:
+			if self.mouse_location!=None:
+				qp.setBrush(QColor(self.mouse_color[0],self.mouse_color[1],self.mouse_color[2]))
+				pen = QPen(QColor(0,0,0),0.1,Qt.SolidLine)
+				qp.setPen(pen)
+
+				x = self.mouse_location[0] # = (x coordinate of mouse) / self.horizontal_step
+				y = self.mouse_location[1] # = (y coordinate of mouse) / self.vertical_step
+				
+				for cell in self.cells:
+					if x>=(cell.render_coordinate[0]) and x<(cell.render_coordinate[0]+horizontal_step):
+						if y>=(cell.render_coordinate[1]) and y<(cell.render_coordinate[1]+vertical_step):
+							qp.drawRect(cell.render_coordinate[0],cell.render_coordinate[1],horizontal_step,vertical_step)
+							break
 
 		if self.verbose:
 			print("                                                                           ",end="\r")
@@ -1738,18 +1749,21 @@ class eight_neighbor_grid(QWidget):
 		# if the coordinates are sent from the UI main_window instance they may
 		# not align exactly with the cell coordinates in the grid so we need to adjust
 		if add_adjustment:
-			size = self.size()
-			width = size.width()
-			height = size.height()
+			# need to iterate over the cells in the self.cells list and check their self.render_coordinate
+			# values to match them to the ones provided (x_coord,y_coord)
 
-			x_coord = x_coord - 1.0
-			y_coord = y_coord - 1.0
+			x = -1
+			y = -1
 
-			if x_coord<0: x_coord = 0
-			if y_coord<0: y_coord = 0
+			for cell in self.cells:
+				if x_coord>=cell.render_coordinate[0] and x_coord<(cell.render_coordinate[0]+cell.render_coordinate[2]):
+					if y_coord>=cell.render_coordinate[1] and y_coord<(cell.render_coordinate[1]+cell.render_coordinate[3]):
+						x = cell.x 
+						y = cell.y 
+						break
 
-			x = int(round(float((float(x_coord)/float(width))*float(self.num_columns))))
-			y = int(round(float((float(y_coord)/float(height))*float(self.num_rows))))
+			if x==-1 and y==-1:
+				print("ERROR: Could not locate ("+str(x_coord)+","+str(y_coord)+") coordinates in set_cell_state().")
 
 		else:
 			x = x_coord
