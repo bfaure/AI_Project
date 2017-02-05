@@ -893,7 +893,5 @@ def main():
 		else:
 			print("Did not recognize command line parameters, try -h for help")
 
-
-
 if __name__ == '__main__':
 	main()
