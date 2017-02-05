@@ -740,6 +740,8 @@ class eight_neighbor_grid(QWidget):
 		self.render_mouse = True
 		self.allow_render_mouse = True # to allow for self.render_mouse override
 
+		self.suppress_output = False # if true, suppress command line printing
+
 		self.setMinimumSize(800,600) # ui pixel dimensions (w,h)
 		self.grid_line_color = [0,0,0] # black for cell lines
 		self.free_cell_color = [255,255,255] # white for free cell
@@ -793,14 +795,14 @@ class eight_neighbor_grid(QWidget):
 		self.path_traces = [] # list of all paths tried (shown to user)
 		if leave_empty: return
 
-		print("\nGenerating a random grid...")
+		if self.suppress_output==False: print("\nGenerating a random grid...")
 		start_time = time.time()
 		self.init_partially_blocked_cells() # init the partially blocked
 		self.init_highways() # initialize the 4 highways
 		self.init_blocked_cells() # initialize the completely blocked cells
 		self.init_start_end_cells() # initialize the start/end locations
 		self.solution_path = [] # the path eventually filled by one of the search algos
-		print("Finished generating random grid, "+str(time.time()-start_time)+" seconds\n")
+		if self.suppress_output==False: print("Finished generating random grid, "+str(time.time()-start_time)+" seconds\n")
 
 	def mouseMoveEvent(self, event):
 
@@ -1014,11 +1016,11 @@ class eight_neighbor_grid(QWidget):
 			num_attempts+=1
 
 		#print("                                                                             ",end='\r')
-		print("Exhausted "+str(num_attempts)+" attempts, "+str(total_attempts)+" total.",end='\r')
+		if self.suppress_output==False: print("Exhausted "+str(num_attempts)+" attempts, "+str(total_attempts)+" total.",end='\r')
 		return num_attempts
 
 	def init_highways(self):
-		print("Placing highways...")
+		if self.suppress_output==False: print("Placing highways...")
 		# see Sakai Asisgnment PDF for more explanation.
 		self.highways = []
 		# select 4 random highway start locations
@@ -1047,11 +1049,11 @@ class eight_neighbor_grid(QWidget):
 				print("ERROR in init_highways, could not locate edge for start_cell: "+str(start_cell))
 				return
 			total_attempts+=self.get_highway(coord,edge,total_attempts) # try to place highway from that head
-		print("\n",end='\r') # save the last entry output from the get_highway() function
+		if self.suppress_output: print("\n",end='\r') # save the last entry output from the get_highway() function
 
 	def init_blocked_cells(self):
 		# choose 20% of the remaining cells to mark as fully blocked, Sakai PDF
-		print("Creating fully blocked cells...")
+		if self.suppress_output==False: print("Creating fully blocked cells...")
 		num_blocked_cells = 3840
 		cur_blocked_cells = 0
 		while cur_blocked_cells<num_blocked_cells:
@@ -1109,7 +1111,7 @@ class eight_neighbor_grid(QWidget):
 
 	def init_start_end_cells(self):
 		# initializes the locations of the start and end cells
-		print("Creating start/end cells...")
+		if self.suppress_output==False: print("Creating start/end cells...")
 		while True:
 			# gereate random start and end cells according to the
 			# rules in the Sakai PDF...
@@ -1130,7 +1132,7 @@ class eight_neighbor_grid(QWidget):
 	def init_partially_blocked_cells(self):
 		# see Sakai Assignment PDF for explanation.
 		# select 8 random regions:
-		print("Creating partially blocked cells...")
+		if self.suppress_output==False: print("Creating partially blocked cells...")
 		self.hard_to_traverse_regions = []
 		num_regions = 8
 		for _ in range(num_regions):
@@ -1201,7 +1203,7 @@ class eight_neighbor_grid(QWidget):
 
 			if cell.state == "full":
 				if self.check_for_highway(x,y):
-					print("WARNING: Blocked cell at: ("+str(x)+","+str(y)+"), is in the path of a highway")
+					if self.suppress_output==False: print("WARNING: Blocked cell at: ("+str(x)+","+str(y)+"), is in the path of a highway")
 				continue
 
 			if cell.state == "free":
@@ -1214,7 +1216,7 @@ class eight_neighbor_grid(QWidget):
 			for item in row:
 				cell_chars_str += item
 		f.write(cell_chars_str)
-		print("Saved a total of "+str(num_highway_coordinates)+" highway coordinates.")
+		if self.suppress_output==False: print("Saved a total of "+str(num_highway_coordinates)+" highway coordinates.")
 
 	def is_finished_highway(self,highway,conservative=True):
 		# checks if both of the endpoints of the highway
@@ -1253,8 +1255,7 @@ class eight_neighbor_grid(QWidget):
 				# save this location as the start of a new highway segment
 				last_cut = coordinate_list.index(item)
 			last = item # use this as the previous location on the next iteration
-
-		print("Initial hwy reconstruction converted "+str(len(coordinate_list))+" coordinates into "+str(len(broken))+" hwy segments...")
+		if self.suppress_output==False: print("Initial hwy reconstruction converted "+str(len(coordinate_list))+" coordinates into "+str(len(broken))+" hwy segments...")
 
 		# now we have the broken list with partially reconstructed highway
 		# segments but they are most likely not complete, iterate over the
@@ -1265,13 +1266,13 @@ class eight_neighbor_grid(QWidget):
 		while True:
 			iterations+=1
 			if iterations>max_allowed:
-				print("ERROR: Could not load the highways for this .grid file.")
+				if self.suppress_output==False: print("ERROR: Could not load the highways for this .grid file.")
 				self.highways = broken # save the current reconstruction state for debuggging
 				return
 
 			segment = broken[0] # start,end of highway segment (coordinate form)
 			if segment == None:
-				print("WARNING: Found NoneType object in broken list, removing.")
+				if self.suppress_output==False: print("WARNING: Found NoneType object in broken list, removing.")
 				del broken[0]
 				continue
 
@@ -1319,7 +1320,7 @@ class eight_neighbor_grid(QWidget):
 				index = 0
 				for h in self.highways:
 					if self.is_finished_highway(h,conservative=False)==False:
-						print("WARNING: A Highway found in this file may be corrupted, attempting repair.")
+						if self.suppress_output==False: print("WARNING: A Highway found in this file may be corrupted, attempting repair.")
 						self.repair_highway(index)
 					index+=1
 				return
@@ -1360,11 +1361,11 @@ class eight_neighbor_grid(QWidget):
 			# extending the start of the highway to the wall
 			edge,distance = self.get_closest_edge_and_distance(start_cell)
 			if distance>5:
-				print("ERROR: Highway reperation was not possible.")
+				if self.suppress_output==False: print("ERROR: Highway reperation was not possible.")
 				return
 			#print("Start cell ("+str(start_cell[0])+","+str(start_cell[1])+") detached from "+edge+" by ",str(distance))
 			if edge == "None":
-				print("WARNING: Could not repair highway.")
+				if self.suppress_output==False: print("WARNING: Could not repair highway.")
 				return
 			if edge == "top":
 				const = start_cell[0]
@@ -1405,11 +1406,11 @@ class eight_neighbor_grid(QWidget):
 			# extending the end of the highway to the wall
 			edge,distance = self.get_closest_edge_and_distance(end_cell)
 			if distance>5:
-				print("ERROR: Highway reperation was not possible.")
+				if self.suppress_output==False: print("ERROR: Highway reperation was not possible.")
 				return
 			#print("End cell ("+str(end_cell[0])+","+str(end_cell[1])+") detached from "+edge+" by ",distance)
 			if edge == "None":
-				print("WARNING: Could not repair highway.")
+				if self.suppress_output==False: print("WARNING: Could not repair highway.")
 				return
 
 			if edge == "top":
@@ -1439,7 +1440,7 @@ class eight_neighbor_grid(QWidget):
 				for i in range(distance):
 					self.highways[index].append([x_start+i,const])
 
-		print("WARNING: Highway was repaired.")
+		if self.suppress_output==False: print("WARNING: Highway was repaired.")
 		return
 
 	def load(self,filename):
@@ -1453,7 +1454,7 @@ class eight_neighbor_grid(QWidget):
 		hard_to_traverse_regions = [] # to hold (x,y) locations of hard to traverse cells
 		highways 	= [] # list of disparate highway coordinates
 
-		print("Loading cell data...")
+		if self.suppress_output==False: print("Loading cell data...")
 		y = 0
 		for line in lines: # iterate over each line of file
 
@@ -1496,7 +1497,7 @@ class eight_neighbor_grid(QWidget):
 						coord = (x,y)
 						highways.append(coord)
 					else:
-						print("WARNING: Came across invalid cell at location ("+str(x)+","+str(y)+") while loading file.")
+						if self.suppress_output==False: print("WARNING: Came across invalid cell at location ("+str(x)+","+str(y)+") while loading file.")
 						cell_state = "free"
 
 					new_cell = cell(x,y)
@@ -1514,7 +1515,7 @@ class eight_neighbor_grid(QWidget):
 		# now need to flush the elements from the highways list and reorganize
 		# it into individual lists that each represent an individual highway
 		self.highways = [] # list of lists of coordinates
-		print("Reconstructing highways...")
+		if self.suppress_output==False: print("Reconstructing highways...")
 		self.reconstruct_highways(highways)
 		#print(self.highways)
 
@@ -1528,7 +1529,7 @@ class eight_neighbor_grid(QWidget):
 	def drawWidget(self, qp):
 		# draw the grid, let the (0,0) cell be in the top left of the window
 		if self.verbose:
-			print("Re-Drawing Grid...",end="\r")
+			if self.suppress_output==False: print("Re-Drawing Grid...",end="\r")
 
 		start_time = time.time() # to time the draw event
 		size = self.size() # current size of widget
@@ -1570,7 +1571,7 @@ class eight_neighbor_grid(QWidget):
 			elif cell.state == "full":
 				cell_color = self.blocked_cell_color
 			else:
-				print("Need to create brushes for cell status:",cell.state)
+				if self.suppress_output==False: print("Need to create brushes for cell status:",cell.state)
 				cell_color = self.free_cell_color # for now
 
 			# check if cell is the start or end cell
@@ -1618,7 +1619,7 @@ class eight_neighbor_grid(QWidget):
 		qp.setBrush(Qt.NoBrush)
 		for highway in self.highways:
 			if highway == None:
-				print("Encountered empty list:",highway)
+				if self.suppress_output==False: print("Encountered empty list:",highway)
 				continue
 			last_location = None
 			for location in highway:
@@ -1760,8 +1761,9 @@ class eight_neighbor_grid(QWidget):
 							break
 
 		if self.verbose:
-			print("                                                                           ",end="\r")
-			print("Re-Drawing Grid: "+str(time.time()-start_time)[:5]+" seconds")
+			if self.suppress_output==False: 
+				print("                                                                           ",end="\r")
+				print("Re-Drawing Grid: "+str(time.time()-start_time)[:5]+" seconds")
 
 	def set_cell_state(self,x_coord,y_coord,state,add_adjustment=True):
 		# updates a single cell in the grid with a new state then reloads the ui
@@ -1783,7 +1785,7 @@ class eight_neighbor_grid(QWidget):
 						break
 
 			if x==-1 and y==-1:
-				print("ERROR: Could not locate ("+str(x_coord)+","+str(y_coord)+") coordinates in set_cell_state().")
+				if self.suppress_output==False: print("ERROR: Could not locate ("+str(x_coord)+","+str(y_coord)+") coordinates in set_cell_state().")
 
 		else:
 			x = x_coord
@@ -1819,7 +1821,7 @@ class eight_neighbor_grid(QWidget):
 					if y_coord>=cell.render_coordinate[1] and y_coord<(cell.render_coordinate[1]+cell.render_coordinate[3]):
 						return cell.state
 			if x==-1 and y==-1:
-				print("ERROR: Could not locate cell in question ("+str(x)+","+str(y)+")")
+				if self.suppress_output==False: print("ERROR: Could not locate cell in question ("+str(x)+","+str(y)+")")
 				return "ERROR"
 		else:
 			for cell in self.cells:
@@ -1866,7 +1868,7 @@ class eight_neighbor_grid(QWidget):
 		elif attrib == "path_trace":
 			self.trace_color = color
 		else:
-			print("Unknown attribute: "+attrib)
+			if self.suppress_output==False: print("Unknown attribute: "+attrib)
 
 	def set_attrib_value(self,attrib,value):
 		if attrib == "Solution Swarm Density":
@@ -1878,7 +1880,7 @@ class eight_neighbor_grid(QWidget):
 		elif attrib == "Highway Width":
 			self.highway_render_width = value
 		else:
-			print("Unknown attribute: "+attrib)
+			if self.suppress_output==False: print("Unknown attribute: "+attrib)
 
 	def set_line_type(self,attrib,value):
 		if attrib == "Highway":
@@ -1890,7 +1892,7 @@ class eight_neighbor_grid(QWidget):
 		elif attrib == "Solution Swarm":
 			self.solution_swarm_line_type = value
 		else:
-			print("Unknown attribute: "+attrib)
+			if self.suppress_output==False: print("Unknown attribute: "+attrib)
 
 	def get_update(self,new_attribs):
 		# slot called from the ucs_agent thread, updates the ui
@@ -2059,7 +2061,7 @@ def get_transition_cost(current_cell,new_cell,highways):
 		return cost
 
 	else:
-		print("Could not decode cell transition from "+current_state+" to "+new_state)
+		if self.suppress_output==False: print("Could not decode cell transition from "+current_state+" to "+new_state)
 		cost = -1
 		return cost
 
