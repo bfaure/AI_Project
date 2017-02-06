@@ -1079,21 +1079,49 @@ class eight_neighbor_grid(QWidget):
 			y_run = abs(start.y - end[1])
 			return sqrt((x_run**2)+(y_run**2))
 
+	def diagonal_distance_heuristic(self, start, end):
+		if (type(start) is tuple) and (type(end) is tuple):
+			x_run = abs(start[0] - end[0])
+			y_run = abs(start[1] - end[1])
+
+			d_max = max(x_run, y_run)
+			d_min = min(x_run, y_run)
+
+			diag = (1.414 * d_min) + (d_max - d_min)
+			return diag
+		else:
+			x_run = abs(start.x - end[0])
+			y_run = abs(start.y - end[1])
+
+			d_max = max(x_run, y_run)
+			d_min = min(x_run, y_run)
+
+			diag = (1.414 * d_min) + (d_max - d_min)
+			return diag
+
 	def approximate_euclidean_heuristic(self, start, end):
 		if (type(start) is tuple) and (type(end) is tuple):
 			x_run = abs(start[0] - end[0])
 			y_run = abs(start[1] - end[1])
-			return 0.41*x_run + 0.94126*y_run
+
+			if(y_run >= x_run):
+				return 0.41*x_run + 0.94126*y_run
+			else:
+				return 0.41*y_run + 0.94126*x_run
 		else:
 			x_run = abs(start.x - end[0])
 			y_run = abs(start.y - end[1])
-			return 0.41*x_run + 0.94126*y_run
+
+			if(y_run >= x_run):
+				return 0.41*x_run + 0.94126*y_run
+			else:
+				return 0.41*y_run + 0.94126*x_run
 
 	def heuristic_manager(self, start, end, code):
 		if code == 0:
 			return euclidean_heuristic(start, end)
 		elif code == 1:
-			return approximate_euclidean_heuristic(start, end)
+			return diagonal_distance_heuristic(start, end)
 		else:
 			return 0
 

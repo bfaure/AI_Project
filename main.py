@@ -512,9 +512,7 @@ class main_window(QWidget):
 		weighted_a_action = self.algo_menu.addAction("Run Weighted A*",self.weighted_astar_wrapper,QKeySequence("Ctrl+2"))
 		uniform_cost_action = self.algo_menu.addAction("Run Uniform-cost Search",self.uniform_cost,QKeySequence("Ctrl+3"))
 
-		a_star_action = self.algo_menu.addAction("Run A* Search",self.a_star,QKeySequence("Ctrl+1"))
-		weighted_a_action = self.algo_menu.addAction("Run Weighted A* Search",self.weighted_astar_wrapper,QKeySequence("Ctrl+2"))
-		uniform_cost_action = self.algo_menu.addAction("Run Uniform-Cost Search",self.uniform_cost,QKeySequence("Ctrl+3"))
+
 
 		self.algo_menu.addSeparator()
 		stop_algorithm_action = self.algo_menu.addAction("Stop Algorithm",self.stop_algorithm)
