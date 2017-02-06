@@ -510,11 +510,12 @@ class main_window(QWidget):
 
 		# algorithm
 
-		a_star_action = self.algo_menu.addAction("Run A*",self.astar_wrapper,QKeySequence("Ctrl+1"))
+		a_star_action = self.algo_menu.addAction("Run A*",self.a_star,QKeySequence("Ctrl+1"))
 		weighted_a_action = self.algo_menu.addAction("Run Weighted A*",self.weighted_astar_wrapper,QKeySequence("Ctrl+2"))
 		uniform_cost_action = self.algo_menu.addAction("Run Uniform-cost Search",self.uniform_cost,QKeySequence("Ctrl+3"))
 
-
+		self.algo_menu.addSeparator()
+		weighted_astar_custom = self.algo_menu.addAction("Run Weighted A*, Custom Heuristic",self.astar_wrapper)
 
 		self.algo_menu.addSeparator()
 		stop_algorithm_action = self.algo_menu.addAction("Stop Algorithm",self.stop_algorithm)
@@ -966,6 +967,7 @@ class main_window(QWidget):
 	def a_star(self, weight=1, code=0):
 		# put a* implementation here
 		self.grid.render_mouse = False
+		self.grid.allow_render_mouse = False
 		self.grid.verbose = False # dont print render update info to terminal during execution
 		self.stop_executing = False
 		self.cells = self.grid.cells #current state of grid cells
@@ -999,6 +1001,7 @@ class main_window(QWidget):
 
 			if self.stop_executing:
 				self.grid.render_mouse = True
+				self.grid.allow_render_mouse = True
 				return # return if user cancelled execution
 
 			# printing current state information to terminal
@@ -1053,6 +1056,7 @@ class main_window(QWidget):
 
 		self.grid.verbose = True # resume printing render timing info for the window
 		self.grid.render_mouse = True
+		self.grid.allow_render_mouse = True
 
 	def uniform_cost(self):
 		if self.is_benchmark==False: print("\nPerforming uniform_cost search...")
@@ -1181,12 +1185,14 @@ class main_window(QWidget):
 
 	def create(self):
 		# clears the current grid and creates a new random one
+		self.allow_render_mouse = False
 		self.stop_executing = True # if performing ucs w/o multhithreading, tell it to stop
 		self.ucs_agent.stop_executing = True # if using multithreading, tell usc_agent to stop executing
 		pyqt_app.processEvents()
 		self.grid.clear()
 		self.grid.random()
 		self.grid.repaint()
+		self.allow_render_mouse = True
 
 	def clear(self):
 		# clears the current grid
@@ -1202,7 +1208,9 @@ class main_window(QWidget):
 		filename = QFileDialog.getSaveFileName(self,"Save As", current_location+"/grids", "Grid Files (*.grid)")
 		if filename != "":
 			self.grid.save(filename)
-		print("Finished saving "+filename)
+			print("Finished saving "+filename)
+		else:
+			print("Saving canceled")
 
 	def load(self):
 		# load a new grid from file
