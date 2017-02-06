@@ -479,6 +479,8 @@ class main_window(QWidget):
 		a_star_benchmark_action = self.benchmark_menu.addAction("Benchmark A* Search",self.a_star_benchmark)
 		weighted_a_star_benchmark_action = self.benchmark_menu.addAction("Benchmark Weighted A* Search",self.weighted_a_star_benchmark_wrapper)
 		uniform_cost_benchmark_action = self.benchmark_menu.addAction("Benchmark Uniform-Cost Search",self.uniform_cost_benchmark)
+		self.benchmark_menu.addSeparator()
+		all_benchmark_action = self.benchmark_menu.addAction("Benchmark All",self.all_benchmark)
 
 		# menubar actions
 		load_action = self.file_menu.addAction("Load...",self.load,QKeySequence("Ctrl+L"))
@@ -528,13 +530,21 @@ class main_window(QWidget):
 		QtCore.QObject.connect(self.grid, QtCore.SIGNAL("return_current_cell_attributes(PyQt_PyObject)"), self.update_current_cell_info)
 		self.show()
 
+	def all_benchmark(self):
+		# run benchmark on all algorithms
+		print(">Running benchmark on all three algorithms...")
+		self.weighted_a_star_benchmark_wrapper()
+		self.a_star_benchmark()
+		self.uniform_cost_benchmark()
+		print(">Entire benchmark complete")
+
 	def get_all_grids(self):
 		# gets all grid filenames in /grids directory
 		grids = [f for f in listdir("grids") if isfile(join("grids",f))]
 		grid_filenames = []
 		for g in grids:
 			grid_filenames.append("grids/"+g)
-		return grid_filenames
+		return grid_filenames,grids
 
 	def a_star_benchmark(self):
 		# benchmark the efficiency of the A* algorithm on all files in /grids
@@ -542,27 +552,30 @@ class main_window(QWidget):
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
 
 		f = open("a_star-benchmark.txt","w")
-		grids = self.get_all_grids()
-		print("Benchmarking A* on "+str(len(grids))+" .grid files...")
-		print("Writing results to a_star-benchmark.txt...")
+		grids,short = self.get_all_grids()
+		print(">Benchmarking A* on "+str(len(grids))+" .grid files...")
+		print(">Writing results to a_star-benchmark.txt...")
 		f.write("A* Benchmark on "+str(len(grids))+" .grid files:\n\n")
 
 		# turning off all UI interaction
 		self.grid.allow_render_mouse = False
+		self.grid.suppress_output = True
 		self.grid.verbose = False
 		self.grid.draw_grid_lines = False
 		self.grid.draw_outer_boundary = False
 		self.grid.show_path_trace = False
 
 		overall_start = time.time()
-		total_execution_time = time.time()
+		total_execution_time = 0
 
 		total_explored = 0
 		total_cost = 0
 		total_frontier = 0
 
-		for grid in grids:
-			print("Running A* on "+grid+"...")
+		current_location = os.getcwd()
+
+		for grid,short_name in list(zip(grids,short)):
+			print(">Running A* on "+grid+"...")
 			self.grid.load(grid)
 			start_time = time.time()
 			self.a_star()
@@ -580,6 +593,11 @@ class main_window(QWidget):
 
 			f.write("\n"+grid+":\t time: "+str(end_time-start_time)+", cost: "+str(last_cost)+", frontier: "+str(frontier_length)+", explored: "+str(explored_length))
 
+			# save screenshot
+			ext = short_name[:short_name.find(".grid")]
+			filename = current_location+"/screenshots/benchmarks/a_star-"+ext+".png"
+			QPixmap.grabWindow(self.winId()).save(filename,'png')
+
 		f.write("\n\nTotal algorithm time: "+str(total_execution_time))
 		f.write("\nTotal cells explored: "+str(total_explored))
 		f.write("\nTotal cost: "+str(total_cost))
@@ -594,16 +612,19 @@ class main_window(QWidget):
 
 		self.grid.allow_render_mouse = True
 		self.is_benchmark = False
+		self.grid.suppress_output = False
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+")")
+		print(">A* Search Benchmark Complete")
 
 	def weighted_a_star_benchmark_wrapper(self):
 		# benchmark on multiple weight values for Weighted A*
 		benchmark_weights = [1.25,2.0]
-		print("Benchmarking Weighted A* on "+str(len(benchmark_weights))+" weights: ",benchmark_weights)
+		print(">Benchmarking Weighted A* on "+str(len(benchmark_weights))+" weights: ",benchmark_weights)
 		i = 0
 		for weight in benchmark_weights:
 			self.weighted_a_star_benchmark(weight,i)
 			i+=1
+		print(">Weighted A* Search Benchmark Complete")
 
 	def weighted_a_star_benchmark(self,weight,benchmark_index):
 		# benchmark the efficiency of the Weighted A* algorithm on all files in /grids
@@ -611,27 +632,30 @@ class main_window(QWidget):
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
 
 		f = open("weighted_a_star-benchmark"+str(benchmark_index)+".txt","w")
-		grids = self.get_all_grids()
-		print("Benchmarking Weighted A* on "+str(len(grids))+" .grid files with weight: "+str(weight)+"...")
-		print("Writing results to weighted_a_star-benchmark"+str(benchmark_index)+".txt...")
-		f.write("Weighted A* Benchmark on "+str(len(grids))+" .grid files with weight: "+str(weight)+":\n")
+		grids,short = self.get_all_grids()
+		print(">Benchmarking Weighted A* on "+str(len(grids))+" .grid files with weight: "+str(weight)+"...")
+		print(">Writing results to weighted_a_star-benchmark"+str(benchmark_index)+".txt...")
+		f.write("Weighted A* Benchmark on "+str(len(grids))+" .grid files with weight: "+str(weight)+":\n\n")
 
 		# turning off all UI interaction
 		self.grid.allow_render_mouse = False
+		self.grid.suppress_output = True
 		self.grid.verbose = False
 		self.grid.draw_grid_lines = False
 		self.grid.draw_outer_boundary = False
 		self.grid.show_path_trace = False
 
 		overall_start = time.time()
-		total_execution_time = time.time()
+		total_execution_time = 0
 
 		total_explored = 0
 		total_cost = 0
 		total_frontier = 0
 
-		for grid in grids:
-			print("Running Weighted A* on "+grid+" with weight: "+str(weight)+"...")
+		current_location = os.getcwd()
+
+		for grid,short_name in list(zip(grids,short)):
+			print(">Running Weighted A* on "+grid+" with weight: "+str(weight)+"...")
 			self.grid.load(grid)
 			start_time = time.time()
 			self.a_star(weight)
@@ -649,6 +673,12 @@ class main_window(QWidget):
 
 			f.write("\n"+grid+":\t time: "+str(end_time-start_time)+", cost: "+str(last_cost)+", frontier: "+str(frontier_length)+", explored: "+str(explored_length))
 
+			# save screenshot
+			ext = short_name[:short_name.find(".grid")]
+			filename = current_location+"/screenshots/benchmarks/weighted_a_star-"+str(benchmark_index)+"-"+ext+".png"
+			QPixmap.grabWindow(self.winId()).save(filename,'png')
+
+
 		f.write("\n\nTotal algorithm time: "+str(total_execution_time))
 		f.write("\nTotal cells explored: "+str(total_explored))
 		f.write("\nTotal cost: "+str(total_cost))
@@ -663,6 +693,7 @@ class main_window(QWidget):
 
 		self.grid.allow_render_mouse = True
 		self.is_benchmark = False
+		self.grid.suppress_output = False
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+")")
 
 	def uniform_cost_benchmark(self):
@@ -671,27 +702,35 @@ class main_window(QWidget):
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
 
 		f = open("ucs-benchmark.txt","w")
-		grids = self.get_all_grids()
-		print("Benchmarking A* on "+str(len(grids))+" .grid files...")
-		print("Writing results to ucs-benchmark.txt...")
-		f.write("Uniform-Cost Search Benchmark on "+str(len(grids))+" .grid files:\n")
+		grids,short = self.get_all_grids()
+		print(">Benchmarking A* on "+str(len(grids))+" .grid files...")
+		print(">Writing results to ucs-benchmark.txt...")
+		f.write("Uniform-Cost Search Benchmark on "+str(len(grids))+" .grid files:\n\n")
 
 		# turning off all UI interaction
 		self.grid.allow_render_mouse = False
 		self.grid.verbose = False
+
 		self.grid.draw_grid_lines = False
 		self.grid.draw_outer_boundary = False
+
+		self.grid.suppress_output = True
+		self.grid.draw_grid_lines = False
+		self.grid.draw_outer_boundary = False
+
 		self.grid.show_path_trace = False
 
 		overall_start = time.time()
-		total_execution_time = time.time()
+		total_execution_time = 0
 
 		total_explored = 0
 		total_cost = 0
 		total_frontier = 0
 
-		for grid in grids:
-			print("Running Uniform-Cost Search on "+grid+"...")
+		current_location = os.getcwd()
+
+		for grid,short_name in list(zip(grids,short)):
+			print(">Running Uniform-Cost Search on "+grid+"...")
 			self.grid.load(grid)
 			start_time = time.time()
 			self.uniform_cost()
@@ -709,6 +748,11 @@ class main_window(QWidget):
 
 			f.write("\n"+grid+":\t time: "+str(end_time-start_time)+", cost: "+str(last_cost)+", frontier: "+str(frontier_length)+", explored: "+str(explored_length))
 
+			# save screenshot
+			ext = short_name[:short_name.find(".grid")]
+			filename = current_location+"/screenshots/benchmarks/ucs-"+ext+".png"
+			QPixmap.grabWindow(self.winId()).save(filename,'png')
+
 		f.write("\n\nTotal algorithm time: "+str(total_execution_time))
 		f.write("\nTotal cells explored: "+str(total_explored))
 		f.write("\nTotal cost: "+str(total_cost))
@@ -721,9 +765,15 @@ class main_window(QWidget):
 
 		f.write("\n\nTotal benchmark time: "+str(time.time()-overall_start))
 
+
 		self.grid.allow_render_mouse = True
+
+		self.grid.allow_render_mouse = True
+		self.grid.suppress_output = False
+
 		self.is_benchmark = False
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+")")
+		print(">Uniform-Cost Search Benchmark Complete")
 
 	def toggle_mouse_tracking(self):
 		# function called by pyqt when user chooses the appropriate menu item
@@ -1003,7 +1053,7 @@ class main_window(QWidget):
 		self.grid.render_mouse = True
 
 	def uniform_cost(self):
-		print("\nPerforming uniform_cost search...")
+		if self.is_benchmark==False: print("\nPerforming uniform_cost search...")
 		self.grid.render_mouse = False
 		self.stop_executing = False # Ctrl+C calls clear which will set this to true
 		self.grid.verbose = False # Don't output all the render details
