@@ -540,7 +540,7 @@ class main_window(QWidget):
 		grid_filenames = []
 		for g in grids:
 			grid_filenames.append("grids/"+g)
-		return grid_filenames
+		return grid_filenames,grids
 
 	def a_star_benchmark(self):
 		# benchmark the efficiency of the A* algorithm on all files in /grids 
@@ -548,7 +548,7 @@ class main_window(QWidget):
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
 
 		f = open("a_star-benchmark.txt","w")
-		grids = self.get_all_grids()
+		grids,short = self.get_all_grids()
 		print(">Benchmarking A* on "+str(len(grids))+" .grid files...")
 		print(">Writing results to a_star-benchmark.txt...")
 		f.write("A* Benchmark on "+str(len(grids))+" .grid files:\n\n")
@@ -568,7 +568,9 @@ class main_window(QWidget):
 		total_cost = 0
 		total_frontier = 0
 
-		for grid in grids:
+		current_location = os.getcwd()
+
+		for grid,short_name in list(zip(grids,short)):
 			print(">Running A* on "+grid+"...")
 			self.grid.load(grid)
 			start_time = time.time()
@@ -586,6 +588,11 @@ class main_window(QWidget):
 			total_explored += explored_length
 
 			f.write("\n"+grid+":\t time: "+str(end_time-start_time)+", cost: "+str(last_cost)+", frontier: "+str(frontier_length)+", explored: "+str(explored_length))
+
+			# save screenshot
+			ext = short_name[:short_name.find(".grid")]
+			filename = current_location+"/screenshots/benchmarks/a_star-"+ext+".png"
+			QPixmap.grabWindow(self.winId()).save(filename,'png')
 
 		f.write("\n\nTotal algorithm time: "+str(total_execution_time))
 		f.write("\nTotal cells explored: "+str(total_explored))
@@ -621,10 +628,10 @@ class main_window(QWidget):
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
 
 		f = open("weighted_a_star-benchmark"+str(benchmark_index)+".txt","w")
-		grids = self.get_all_grids()
+		grids,short = self.get_all_grids()
 		print(">Benchmarking Weighted A* on "+str(len(grids))+" .grid files with weight: "+str(weight)+"...")
 		print(">Writing results to weighted_a_star-benchmark"+str(benchmark_index)+".txt...")
-		f.write("Weighted A* Benchmark on "+str(len(grids))+" .grid files with weight: "+str(weight)+":\n")
+		f.write("Weighted A* Benchmark on "+str(len(grids))+" .grid files with weight: "+str(weight)+":\n\n")
 
 		# turning off all UI interaction
 		self.grid.allow_render_mouse = False
@@ -641,7 +648,9 @@ class main_window(QWidget):
 		total_cost = 0
 		total_frontier = 0
 
-		for grid in grids:
+		current_location = os.getcwd()
+
+		for grid,short_name in list(zip(grids,short)):
 			print(">Running Weighted A* on "+grid+" with weight: "+str(weight)+"...")
 			self.grid.load(grid)
 			start_time = time.time()
@@ -659,6 +668,12 @@ class main_window(QWidget):
 			total_explored += explored_length
 
 			f.write("\n"+grid+":\t time: "+str(end_time-start_time)+", cost: "+str(last_cost)+", frontier: "+str(frontier_length)+", explored: "+str(explored_length))
+
+			# save screenshot
+			ext = short_name[:short_name.find(".grid")]
+			filename = current_location+"/screenshots/benchmarks/weighted_a_star-"+str(benchmark_index)+"-"+ext+".png"
+			QPixmap.grabWindow(self.winId()).save(filename,'png')
+
 
 		f.write("\n\nTotal algorithm time: "+str(total_execution_time))
 		f.write("\nTotal cells explored: "+str(total_explored))
@@ -683,10 +698,10 @@ class main_window(QWidget):
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
 
 		f = open("ucs-benchmark.txt","w")
-		grids = self.get_all_grids()
+		grids,short = self.get_all_grids()
 		print(">Benchmarking A* on "+str(len(grids))+" .grid files...")
 		print(">Writing results to ucs-benchmark.txt...")
-		f.write("Uniform-Cost Search Benchmark on "+str(len(grids))+" .grid files:\n")
+		f.write("Uniform-Cost Search Benchmark on "+str(len(grids))+" .grid files:\n\n")
 
 		# turning off all UI interaction
 		self.grid.allow_render_mouse = False
@@ -703,7 +718,9 @@ class main_window(QWidget):
 		total_cost = 0
 		total_frontier = 0
 
-		for grid in grids:
+		current_location = os.getcwd()
+
+		for grid,short_name in list(zip(grids,short)):
 			print(">Running Uniform-Cost Search on "+grid+"...")
 			self.grid.load(grid)
 			start_time = time.time()
@@ -721,6 +738,11 @@ class main_window(QWidget):
 			total_explored += explored_length
 
 			f.write("\n"+grid+":\t time: "+str(end_time-start_time)+", cost: "+str(last_cost)+", frontier: "+str(frontier_length)+", explored: "+str(explored_length))
+
+			# save screenshot
+			ext = short_name[:short_name.find(".grid")]
+			filename = current_location+"/screenshots/benchmarks/ucs-"+ext+".png"
+			QPixmap.grabWindow(self.winId()).save(filename,'png')
 
 		f.write("\n\nTotal algorithm time: "+str(total_execution_time))
 		f.write("\nTotal cells explored: "+str(total_explored))
@@ -1012,7 +1034,7 @@ class main_window(QWidget):
 		self.grid.render_mouse = True
 
 	def uniform_cost(self):
-		print("\nPerforming uniform_cost search...")
+		if self.is_benchmark==False: print("\nPerforming uniform_cost search...")
 		self.grid.render_mouse = False
 		self.stop_executing = False # Ctrl+C calls clear which will set this to true
 		self.grid.verbose = False # Don't output all the render details
