@@ -815,7 +815,6 @@ class eight_neighbor_grid(QWidget):
 			x = event.x()
 			y = event.y()
 
-
 			self.mouse_location = [x,y]
 			self.repaint()
 
@@ -1806,6 +1805,12 @@ class eight_neighbor_grid(QWidget):
 			if self.suppress_output==False:
 				print("                                                                           ",end="\r")
 				print("Re-Drawing Grid: "+str(time.time()-start_time)[:5]+" seconds")
+
+	def get_manhattan_distance(self,cell1,cell2):
+		# calculates manhattan distance
+		x_run = abs(cell1[0]-cell2[0])
+		y_run = abs(cell1[1]-cell2[1])
+		return x_run+y_run
 
 	def set_cell_state(self,x_coord,y_coord,state,add_adjustment=True):
 		# updates a single cell in the grid with a new state then reloads the ui

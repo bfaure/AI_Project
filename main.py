@@ -951,15 +951,17 @@ class main_window(QWidget):
 		self.grid.repaint()
 
 	def weighted_astar_wrapper(self):
-		self.grid.render_mouse = False
+		self.grid.allow_render_mouse = False
 		inputweight, ok = QInputDialog.getText(self, "Input Dialog", "Enter Weight: ")
 		inputcode, ok2 = QInputDialog.getText(self, "Input Dialog", "Enter Heuristic Code: ")
 		self.a_star(weight=inputweight, code=inputcode)
+		self.grid.allow_render_mouse = True
 
 	def astar_wrapper(self):
-		self.grid.render_mouse = False
+		self.grid.allow_render_mouse = False
 		inputcode, ok = QInputDialog.getText(self, "Input Dialog", "Enter Heuristic Code: ")
 		self.a_star(weight=1, code=inputcode)
+		self.allow_render_mouse = True
 
 	def a_star(self, weight=1, code=0):
 		# put a* implementation here
