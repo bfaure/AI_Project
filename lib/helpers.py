@@ -1126,6 +1126,7 @@ class eight_neighbor_grid(QWidget):
 		elif code == 2:
 			return self.approximate_euclidean_heuristic(start, end)
 		else:
+			print("WARNING: Using invalid heuristic code: "+str(code))
 			return 0
 
 	def get_start_or_end_cell(self):

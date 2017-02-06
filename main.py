@@ -449,9 +449,7 @@ class main_window(QWidget):
 		self.h_value.setFixedWidth(100)
 		top_row_layout.addWidget(self.h_value)
 		top_row_layout.addSpacing(20)
-
 		top_row_layout.addStretch()
-
 
 		self.grid = eight_neighbor_grid(160,120,pyqt_app)
 		self.grid.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -511,11 +509,12 @@ class main_window(QWidget):
 
 		# algorithm
 		a_star_action = self.algo_menu.addAction("Run A*",self.a_star,QKeySequence("Ctrl+1"))
-		weighted_a_action = self.algo_menu.addAction("Run Weighted A*",self.weighted_astar_wrapper,QKeySequence("Ctrl+2"))
+		weighted_a_action = self.algo_menu.addAction("Run Weighted A*",self.weighted_astar_wrapper_default_heuristic,QKeySequence("Ctrl+2"))
 		uniform_cost_action = self.algo_menu.addAction("Run Uniform-cost Search",self.uniform_cost,QKeySequence("Ctrl+3"))
 
 		self.algo_menu.addSeparator()
-		weighted_astar_custom = self.algo_menu.addAction("Run Weighted A*, Custom Heuristic",self.astar_wrapper)
+		astar_custom_action = self.algo_menu.addAction("Run A*, Custom Heuristic",self.astar_wrapper)
+		weighted_astar_custom = self.algo_menu.addAction("Run Weighted A*, Custom Heuristic",self.weighted_astar_wrapper)
 		self.algo_menu.addSeparator()
 		stop_algorithm_action = self.algo_menu.addAction("Stop Algorithm",self.stop_algorithm)
 
@@ -968,20 +967,39 @@ class main_window(QWidget):
 		self.grid.toggle_grid_lines(grid_lines=self.show_grid_lines)
 		self.grid.repaint()
 
+	def weighted_astar_wrapper_default_heuristic(self):
+		self.grid.allow_render_mouse = False
+		weight,ok = QInputDialog.getText(self, "Input Dialog", "Enter Weight: ")
+		if ok:
+			self.a_star(weight=weight)
+		self.allow_render_mouse = True
+
 	def weighted_astar_wrapper(self):
 		self.grid.allow_render_mouse = False
 		inputweight, ok = QInputDialog.getText(self, "Input Dialog", "Enter Weight: ")
-		inputcode, ok2 = QInputDialog.getText(self, "Input Dialog", "Enter Heuristic Code: ")
-		self.a_star(weight=inputweight, code=inputcode)
+		if ok:
+			inputcode, ok2 = QInputDialog.getText(self, "Input Dialog", "Enter Heuristic Code (0 for Euclidean, 1 for Diagonal, 2 for Approx. Euclidean): ")
+			if ok2:
+				inputcode = int(inputcode)
+				if inputcode not in [0,1,2]:
+					print("ERROR: Heuristic can be 0, 1, or 2 only.")
+					return
+				self.a_star(weight=inputweight, code=inputcode)
 		self.grid.allow_render_mouse = True
 
 	def astar_wrapper(self):
 		self.grid.allow_render_mouse = False
-		inputcode, ok = QInputDialog.getText(self, "Input Dialog", "Enter Heuristic Code: ")
-		self.a_star(weight=1, code=inputcode)
+		inputcode, ok = QInputDialog.getText(self, "Input Dialog", "Enter Heuristic Code (0 for Euclidean, 1 for Diagonal, 2 for Approx. Euclidean): ")
+		if ok:
+			inputcode = int(inputcode)
+			if inputcode not in [0,1,2]:
+				print("ERROR: Heuristic can be 0, 1, or 2 only.")
+				return
+			self.a_star(weight=1, code=inputcode)
 		self.allow_render_mouse = True
 
 	def a_star(self, weight=1, code=0):
+		if self.is_benchmark==False: print("Performing A* Seach with weight: "+str(weight)+", and heuristic: "+str(code)+"...")
 		# put a* implementation here
 		self.grid.render_mouse = False
 		self.grid.allow_render_mouse = False

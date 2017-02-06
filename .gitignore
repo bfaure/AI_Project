@@ -49,6 +49,7 @@ Temporary Items
 build/
 helpers.pyx
 helpers.pyd
+helpers.c
 lib/helpers.pyc
 .tags1
 .tags
