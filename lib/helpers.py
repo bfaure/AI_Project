@@ -1129,12 +1129,6 @@ class eight_neighbor_grid(QWidget):
 		else:
 			return 0
 
-	def get_manhattan_distance(self,cell1,cell2):
-		# calculates manhattan distance
-		x_run = abs(cell1[0]-cell2[0])
-		y_run = abs(cell1[1]-cell2[1])
-		return x_run+y_run
-
 	def get_start_or_end_cell(self):
 		# helper function for the init_start_end_cells function, see the
 		# sakai PDF for details on how the location is chosen
