@@ -2014,7 +2014,7 @@ static PyObject *__pyx_pf_7helpers_19eight_neighbor_grid_30init_blocked_cells(CY
 static PyObject *__pyx_pf_7helpers_19eight_neighbor_grid_32euclidean_heuristic(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self, PyObject *__pyx_v_start, PyObject *__pyx_v_end); /* proto */
 static PyObject *__pyx_pf_7helpers_19eight_neighbor_grid_34diagonal_distance_heuristic(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self, PyObject *__pyx_v_start, PyObject *__pyx_v_end); /* proto */
 static PyObject *__pyx_pf_7helpers_19eight_neighbor_grid_36approximate_euclidean_heuristic(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self, PyObject *__pyx_v_start, PyObject *__pyx_v_end); /* proto */
-static PyObject *__pyx_pf_7helpers_19eight_neighbor_grid_38heuristic_manager(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self, PyObject *__pyx_v_start, PyObject *__pyx_v_end, PyObject *__pyx_v_code); /* proto */
+static PyObject *__pyx_pf_7helpers_19eight_neighbor_grid_38heuristic_manager(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_start, PyObject *__pyx_v_end, PyObject *__pyx_v_code); /* proto */
 static PyObject *__pyx_pf_7helpers_19eight_neighbor_grid_40get_start_or_end_cell(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_7helpers_19eight_neighbor_grid_42init_start_end_cells(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_7helpers_19eight_neighbor_grid_44init_partially_blocked_cells(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self); /* proto */
@@ -23097,14 +23097,14 @@ static PyObject *__pyx_pf_7helpers_19eight_neighbor_grid_36approximate_euclidean
  * 
  * 	def heuristic_manager(self, start, end, code):             # <<<<<<<<<<<<<<
  * 		if code == 0:
- * 			return euclidean_heuristic(start, end)
+ * 			return self.euclidean_heuristic(start, end)
  */
 
 /* Python wrapper */
 static PyObject *__pyx_pw_7helpers_19eight_neighbor_grid_39heuristic_manager(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
 static PyMethodDef __pyx_mdef_7helpers_19eight_neighbor_grid_39heuristic_manager = {"heuristic_manager", (PyCFunction)__pyx_pw_7helpers_19eight_neighbor_grid_39heuristic_manager, METH_VARARGS|METH_KEYWORDS, 0};
 static PyObject *__pyx_pw_7helpers_19eight_neighbor_grid_39heuristic_manager(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
-  CYTHON_UNUSED PyObject *__pyx_v_self = 0;
+  PyObject *__pyx_v_self = 0;
   PyObject *__pyx_v_start = 0;
   PyObject *__pyx_v_end = 0;
   PyObject *__pyx_v_code = 0;
@@ -23180,7 +23180,7 @@ static PyObject *__pyx_pw_7helpers_19eight_neighbor_grid_39heuristic_manager(PyO
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_7helpers_19eight_neighbor_grid_38heuristic_manager(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self, PyObject *__pyx_v_start, PyObject *__pyx_v_end, PyObject *__pyx_v_code) {
+static PyObject *__pyx_pf_7helpers_19eight_neighbor_grid_38heuristic_manager(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_start, PyObject *__pyx_v_end, PyObject *__pyx_v_code) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -23198,7 +23198,7 @@ static PyObject *__pyx_pf_7helpers_19eight_neighbor_grid_38heuristic_manager(CYT
  * 
  * 	def heuristic_manager(self, start, end, code):
  * 		if code == 0:             # <<<<<<<<<<<<<<
- * 			return euclidean_heuristic(start, end)
+ * 			return self.euclidean_heuristic(start, end)
  * 		elif code == 1:
  */
   __pyx_t_1 = __Pyx_PyInt_EqObjC(__pyx_v_code, __pyx_int_0, 0, 0); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1122; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
@@ -23210,16 +23210,16 @@ static PyObject *__pyx_pf_7helpers_19eight_neighbor_grid_38heuristic_manager(CYT
     /* "helpers.pyx":1123
  * 	def heuristic_manager(self, start, end, code):
  * 		if code == 0:
- * 			return euclidean_heuristic(start, end)             # <<<<<<<<<<<<<<
+ * 			return self.euclidean_heuristic(start, end)             # <<<<<<<<<<<<<<
  * 		elif code == 1:
- * 			return diagonal_distance_heuristic(start, end)
+ * 			return self.diagonal_distance_heuristic(start, end)
  */
     __Pyx_XDECREF(__pyx_r);
-    __pyx_t_3 = __Pyx_GetModuleGlobalName(__pyx_n_s_euclidean_heuristic); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1123; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_euclidean_heuristic); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1123; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_3);
     __pyx_t_4 = NULL;
     __pyx_t_5 = 0;
-    if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_3))) {
+    if (CYTHON_COMPILING_IN_CPYTHON && likely(PyMethod_Check(__pyx_t_3))) {
       __pyx_t_4 = PyMethod_GET_SELF(__pyx_t_3);
       if (likely(__pyx_t_4)) {
         PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_3);
@@ -23252,16 +23252,16 @@ static PyObject *__pyx_pf_7helpers_19eight_neighbor_grid_38heuristic_manager(CYT
  * 
  * 	def heuristic_manager(self, start, end, code):
  * 		if code == 0:             # <<<<<<<<<<<<<<
- * 			return euclidean_heuristic(start, end)
+ * 			return self.euclidean_heuristic(start, end)
  * 		elif code == 1:
  */
   }
 
   /* "helpers.pyx":1124
  * 		if code == 0:
- * 			return euclidean_heuristic(start, end)
+ * 			return self.euclidean_heuristic(start, end)
  * 		elif code == 1:             # <<<<<<<<<<<<<<
- * 			return diagonal_distance_heuristic(start, end)
+ * 			return self.diagonal_distance_heuristic(start, end)
  * 		elif code == 2:
  */
   __pyx_t_1 = __Pyx_PyInt_EqObjC(__pyx_v_code, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1124; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
@@ -23271,18 +23271,18 @@ static PyObject *__pyx_pf_7helpers_19eight_neighbor_grid_38heuristic_manager(CYT
   if (__pyx_t_2) {
 
     /* "helpers.pyx":1125
- * 			return euclidean_heuristic(start, end)
+ * 			return self.euclidean_heuristic(start, end)
  * 		elif code == 1:
- * 			return diagonal_distance_heuristic(start, end)             # <<<<<<<<<<<<<<
+ * 			return self.diagonal_distance_heuristic(start, end)             # <<<<<<<<<<<<<<
  * 		elif code == 2:
- * 			return approximate_euclidean_heuristic(start, end)
+ * 			return self.approximate_euclidean_heuristic(start, end)
  */
     __Pyx_XDECREF(__pyx_r);
-    __pyx_t_3 = __Pyx_GetModuleGlobalName(__pyx_n_s_diagonal_distance_heuristic); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1125; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_diagonal_distance_heuristic); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1125; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_3);
     __pyx_t_6 = NULL;
     __pyx_t_5 = 0;
-    if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_3))) {
+    if (CYTHON_COMPILING_IN_CPYTHON && likely(PyMethod_Check(__pyx_t_3))) {
       __pyx_t_6 = PyMethod_GET_SELF(__pyx_t_3);
       if (likely(__pyx_t_6)) {
         PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_3);
@@ -23313,18 +23313,18 @@ static PyObject *__pyx_pf_7helpers_19eight_neighbor_grid_38heuristic_manager(CYT
 
     /* "helpers.pyx":1124
  * 		if code == 0:
- * 			return euclidean_heuristic(start, end)
+ * 			return self.euclidean_heuristic(start, end)
  * 		elif code == 1:             # <<<<<<<<<<<<<<
- * 			return diagonal_distance_heuristic(start, end)
+ * 			return self.diagonal_distance_heuristic(start, end)
  * 		elif code == 2:
  */
   }
 
   /* "helpers.pyx":1126
  * 		elif code == 1:
- * 			return diagonal_distance_heuristic(start, end)
+ * 			return self.diagonal_distance_heuristic(start, end)
  * 		elif code == 2:             # <<<<<<<<<<<<<<
- * 			return approximate_euclidean_heuristic(start, end)
+ * 			return self.approximate_euclidean_heuristic(start, end)
  * 		else:
  */
   __pyx_t_1 = __Pyx_PyInt_EqObjC(__pyx_v_code, __pyx_int_2, 2, 0); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1126; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
@@ -23334,18 +23334,18 @@ static PyObject *__pyx_pf_7helpers_19eight_neighbor_grid_38heuristic_manager(CYT
   if (__pyx_t_2) {
 
     /* "helpers.pyx":1127
- * 			return diagonal_distance_heuristic(start, end)
+ * 			return self.diagonal_distance_heuristic(start, end)
  * 		elif code == 2:
- * 			return approximate_euclidean_heuristic(start, end)             # <<<<<<<<<<<<<<
+ * 			return self.approximate_euclidean_heuristic(start, end)             # <<<<<<<<<<<<<<
  * 		else:
  * 			return 0
  */
     __Pyx_XDECREF(__pyx_r);
-    __pyx_t_3 = __Pyx_GetModuleGlobalName(__pyx_n_s_approximate_euclidean_heuristic); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1127; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_approximate_euclidean_heuristic); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1127; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_3);
     __pyx_t_4 = NULL;
     __pyx_t_5 = 0;
-    if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_3))) {
+    if (CYTHON_COMPILING_IN_CPYTHON && likely(PyMethod_Check(__pyx_t_3))) {
       __pyx_t_4 = PyMethod_GET_SELF(__pyx_t_3);
       if (likely(__pyx_t_4)) {
         PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_3);
@@ -23376,15 +23376,15 @@ static PyObject *__pyx_pf_7helpers_19eight_neighbor_grid_38heuristic_manager(CYT
 
     /* "helpers.pyx":1126
  * 		elif code == 1:
- * 			return diagonal_distance_heuristic(start, end)
+ * 			return self.diagonal_distance_heuristic(start, end)
  * 		elif code == 2:             # <<<<<<<<<<<<<<
- * 			return approximate_euclidean_heuristic(start, end)
+ * 			return self.approximate_euclidean_heuristic(start, end)
  * 		else:
  */
   }
 
   /* "helpers.pyx":1129
- * 			return approximate_euclidean_heuristic(start, end)
+ * 			return self.approximate_euclidean_heuristic(start, end)
  * 		else:
  * 			return 0             # <<<<<<<<<<<<<<
  * 
@@ -23402,7 +23402,7 @@ static PyObject *__pyx_pf_7helpers_19eight_neighbor_grid_38heuristic_manager(CYT
  * 
  * 	def heuristic_manager(self, start, end, code):             # <<<<<<<<<<<<<<
  * 		if code == 0:
- * 			return euclidean_heuristic(start, end)
+ * 			return self.euclidean_heuristic(start, end)
  */
 
   /* function exit code */
@@ -49165,7 +49165,7 @@ static int __Pyx_InitCachedConstants(void) {
  * 
  * 	def heuristic_manager(self, start, end, code):             # <<<<<<<<<<<<<<
  * 		if code == 0:
- * 			return euclidean_heuristic(start, end)
+ * 			return self.euclidean_heuristic(start, end)
  */
   __pyx_tuple__176 = PyTuple_Pack(4, __pyx_n_s_self, __pyx_n_s_start, __pyx_n_s_end, __pyx_n_s_code); if (unlikely(!__pyx_tuple__176)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1121; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_tuple__176);
@@ -50651,7 +50651,7 @@ PyMODINIT_FUNC PyInit_helpers(void)
  * 
  * 	def heuristic_manager(self, start, end, code):             # <<<<<<<<<<<<<<
  * 		if code == 0:
- * 			return euclidean_heuristic(start, end)
+ * 			return self.euclidean_heuristic(start, end)
  */
   __pyx_t_4 = __Pyx_CyFunction_NewEx(&__pyx_mdef_7helpers_19eight_neighbor_grid_39heuristic_manager, 0, __pyx_n_s_eight_neighbor_grid_heuristic_ma, NULL, __pyx_n_s_helpers, __pyx_d, ((PyObject *)__pyx_codeobj__177)); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1121; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_4);

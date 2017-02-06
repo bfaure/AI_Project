@@ -1120,11 +1120,11 @@ class eight_neighbor_grid(QWidget):
 
 	def heuristic_manager(self, start, end, code):
 		if code == 0:
-			return euclidean_heuristic(start, end)
+			return self.euclidean_heuristic(start, end)
 		elif code == 1:
-			return diagonal_distance_heuristic(start, end)
+			return self.diagonal_distance_heuristic(start, end)
 		elif code == 2:
-			return approximate_euclidean_heuristic(start, end)
+			return self.approximate_euclidean_heuristic(start, end)
 		else:
 			return 0
 

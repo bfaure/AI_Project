@@ -57,3 +57,4 @@ benchmark.txt
 a_star-benchmark.txt
 weighted_a_star-benchmark.txt
 ucs-benchmark.txt
+build/*
