@@ -481,6 +481,7 @@ class main_window(QWidget):
 		uniform_cost_benchmark_action = self.benchmark_menu.addAction("Benchmark Uniform-Cost Search",self.uniform_cost_benchmark)
 		self.benchmark_menu.addSeparator()
 		all_benchmark_action = self.benchmark_menu.addAction("Benchmark All",self.all_benchmark)
+		astar_custom = self.benchmark_menu.addAction("Benchmark A*, All Heuristics",self.astar_heuristic_wrapper)
 
 		# menubar actions
 		load_action = self.file_menu.addAction("Load...",self.load,QKeySequence("Ctrl+L"))
@@ -509,14 +510,12 @@ class main_window(QWidget):
 		regenerate_start_end_action = self.tools_menu.addAction("New Start/End Cells...",self.regenerate_start_end)
 
 		# algorithm
-
 		a_star_action = self.algo_menu.addAction("Run A*",self.a_star,QKeySequence("Ctrl+1"))
 		weighted_a_action = self.algo_menu.addAction("Run Weighted A*",self.weighted_astar_wrapper,QKeySequence("Ctrl+2"))
 		uniform_cost_action = self.algo_menu.addAction("Run Uniform-cost Search",self.uniform_cost,QKeySequence("Ctrl+3"))
 
 		self.algo_menu.addSeparator()
 		weighted_astar_custom = self.algo_menu.addAction("Run Weighted A*, Custom Heuristic",self.astar_wrapper)
-
 		self.algo_menu.addSeparator()
 		stop_algorithm_action = self.algo_menu.addAction("Stop Algorithm",self.stop_algorithm)
 
@@ -535,9 +534,14 @@ class main_window(QWidget):
 		# run benchmark on all algorithms
 		print(">Running benchmark on all three algorithms...")
 		self.weighted_a_star_benchmark_wrapper()
-		self.a_star_benchmark()
+		self.astar_heuristic_wrapper()
 		self.uniform_cost_benchmark()
 		print(">Entire benchmark complete")
+
+	def astar_heuristic_wrapper(self):
+		# run a_star on all different heuristic types
+		for i in range(3):
+			self.a_star_benchmark(weight=1,code=i)
 
 	def get_all_grids(self):
 		# gets all grid filenames in /grids directory
@@ -547,15 +551,28 @@ class main_window(QWidget):
 			grid_filenames.append("grids/"+g)
 		return grid_filenames,grids
 
-	def a_star_benchmark(self):
+	def a_star_benchmark(self,weight=1,code=0):
 		# benchmark the efficiency of the A* algorithm on all files in /grids
 		self.is_benchmark = True
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
 
-		f = open("a_star-benchmark.txt","w")
+		if code==0:
+			f = open("a_star-benchmark-euclidean.txt","w")
+			print(">Writing results to a_star-benchmark-euclidean.txt...")
+		elif code==1:
+			f = open("a_star-benchmark-diagonal.txt","w")
+			print(">Writing results to a_star-benchmark-diagonal.txt...")
+		elif code==2:
+			f = open("a_star-benchmark-approx-euclidean.txt","w")
+			print(">Writing results to a_star-benchmark-approx-euclidean.txt...")
+		else:
+			print("Could not recognize a_star_benchmark input code.")
+			return
+
+		#f = open("a_star-benchmark"+str(code)+".txt","w")
 		grids,short = self.get_all_grids()
-		print(">Benchmarking A* on "+str(len(grids))+" .grid files...")
-		print(">Writing results to a_star-benchmark.txt...")
+		#print(">Benchmarking A* on "+str(len(grids))+" .grid files...")
+		#print(">Writing results to a_star-benchmark"+str(code)+".txt...")
 		f.write("A* Benchmark on "+str(len(grids))+" .grid files:\n\n")
 
 		# turning off all UI interaction
@@ -579,7 +596,7 @@ class main_window(QWidget):
 			print(">Running A* on "+grid+"...")
 			self.grid.load(grid)
 			start_time = time.time()
-			self.a_star()
+			self.a_star(weight,code)
 			end_time = time.time()
 			total_execution_time += (end_time-start_time)
 
