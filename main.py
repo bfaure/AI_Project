@@ -529,8 +529,8 @@ class main_window(QWidget):
 	def all_benchmark(self):
 		# run benchmark on all algorithms
 		print(">Running benchmark on all three algorithms...")
-		self.a_star_benchmark()
 		self.weighted_a_star_benchmark_wrapper()
+		self.a_star_benchmark()
 		self.uniform_cost_benchmark()
 		print(">Entire benchmark complete")
 
@@ -562,7 +562,7 @@ class main_window(QWidget):
 		self.grid.show_path_trace = False
 
 		overall_start = time.time()
-		total_execution_time = time.time()
+		total_execution_time = 0
 
 		total_explored = 0
 		total_cost = 0
@@ -635,7 +635,7 @@ class main_window(QWidget):
 		self.grid.show_path_trace = False
 
 		overall_start = time.time()
-		total_execution_time = time.time()
+		total_execution_time = 0
 
 		total_explored = 0
 		total_cost = 0
@@ -697,7 +697,7 @@ class main_window(QWidget):
 		self.grid.show_path_trace = False
 
 		overall_start = time.time()
-		total_execution_time = time.time()
+		total_execution_time = 0
 
 		total_explored = 0
 		total_cost = 0
