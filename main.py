@@ -978,22 +978,22 @@ class main_window(QWidget):
 		self.grid.allow_render_mouse = False
 		inputweight, ok = QInputDialog.getText(self, "Input Dialog", "Enter Weight: ")
 		if ok:
-			inputcode, ok2 = QInputDialog.getText(self, "Input Dialog", "Enter Heuristic Code (0 for Euclidean, 1 for Diagonal, 2 for Approx. Euclidean): ")
+			inputcode, ok2 = QInputDialog.getText(self, "Input Dialog", "Enter Heuristic Code (0 for Euclidean, 1 for Diagonal, 2 for Approx. Euclidean, 3 for Manhattan): ")
 			if ok2:
 				inputcode = int(inputcode)
-				if inputcode not in [0,1,2]:
-					print("ERROR: Heuristic can be 0, 1, or 2 only.")
+				if inputcode not in [0,1,2,3]:
+					print("ERROR: Heuristic can be 0, 1, 2 or 3 only.")
 					return
 				self.a_star(weight=inputweight, code=inputcode)
 		self.grid.allow_render_mouse = True
 
 	def astar_wrapper(self):
 		self.grid.allow_render_mouse = False
-		inputcode, ok = QInputDialog.getText(self, "Input Dialog", "Enter Heuristic Code (0 for Euclidean, 1 for Diagonal, 2 for Approx. Euclidean): ")
+		inputcode, ok = QInputDialog.getText(self, "Input Dialog", "Enter Heuristic Code (0 for Euclidean, 1 for Diagonal, 2 for Approx. Euclidean, 3 for Manhattan): ")
 		if ok:
 			inputcode = int(inputcode)
-			if inputcode not in [0,1,2]:
-				print("ERROR: Heuristic can be 0, 1, or 2 only.")
+			if inputcode not in [0,1,2,3]:
+				print("ERROR: Heuristic can be 0, 1, 2  or 3 only.")
 				return
 			self.a_star(weight=1, code=inputcode)
 		self.allow_render_mouse = True

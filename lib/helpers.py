@@ -1118,6 +1118,17 @@ class eight_neighbor_grid(QWidget):
 			else:
 				return 0.41*y_run + 0.94126*x_run
 
+	def manhattan_heuristic(self,start,end):
+		if (type(start) is tuple) and (type(end) is tuple):
+			x_run = abs(start[0] - end[0])
+			y_run = abs(start[1] - end[1])
+			return x_run + y_run
+		else:
+			x_run = abs(start.x - end[0])
+			y_run = abs(start.y - end[1])
+			return x_run + y_run
+
+
 	def heuristic_manager(self, start, end, code):
 		if code == 0:
 			return self.euclidean_heuristic(start, end)
@@ -1125,6 +1136,8 @@ class eight_neighbor_grid(QWidget):
 			return self.diagonal_distance_heuristic(start, end)
 		elif code == 2:
 			return self.approximate_euclidean_heuristic(start, end)
+		elif code == 3:
+			return self.manhattan_heuristic(start,end)
 		else:
 			print("WARNING: Using invalid heuristic code: "+str(code))
 			return 0
