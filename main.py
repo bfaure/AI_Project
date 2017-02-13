@@ -598,7 +598,7 @@ class main_window(QWidget):
 		#print("s_start: "+str(s_start)+", s_goal: "+str(s_goal)+", g[s_goal]: "+str(self.g[s_goal])+", g[s_start]: "+str(self.g[s_start]))
 		#f.write("s_start: "+str(s_start)+", s_goal: "+str(s_goal)+", g[s_goal]: "+str(self.g[s_goal])+", g[s_start]: "+str(self.g[s_start])+"\n")
 
-		refresh_rate = 0.1
+		refresh_rate = 0.05
 		last_cell = None 
 
 		num_iterations = 0
@@ -629,6 +629,9 @@ class main_window(QWidget):
 				#	f.write("[ "+elem[2].to_string()+" ], ")
 				#f.write("\n")
 				#print(self.open_t[i]._queue)
+				if len(self.open_t[i]._queue)==0:
+					continue
+
 				if self.open_t[i].Minkey() <= ( w2 * self.open_t[0].Minkey() ):
 
 					if self.g[s_goal] <= self.open_t[i].Minkey():
@@ -1288,6 +1291,12 @@ class main_window(QWidget):
 
 			heuristic_value = self.grid.euclidean_heuristic(temp,self.grid.end_cell)
 			self.h_value.setText(str(heuristic_value))
+
+			if cell_attributes.state=="full":
+				self.g_value.setText("inf.")
+				self.f_value.setText("inf.")
+				self.h_value.setText("inf.")
+				return
 
 			if hasattr(self,"last_cost_list"):
 				# if we have run an a* algorithm
