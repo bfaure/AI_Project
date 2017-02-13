@@ -2001,6 +2001,7 @@ class eight_neighbor_grid(QWidget):
 		QtCore.QObject.connect(agent_handle,QtCore.SIGNAL("send_update_to_ui(PyQt_PyObject)"),self.get_update)
 
 class PriorityQueue:
+	
 	def __init__(self):
 		self._queue = []
 		self._index = 0

@@ -10,7 +10,7 @@ from os import listdir
 from os.path import isfile,join
 
 import shutil # for copying helpers.py to helpers.pyx
-import filecmp
+import filecmp # to check if helpers.py == helpers.pyx (if exists)
 
 from math import sqrt
 
@@ -367,6 +367,7 @@ class attrib_color_window(QWidget):
 
 class main_window(QWidget):
 
+	# Initializations...
 	def __init__(self):
 		# constructor
 		super(main_window,self).__init__()
@@ -532,12 +533,267 @@ class main_window(QWidget):
 		QtCore.QObject.connect(self.grid, QtCore.SIGNAL("return_current_cell_attributes(PyQt_PyObject)"), self.update_current_cell_info)
 		self.show()
 
+	# Algorithms...
 	def sequential_astar(self):
-		pass 
+		num_heuristics = 0
+		if self.is_benchmark==False: print("Performing Sequential A* Search with "+str(num_heuristics)+" heuristics...")
 
 	def integrated_astar(self):
-		pass
+		num_heuristics = 0
+		if self.is_benchmark==False: print("Performing Integrated A* Search with "+str(num_heuristics)+" heuristics...")
 
+	def weighted_astar_wrapper_default_heuristic(self):
+		self.grid.allow_render_mouse = False
+		weight,ok = QInputDialog.getText(self, "Input Dialog", "Enter Weight: ")
+		if ok:
+			self.a_star(weight=weight)
+		self.allow_render_mouse = True
+
+	def weighted_astar_wrapper(self):
+		self.grid.allow_render_mouse = False
+		inputweight, ok = QInputDialog.getText(self, "Input Dialog", "Enter Weight: ")
+		if ok:
+			inputcode, ok2 = QInputDialog.getText(self, "Input Dialog", "Enter Heuristic Code (0 for Euclidean, 1 for Diagonal, 2 for Approx. Euclidean, 3 for Manhattan, 4 for approx): ")
+			if ok2:
+				inputcode = int(inputcode)
+				if inputcode not in [0,1,2,3,4]:
+					print("ERROR: Heuristic can be 0, 1, 2, 3 or 4 only.")
+					return
+				self.a_star(weight=inputweight, code=inputcode)
+		self.grid.allow_render_mouse = True
+
+	def astar_wrapper(self):
+		self.grid.allow_render_mouse = False
+		inputcode, ok = QInputDialog.getText(self, "Input Dialog", "Enter Heuristic Code (0 for Euclidean, 1 for Diagonal, 2 for Approx. Euclidean, 3 for Manhattan, 4 for approx): ")
+		if ok:
+			inputcode = int(inputcode)
+			if inputcode not in [0,1,2,3,4]:
+				print("ERROR: Heuristic can be 0, 1, 2, 3 or 4 only.")
+				return
+			self.a_star(weight=1, code=inputcode)
+		self.allow_render_mouse = True
+
+	def a_star(self, weight=1, code=0):
+		if self.is_benchmark==False: print("Performing A* Seach with weight: "+str(weight)+", and heuristic: "+str(code)+"...")
+		# put a* implementation here
+		self.grid.render_mouse = False
+		self.grid.allow_render_mouse = False
+		self.grid.verbose = False # dont print render update info to terminal during execution
+		self.stop_executing = False
+		self.cells = self.grid.cells #current state of grid cells
+		self.start_cell = self.grid.start_cell #current start cell
+
+		for item in self.cells:
+			if item.x==self.start_cell[0] and item.y==self.start_cell[1]:
+				self.start_cell = item
+				break
+
+		self.end_cell = self.grid.end_cell # current end cell
+		self.highways = self.grid.highways # current highways on grid
+		cost_list = {}; #initialize set that contains the cost to visit coordinates
+
+		self.frontier = PriorityQueue()
+		self.explored = [] # empty set
+		visited = [False] * len(self.cells)
+
+		cost_root = float(self.grid.heuristic_manager(self.start_cell, self.end_cell, code))
+		self.frontier.push(self.start_cell,cost_root,parent=None)
+
+		rootIndex = get_cell_index(self.start_cell, self.cells)
+		cost_list[rootIndex] = 0
+		visited[rootIndex] = rootIndex
+
+		refresh_rate = 0.1 # update the ui window after this many seconds
+		start_time = time.time() # used for updating the ui
+		overall_start = time.time() # used for saving execution time
+
+		while (self.frontier.length() != 0):
+
+			if self.stop_executing:
+				self.grid.render_mouse = True
+				self.grid.allow_render_mouse = True
+				return # return if user cancelled execution
+
+			# printing current state information to terminal
+			print("explored: "+str(len(self.explored))+", frontier: "+str(self.frontier.length())+", time: "+str(time.time()-overall_start)[:6],end="\r")
+
+			cur_node = self.frontier.pop()
+			self.explored.append(cur_node)
+
+
+			# update the ui window
+			if time.time()-start_time > refresh_rate:
+				start_time = time.time()
+				self.grid.solution_path = self.explored
+				self.grid.shortest_path = rectify_path(cur_node)
+				self.grid.update()
+				pyqt_app.processEvents()
+
+			#If we're at the goal
+			if cur_node.x == self.end_cell[0] and cur_node.y == self.end_cell[1]:
+				self.path_end = cur_node
+				break
+
+			#get all the neighbors of the current node
+			neighbor_list = get_neighbors(cur_node,self.cells)
+			#index_list = neighbor_index_list(neighbor_list, self.cells)
+			#pruned_list = prune_neighbors(neighbor_list, visited, index_list)
+			current_node_index = get_cell_index(cur_node, self.cells)
+			visited[current_node_index] = True
+			#self.frontier.clear()
+			for neighbor in neighbor_list:
+				transition_cost = get_transition_cost(cur_node,neighbor,self.highways)
+				updated_cost = cost_list[current_node_index] + transition_cost
+				neighborIndex = get_cell_index(neighbor, self.cells)
+
+				if (neighborIndex not in cost_list or updated_cost < cost_list[neighborIndex]) and (neighbor.state != "full") and visited[neighborIndex] == False:
+					cost_list[neighborIndex] = updated_cost
+					priority = updated_cost + (float(weight) * float(self.grid.heuristic_manager(neighbor, self.end_cell, code)))
+					self.frontier.push(neighbor, priority, parent=cur_node)
+
+		self.last_cost_list = cost_list
+		self.grid.solution_path = self.explored
+		self.grid.shortest_path = rectify_path(self.path_end)
+		self.grid.update() # render grid with new solution path
+		pyqt_app.processEvents()
+		final_solution_cost = get_path_cost(self.path_end,self.highways)
+		print("\nFinished a* search in "+str(time.time()-overall_start)[:6]+" seconds, final cost: "+str(final_solution_cost)+", checked "+str(len(self.explored))+" cells\n")
+
+		if self.is_benchmark:
+			self.latest_search_cost = final_solution_cost
+			self.latest_num_explored = len(self.explored)
+			self.latest_frontier_length = self.frontier.length()
+
+		self.grid.verbose = True # resume printing render timing info for the window
+		self.grid.render_mouse = True
+		self.grid.allow_render_mouse = True
+
+	def uniform_cost(self):
+		if self.is_benchmark==False: print("\nPerforming uniform_cost search...")
+		self.grid.render_mouse = False
+		self.stop_executing = False # Ctrl+C calls clear which will set this to true
+		self.grid.verbose = False # Don't output all the render details
+
+		# indicate the refresh rate here
+		refresh_rate = 0.1 # at least every this many seconds refresh
+		cost_refresh_rate = 1 # refresh if the algo has increased the current fringe cost by this much
+		explored_refresh_rate = 100 # refresh if the algo has increased the explorted count by this much
+
+		self.overall_start = time.time()
+
+		self.cells = self.grid.cells # current state of cells in grid
+		self.start_cell = self.grid.start_cell  # current start cell
+
+		for item in self.cells:
+			if item.x==self.start_cell[0] and item.y==self.start_cell[1]:
+				self.start_cell = item
+				break
+
+		self.end_cell = self.grid.end_cell # current end cell
+		self.highways = self.grid.highways # current highways on grid
+
+		if USE_UCS_MULTITHREADED:
+			self.ucs_agent = uniform_cost_search()
+			self.ucs_agent.load_grid_data(self.cells,self.start_cell,self.end_cell,self.highways)
+			self.grid.connect_to_ucs_agent(self.ucs_agent)
+			self.ucs_agent.app = pyqt_app
+			self.ucs_agent.start() # start the thread
+			self.grid.render_mouse = True
+			return
+
+		self.path_cost = 0 # overall path cost
+		self.tried_paths = [] # to hold all paths shown to user
+
+		self.frontier = PriorityQueue()
+		self.frontier.push(self.start_cell,0,parent=None)
+		self.path_end = self.start_cell
+		self.path_length = 1
+
+		self.explored = [] # empty set
+
+		while True:
+			done = self.uniform_cost_step(refresh_rate,cost_refresh_rate,explored_refresh_rate)
+			self.grid.solution_path = self.explored
+			self.grid.shortest_path = rectify_path(self.path_end)
+			self.tried_paths.append(self.grid.shortest_path)
+			self.grid.path_traces = self.tried_paths
+			self.grid.update() # render grid with new solution path
+			pyqt_app.processEvents()
+			if done:
+				break
+
+		# used for benchmarking
+		if self.is_benchmark:
+			self.latest_search_cost = self.path_cost
+			self.latest_num_explored = len(self.explored)
+			self.latest_frontier_length = self.frontier.length()
+
+		self.grid.verbose = True
+		self.grid.render_mouse = True
+
+	def uniform_cost_step(self,refresh_rate,cost_refresh_rate,explored_refresh_rate):
+		# helper function for uniform_cost search, performs only refresh_rate seconds then returns
+		start_time = time.time() # to log the amount of time taken
+		last_path_cost = self.path_cost
+		initial_explored = len(self.explored)
+
+		while True:
+
+			if self.stop_executing:
+				return True
+
+			print("explored: "+str(len(self.explored))+", frontier: "+str(self.frontier.length())+", time: "+str(time.time()-self.overall_start)[:6]+", cost: "+str(self.path_cost)[:5],end="\r")
+
+			if self.frontier.length() == 0:
+				print("ERROR: Uniform cost search failed to find a solution path.")
+				return True
+
+			cur_node = self.frontier.pop()
+			self.path_cost = cur_node.cost # get the path cost so far
+
+			if cur_node.x==self.end_cell[0] and cur_node.y==self.end_cell[1]:
+				# if we have reached the goal node
+				self.path_end = cur_node
+				break
+
+			self.explored.append(cur_node) # add current node to explored list
+			node_neigbors = get_neighbors(cur_node,self.cells)
+
+			for neighbor in node_neigbors:
+				transition_cost = get_transition_cost(cur_node,neighbor,self.highways)
+
+				# if not explored yet and not in frontier already
+				if cell_in_list(neighbor,self.explored)==False and self.frontier.has_cell(neighbor)==False:
+					# if not a blocked cell
+					if transition_cost!=-1:
+						# add to frontier
+						self.frontier.push(neighbor,self.path_cost+transition_cost,parent=cur_node)
+
+				# if in the frontier already
+				elif self.frontier.has_cell(neighbor)==True:
+					# if version in frontier has higher cost
+					if self.frontier.get_cell_cost(neighbor)>(self.path_cost+transition_cost):
+						self.frontier.replace_cell(neighbor,self.path_cost+transition_cost,parent=cur_node)
+
+			# refresh the display if the algorithm has checked explored_refresh_rate cells
+			if len(self.explored)>(initial_explored+explored_refresh_rate):
+				self.path_end = cur_node
+				return False # refresh the display
+
+			# refresh the display if the algorithm has increased the current cost by cost_refresh_rate
+			if self.path_cost>(last_path_cost+cost_refresh_rate):
+				self.path_end = cur_node
+				return False # refresh the display
+
+			# at least refresh every "refresh_rate" seconds
+			if int(time.time()-start_time)>refresh_rate:
+				self.path_end = cur_node
+				return False # refresh the display
+
+		print("\nFinished uniform cost search in "+str(time.time()-self.overall_start)[:6]+" seconds, final cost: "+str(self.path_cost)+", checked "+str(len(self.explored))+" cells\n")
+		return True
+
+	# Benchmarks...
 	def all_benchmark(self):
 		# run benchmark on all algorithms
 		print(">Running benchmark on all three algorithms...")
@@ -797,6 +1053,7 @@ class main_window(QWidget):
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+")")
 		print(">Uniform-Cost Search Benchmark Complete")
 
+	# State-changing utilities...
 	def toggle_mouse_tracking(self):
 		# function called by pyqt when user chooses the appropriate menu item
 		if self.mouse_tracking == True:
@@ -811,7 +1068,8 @@ class main_window(QWidget):
 		pyqt_app.processEvents()
 
 	def update_current_cell_info(self,cell_attributes):
-		# automatically called when the grid sends info
+		# automatically called when the grid sends info, updates
+		# the current cell HUD with the appropriate information
 		self.cells = self.grid.cells
 		if cell_attributes.is_valid:
 			self.coordinates_value.setText("("+str(cell_attributes.coordinates[0])+","+str(cell_attributes.coordinates[1])+")")
@@ -972,257 +1230,6 @@ class main_window(QWidget):
 		self.grid.draw_grid_lines = self.show_grid_lines
 		self.grid.repaint()
 
-	def weighted_astar_wrapper_default_heuristic(self):
-		self.grid.allow_render_mouse = False
-		weight,ok = QInputDialog.getText(self, "Input Dialog", "Enter Weight: ")
-		if ok:
-			self.a_star(weight=weight)
-		self.allow_render_mouse = True
-
-	def weighted_astar_wrapper(self):
-		self.grid.allow_render_mouse = False
-		inputweight, ok = QInputDialog.getText(self, "Input Dialog", "Enter Weight: ")
-		if ok:
-			inputcode, ok2 = QInputDialog.getText(self, "Input Dialog", "Enter Heuristic Code (0 for Euclidean, 1 for Diagonal, 2 for Approx. Euclidean, 3 for Manhattan, 4 for approx): ")
-			if ok2:
-				inputcode = int(inputcode)
-				if inputcode not in [0,1,2,3,4]:
-					print("ERROR: Heuristic can be 0, 1, 2, 3 or 4 only.")
-					return
-				self.a_star(weight=inputweight, code=inputcode)
-		self.grid.allow_render_mouse = True
-
-	def astar_wrapper(self):
-		self.grid.allow_render_mouse = False
-		inputcode, ok = QInputDialog.getText(self, "Input Dialog", "Enter Heuristic Code (0 for Euclidean, 1 for Diagonal, 2 for Approx. Euclidean, 3 for Manhattan, 4 for approx): ")
-		if ok:
-			inputcode = int(inputcode)
-			if inputcode not in [0,1,2,3,4]:
-				print("ERROR: Heuristic can be 0, 1, 2, 3 or 4 only.")
-				return
-			self.a_star(weight=1, code=inputcode)
-		self.allow_render_mouse = True
-
-	def a_star(self, weight=1, code=0):
-		if self.is_benchmark==False: print("Performing A* Seach with weight: "+str(weight)+", and heuristic: "+str(code)+"...")
-		# put a* implementation here
-		self.grid.render_mouse = False
-		self.grid.allow_render_mouse = False
-		self.grid.verbose = False # dont print render update info to terminal during execution
-		self.stop_executing = False
-		self.cells = self.grid.cells #current state of grid cells
-		self.start_cell = self.grid.start_cell #current start cell
-
-		for item in self.cells:
-			if item.x==self.start_cell[0] and item.y==self.start_cell[1]:
-				self.start_cell = item
-				break
-
-		self.end_cell = self.grid.end_cell # current end cell
-		self.highways = self.grid.highways # current highways on grid
-		cost_list = {}; #initialize set that contains the cost to visit coordinates
-
-		self.frontier = PriorityQueue()
-		self.explored = [] # empty set
-		visited = [False] * len(self.cells)
-
-		cost_root = float(self.grid.heuristic_manager(self.start_cell, self.end_cell, code))
-		self.frontier.push(self.start_cell,cost_root,parent=None)
-
-		rootIndex = get_cell_index(self.start_cell, self.cells)
-		cost_list[rootIndex] = 0
-		visited[rootIndex] = rootIndex
-
-		refresh_rate = 0.1 # update the ui window after this many seconds
-		start_time = time.time() # used for updating the ui
-		overall_start = time.time() # used for saving execution time
-
-		while (self.frontier.length() != 0):
-
-			if self.stop_executing:
-				self.grid.render_mouse = True
-				self.grid.allow_render_mouse = True
-				return # return if user cancelled execution
-
-			# printing current state information to terminal
-			print("explored: "+str(len(self.explored))+", frontier: "+str(self.frontier.length())+", time: "+str(time.time()-overall_start)[:6],end="\r")
-
-			cur_node = self.frontier.pop()
-			self.explored.append(cur_node)
-
-
-			# update the ui window
-			if time.time()-start_time > refresh_rate:
-				start_time = time.time()
-				self.grid.solution_path = self.explored
-				self.grid.shortest_path = rectify_path(cur_node)
-				self.grid.update()
-				pyqt_app.processEvents()
-
-			#If we're at the goal
-			if cur_node.x == self.end_cell[0] and cur_node.y == self.end_cell[1]:
-				self.path_end = cur_node
-				break
-
-			#get all the neighbors of the current node
-			neighbor_list = get_neighbors(cur_node,self.cells)
-			#index_list = neighbor_index_list(neighbor_list, self.cells)
-			#pruned_list = prune_neighbors(neighbor_list, visited, index_list)
-			current_node_index = get_cell_index(cur_node, self.cells)
-			visited[current_node_index] = True
-			#self.frontier.clear()
-			for neighbor in neighbor_list:
-				transition_cost = get_transition_cost(cur_node,neighbor,self.highways)
-				updated_cost = cost_list[current_node_index] + transition_cost
-				neighborIndex = get_cell_index(neighbor, self.cells)
-
-				if (neighborIndex not in cost_list or updated_cost < cost_list[neighborIndex]) and (neighbor.state != "full") and visited[neighborIndex] == False:
-					cost_list[neighborIndex] = updated_cost
-					priority = updated_cost + (float(weight) * float(self.grid.heuristic_manager(neighbor, self.end_cell, code)))
-					self.frontier.push(neighbor, priority, parent=cur_node)
-
-		self.last_cost_list = cost_list
-		self.grid.solution_path = self.explored
-		self.grid.shortest_path = rectify_path(self.path_end)
-		self.grid.update() # render grid with new solution path
-		pyqt_app.processEvents()
-		final_solution_cost = get_path_cost(self.path_end,self.highways)
-		print("\nFinished a* search in "+str(time.time()-overall_start)[:6]+" seconds, final cost: "+str(final_solution_cost)+", checked "+str(len(self.explored))+" cells\n")
-
-		if self.is_benchmark:
-			self.latest_search_cost = final_solution_cost
-			self.latest_num_explored = len(self.explored)
-			self.latest_frontier_length = self.frontier.length()
-
-		self.grid.verbose = True # resume printing render timing info for the window
-		self.grid.render_mouse = True
-		self.grid.allow_render_mouse = True
-
-	def uniform_cost(self):
-		if self.is_benchmark==False: print("\nPerforming uniform_cost search...")
-		self.grid.render_mouse = False
-		self.stop_executing = False # Ctrl+C calls clear which will set this to true
-		self.grid.verbose = False # Don't output all the render details
-
-		# indicate the refresh rate here
-		refresh_rate = 0.1 # at least every this many seconds refresh
-		cost_refresh_rate = 1 # refresh if the algo has increased the current fringe cost by this much
-		explored_refresh_rate = 100 # refresh if the algo has increased the explorted count by this much
-
-		self.overall_start = time.time()
-
-		self.cells = self.grid.cells # current state of cells in grid
-		self.start_cell = self.grid.start_cell  # current start cell
-
-		for item in self.cells:
-			if item.x==self.start_cell[0] and item.y==self.start_cell[1]:
-				self.start_cell = item
-				break
-
-		self.end_cell = self.grid.end_cell # current end cell
-		self.highways = self.grid.highways # current highways on grid
-
-		if USE_UCS_MULTITHREADED:
-			self.ucs_agent = uniform_cost_search()
-			self.ucs_agent.load_grid_data(self.cells,self.start_cell,self.end_cell,self.highways)
-			self.grid.connect_to_ucs_agent(self.ucs_agent)
-			self.ucs_agent.app = pyqt_app
-			self.ucs_agent.start() # start the thread
-			self.grid.render_mouse = True
-			return
-
-		self.path_cost = 0 # overall path cost
-		self.tried_paths = [] # to hold all paths shown to user
-
-		self.frontier = PriorityQueue()
-		self.frontier.push(self.start_cell,0,parent=None)
-		self.path_end = self.start_cell
-		self.path_length = 1
-
-		self.explored = [] # empty set
-
-		while True:
-			done = self.uniform_cost_step(refresh_rate,cost_refresh_rate,explored_refresh_rate)
-			self.grid.solution_path = self.explored
-			self.grid.shortest_path = rectify_path(self.path_end)
-			self.tried_paths.append(self.grid.shortest_path)
-			self.grid.path_traces = self.tried_paths
-			self.grid.update() # render grid with new solution path
-			pyqt_app.processEvents()
-			if done:
-				break
-
-		# used for benchmarking
-		if self.is_benchmark:
-			self.latest_search_cost = self.path_cost
-			self.latest_num_explored = len(self.explored)
-			self.latest_frontier_length = self.frontier.length()
-
-		self.grid.verbose = True
-		self.grid.render_mouse = True
-
-	def uniform_cost_step(self,refresh_rate,cost_refresh_rate,explored_refresh_rate):
-		# helper function for uniform_cost search, performs only refresh_rate seconds then returns
-		start_time = time.time() # to log the amount of time taken
-		last_path_cost = self.path_cost
-		initial_explored = len(self.explored)
-
-		while True:
-
-			if self.stop_executing:
-				return True
-
-			print("explored: "+str(len(self.explored))+", frontier: "+str(self.frontier.length())+", time: "+str(time.time()-self.overall_start)[:6]+", cost: "+str(self.path_cost)[:5],end="\r")
-
-			if self.frontier.length() == 0:
-				print("ERROR: Uniform cost search failed to find a solution path.")
-				return True
-
-			cur_node = self.frontier.pop()
-			self.path_cost = cur_node.cost # get the path cost so far
-
-			if cur_node.x==self.end_cell[0] and cur_node.y==self.end_cell[1]:
-				# if we have reached the goal node
-				self.path_end = cur_node
-				break
-
-			self.explored.append(cur_node) # add current node to explored list
-			node_neigbors = get_neighbors(cur_node,self.cells)
-
-			for neighbor in node_neigbors:
-				transition_cost = get_transition_cost(cur_node,neighbor,self.highways)
-
-				# if not explored yet and not in frontier already
-				if cell_in_list(neighbor,self.explored)==False and self.frontier.has_cell(neighbor)==False:
-					# if not a blocked cell
-					if transition_cost!=-1:
-						# add to frontier
-						self.frontier.push(neighbor,self.path_cost+transition_cost,parent=cur_node)
-
-				# if in the frontier already
-				elif self.frontier.has_cell(neighbor)==True:
-					# if version in frontier has higher cost
-					if self.frontier.get_cell_cost(neighbor)>(self.path_cost+transition_cost):
-						self.frontier.replace_cell(neighbor,self.path_cost+transition_cost,parent=cur_node)
-
-			# refresh the display if the algorithm has checked explored_refresh_rate cells
-			if len(self.explored)>(initial_explored+explored_refresh_rate):
-				self.path_end = cur_node
-				return False # refresh the display
-
-			# refresh the display if the algorithm has increased the current cost by cost_refresh_rate
-			if self.path_cost>(last_path_cost+cost_refresh_rate):
-				self.path_end = cur_node
-				return False # refresh the display
-
-			# at least refresh every "refresh_rate" seconds
-			if int(time.time()-start_time)>refresh_rate:
-				self.path_end = cur_node
-				return False # refresh the display
-
-		print("\nFinished uniform cost search in "+str(time.time()-self.overall_start)[:6]+" seconds, final cost: "+str(self.path_cost)+", checked "+str(len(self.explored))+" cells\n")
-		return True
-
 	def create(self):
 		# clears the current grid and creates a new random one
 		self.allow_render_mouse = False
@@ -1268,6 +1275,7 @@ class main_window(QWidget):
 		# quits the application
 		sys.exit()
 
+	# Context Menu...
 	def on_context_menu_request(self,point):
 		# function called when user right clicks on grid
 		self.click = point
@@ -1298,6 +1306,7 @@ class main_window(QWidget):
 		# called when user chooses item in right click menu
 		self.grid.set_cell_state(self.click.x(),self.click.y(),"full")
 
+	# Event handlers...
 	def resizeEvent(self,e):
 		# called when user resizes the window
 		if self.is_benchmark:
