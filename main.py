@@ -458,14 +458,14 @@ class main_window(QWidget):
 
 		# context menu stuff, opens on right click
 		self.context_menu = QMenu(self)
-		context_set_start_action = self.context_menu.addAction("Set as Starting Point",self.set_start)
-		context_set_end_action = self.context_menu.addAction("Set as Ending Point",self.set_end)
+		self.context_menu.addAction("Set as Starting Point",self.set_start)
+		self.context_menu.addAction("Set as Ending Point",self.set_end)
 		self.context_menu.addSeparator()
-		context_menu_free_action = self.context_menu.addAction("Set Cell as Free",self.set_free)
-		context_menu_partial_action = self.context_menu.addAction("Set Cell as Partially Blocked",self.set_partial)
-		context_menu_full_action = self.context_menu.addAction("Set Cell as Fully Blocked",self.set_full)
+		self.context_menu.addAction("Set Cell as Free",self.set_free)
+		self.context_menu.addAction("Set Cell as Partially Blocked",self.set_partial)
+		self.context_menu.addAction("Set Cell as Fully Blocked",self.set_full)
 
-		# menubar
+		# Creating menubar and menu items
 		self.menu_bar = QMenuBar(self)
 		self.menu_bar.setMinimumWidth(250)
 		self.file_menu = self.menu_bar.addMenu("File")
@@ -473,28 +473,29 @@ class main_window(QWidget):
 		self.tools_menu = self.menu_bar.addMenu("Tools")
 		self.benchmark_menu = self.menu_bar.addMenu("Benchmark")
 
-		# benchmark actions
-		a_star_benchmark_action = self.benchmark_menu.addAction("Benchmark A* Search",self.a_star_benchmark)
-		weighted_a_star_benchmark_action = self.benchmark_menu.addAction("Benchmark Weighted A* Search",self.weighted_a_star_benchmark_wrapper)
-		uniform_cost_benchmark_action = self.benchmark_menu.addAction("Benchmark Uniform-Cost Search",self.uniform_cost_benchmark)
+		# Benchmark menu actions
+		self.benchmark_menu.addAction("Benchmark A* Search",self.a_star_benchmark)
+		self.benchmark_menu.addAction("Benchmark Weighted A* Search",self.weighted_a_star_benchmark_wrapper)
+		self.benchmark_menu.addAction("Benchmark Uniform-Cost Search",self.uniform_cost_benchmark)
 		self.benchmark_menu.addSeparator()
-		all_benchmark_action = self.benchmark_menu.addAction("Benchmark All",self.all_benchmark)
-		astar_custom = self.benchmark_menu.addAction("Benchmark A*, All Heuristics",self.astar_heuristic_wrapper)
+		self.benchmark_menu.addAction("Benchmark All",self.all_benchmark)
+		self.benchmark_menu.addAction("Benchmark A*, All Heuristics",self.astar_heuristic_wrapper)
 
-		# menubar actions
-		load_action = self.file_menu.addAction("Load...",self.load,QKeySequence("Ctrl+L"))
-		save_action = self.file_menu.addAction("Save As...",self.save_as,QKeySequence("Ctrl+S"))
+		# File menu actions
+		self.file_menu.addAction("Load...",self.load,QKeySequence("Ctrl+L"))
+		self.file_menu.addAction("Save As...",self.save_as,QKeySequence("Ctrl+S"))
 		self.file_menu.addSeparator()
-		screenshot_action = self.file_menu.addAction("Save Screenshot...",self.save_screenshot,QKeySequence("Ctrl+Shift+S"))
+		self.file_menu.addAction("Save Screenshot...",self.save_screenshot,QKeySequence("Ctrl+Shift+S"))
 		self.file_menu.addSeparator()
-		clear_action = self.file_menu.addAction("Clear Grid",self.clear,QKeySequence("Ctrl+C"))
-		clear_path_action = self.file_menu.addAction("Clear Search Path", self.clear_path,"Ctrl+P")
-		create_action = self.file_menu.addAction("Create New Grid",self.create,QKeySequence("Ctrl+N"))
+		self.file_menu.addAction("Clear Grid",self.clear,QKeySequence("Ctrl+C"))
+		self.file_menu.addAction("Clear Search Path", self.clear_path,"Ctrl+P")
+		self.file_menu.addAction("Create New Grid",self.create,QKeySequence("Ctrl+N"))
 		self.file_menu.addSeparator()
-		new_window_action = self.file_menu.addAction("Open New Window...",self.open_new_window,QKeySequence("Ctrl+Shift+N"))
+		self.file_menu.addAction("Open New Window...",self.open_new_window,QKeySequence("Ctrl+Shift+N"))
 		self.file_menu.addSeparator()
-		quit_action = self.file_menu.addAction("Quit", self.quit, QKeySequence("Ctrl+Q"))
+		self.file_menu.addAction("Quit", self.quit, QKeySequence("Ctrl+Q"))
 
+		# Tools menu actions
 		self.toggle_grid_lines_action = self.tools_menu.addAction("Turn On Grid Lines",self.toggle_grid_lines,QKeySequence("Ctrl+G"))
 		self.toggle_solution_swarm_action = self.tools_menu.addAction("Turn Off Solution Swarm",self.toggle_solution_swarm,QKeySequence("Ctrl+T"))
 		self.toggle_gradient_action = self.tools_menu.addAction("Turn Off Swarm Gradient",self.toggle_gradient)
@@ -502,21 +503,23 @@ class main_window(QWidget):
 		self.tools_menu.addSeparator()
 		self.toggle_mouse_tracking_action = self.tools_menu.addAction("Turn Off Mouse Tracking",self.toggle_mouse_tracking)
 		self.tools_menu.addSeparator()
-		change_attrib_color_action = self.tools_menu.addAction("Set Attribute Color...",self.change_attrib_color,QKeySequence("Ctrl+M"))
-		change_attrib_value_action = self.tools_menu.addAction("Set Attribute Value...",self.change_attrib_value,QKeySequence("Ctrl+V"))
+		self.tools_menu.addAction("Set Attribute Color...",self.change_attrib_color,QKeySequence("Ctrl+M"))
+		self.tools_menu.addAction("Set Attribute Value...",self.change_attrib_value,QKeySequence("Ctrl+V"))
 		self.tools_menu.addSeparator()
-		regenerate_start_end_action = self.tools_menu.addAction("New Start/End Cells...",self.regenerate_start_end)
+		self.tools_menu.addAction("New Start/End Cells...",self.regenerate_start_end)
 
-		# algorithm
-		a_star_action = self.algo_menu.addAction("Run A*",self.a_star,QKeySequence("Ctrl+1"))
-		weighted_a_action = self.algo_menu.addAction("Run Weighted A*",self.weighted_astar_wrapper_default_heuristic,QKeySequence("Ctrl+2"))
-		uniform_cost_action = self.algo_menu.addAction("Run Uniform-cost Search",self.uniform_cost,QKeySequence("Ctrl+3"))
-
+		# Algorithm menu actions
+		self.algo_menu.addAction("Run A*",self.a_star,QKeySequence("Ctrl+1"))
+		self.algo_menu.addAction("Run Weighted A*",self.weighted_astar_wrapper_default_heuristic,QKeySequence("Ctrl+2"))
+		self.algo_menu.addAction("Run Uniform-Cost Search",self.uniform_cost,QKeySequence("Ctrl+3"))
 		self.algo_menu.addSeparator()
-		astar_custom_action = self.algo_menu.addAction("Run A*, Custom Heuristic",self.astar_wrapper)
-		weighted_astar_custom = self.algo_menu.addAction("Run Weighted A*, Custom Heuristic",self.weighted_astar_wrapper)
+		self.algo_menu.addAction("Run A*, Custom Heuristic",self.astar_wrapper)
+		self.algo_menu.addAction("Run Weighted A*, Custom Heuristic",self.weighted_astar_wrapper)
 		self.algo_menu.addSeparator()
-		stop_algorithm_action = self.algo_menu.addAction("Stop Algorithm",self.stop_algorithm)
+		self.algo_menu.addAction("Run Sequential Heuristic A*",self.sequential_astar,QKeySequence("Ctrl+8"))
+		self.algo_menu.addAction("Run Integrated Heuristic A*",self.integrated_astar,QKeySequence("Ctrl+9"))
+		self.algo_menu.addSeparator()
+		self.algo_menu.addAction("Stop Algorithm",self.stop_algorithm,QKeySequence("Ctrl+0"))
 
 		if os.name == "nt":
 			#self.resize(1623,1249) # large monitor size
@@ -528,6 +531,12 @@ class main_window(QWidget):
 		QtCore.QObject.connect(self.value_preferences_window, QtCore.SIGNAL("return_value_prefs()"), self.finished_changing_values)
 		QtCore.QObject.connect(self.grid, QtCore.SIGNAL("return_current_cell_attributes(PyQt_PyObject)"), self.update_current_cell_info)
 		self.show()
+
+	def sequential_astar(self):
+		pass 
+
+	def integrated_astar(self):
+		pass
 
 	def all_benchmark(self):
 		# run benchmark on all algorithms
@@ -555,23 +564,22 @@ class main_window(QWidget):
 		self.is_benchmark = True
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
 
+		data_dir = "benchmarks/data/"
+
 		if code==0:
-			f = open("a_star-benchmark-euclidean.txt","w")
-			print(">Writing results to a_star-benchmark-euclidean.txt...")
+			f = open(data_dir+"a_star-benchmark-euclidean.txt","w")
+			print(">Writing results to "+data_dir+"a_star-benchmark-euclidean.txt...")
 		elif code==1:
-			f = open("a_star-benchmark-diagonal.txt","w")
-			print(">Writing results to a_star-benchmark-diagonal.txt...")
+			f = open(data_dir+"a_star-benchmark-diagonal.txt","w")
+			print(">Writing results to "+data_dir+"a_star-benchmark-diagonal.txt...")
 		elif code==2:
-			f = open("a_star-benchmark-approx-euclidean.txt","w")
-			print(">Writing results to a_star-benchmark-approx-euclidean.txt...")
+			f = open(data_dir+"a_star-benchmark-approx-euclidean.txt","w")
+			print(">Writing results to "+data_dir+"a_star-benchmark-approx-euclidean.txt...")
 		else:
 			print("Could not recognize a_star_benchmark input code.")
 			return
 
-		#f = open("a_star-benchmark"+str(code)+".txt","w")
 		grids,short = self.get_all_grids()
-		#print(">Benchmarking A* on "+str(len(grids))+" .grid files...")
-		#print(">Writing results to a_star-benchmark"+str(code)+".txt...")
 		f.write("A* Benchmark on "+str(len(grids))+" .grid files:\n\n")
 
 		# turning off all UI interaction
@@ -612,7 +620,7 @@ class main_window(QWidget):
 
 			# save screenshot
 			ext = short_name[:short_name.find(".grid")]
-			filename = current_location+"/screenshots/benchmarks/a_star-"+ext+".png"
+			filename = current_location+"/benchmarks/screenshots/a_star-"+ext+".png"
 			QPixmap.grabWindow(self.winId()).save(filename,'png')
 
 		f.write("\n\nTotal algorithm time: "+str(total_execution_time))
@@ -648,10 +656,12 @@ class main_window(QWidget):
 		self.is_benchmark = True
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
 
-		f = open("weighted_a_star-benchmark"+str(benchmark_index)+".txt","w")
+		data_dir = "benchmarks/data/"
+
+		f = open(data_dir+"weighted_a_star-benchmark"+str(benchmark_index)+".txt","w")
 		grids,short = self.get_all_grids()
 		print(">Benchmarking Weighted A* on "+str(len(grids))+" .grid files with weight: "+str(weight)+"...")
-		print(">Writing results to weighted_a_star-benchmark"+str(benchmark_index)+".txt...")
+		print(">Writing results to "+data_dir+"weighted_a_star-benchmark"+str(benchmark_index)+".txt...")
 		f.write("Weighted A* Benchmark on "+str(len(grids))+" .grid files with weight: "+str(weight)+":\n\n")
 
 		# turning off all UI interaction
@@ -692,9 +702,8 @@ class main_window(QWidget):
 
 			# save screenshot
 			ext = short_name[:short_name.find(".grid")]
-			filename = current_location+"/screenshots/benchmarks/weighted_a_star-"+str(benchmark_index)+"-"+ext+".png"
+			filename = current_location+"/benchmarks/screenshots/weighted_a_star-"+str(benchmark_index)+"-"+ext+".png"
 			QPixmap.grabWindow(self.winId()).save(filename,'png')
-
 
 		f.write("\n\nTotal algorithm time: "+str(total_execution_time))
 		f.write("\nTotal cells explored: "+str(total_explored))
@@ -717,11 +726,13 @@ class main_window(QWidget):
 		# benchmark the efficiency of the Uniform Cost Search algorithm on all files in /grids
 		self.is_benchmark = True
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
-
-		f = open("ucs-benchmark.txt","w")
+		
+		data_dir = "benchmarks/data/"
+		
+		f = open(data_dir+"ucs-benchmark.txt","w")
 		grids,short = self.get_all_grids()
-		print(">Benchmarking A* on "+str(len(grids))+" .grid files...")
-		print(">Writing results to ucs-benchmark.txt...")
+		print(">Benchmarking UCS on "+str(len(grids))+" .grid files...")
+		print(">Writing results to "+data_dir+"ucs-benchmark.txt...")
 		f.write("Uniform-Cost Search Benchmark on "+str(len(grids))+" .grid files:\n\n")
 
 		# turning off all UI interaction
@@ -767,27 +778,21 @@ class main_window(QWidget):
 
 			# save screenshot
 			ext = short_name[:short_name.find(".grid")]
-			filename = current_location+"/screenshots/benchmarks/ucs-"+ext+".png"
+			filename = current_location+"/benchmarks/screenshots/ucs-"+ext+".png"
 			QPixmap.grabWindow(self.winId()).save(filename,'png')
 
 		f.write("\n\nTotal algorithm time: "+str(total_execution_time))
 		f.write("\nTotal cells explored: "+str(total_explored))
 		f.write("\nTotal cost: "+str(total_cost))
 		f.write("\nTotal frontier length: "+str(total_frontier))
-
 		f.write("\n\nAverage algorithm time: "+str(total_execution_time/len(grids)))
 		f.write("\nAverage cells explored: "+str(total_explored/len(grids)))
 		f.write("\nAverage cost: "+str(total_cost/len(grids)))
 		f.write("\nAverage frontier length: "+str(total_frontier/len(grids)))
-
 		f.write("\n\nTotal benchmark time: "+str(time.time()-overall_start))
-
-
-		self.grid.allow_render_mouse = True
 
 		self.grid.allow_render_mouse = True
 		self.grid.suppress_output = False
-
 		self.is_benchmark = False
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+")")
 		print(">Uniform-Cost Search Benchmark Complete")
@@ -801,7 +806,7 @@ class main_window(QWidget):
 			self.mouse_tracking = True
 			self.toggle_mouse_tracking_action.setText("Turn Off Mouse Tracking")
 
-		self.grid.toggle_mouse(track=self.mouse_tracking)
+		self.grid.allow_render_mouse = self.mouse_tracking # set the correct tracking state in grid
 		self.grid.repaint()
 		pyqt_app.processEvents()
 
@@ -901,7 +906,7 @@ class main_window(QWidget):
 			self.show_solution_swarm = True
 			self.toggle_solution_swarm_action.setText("Turn Off Solution Swarm")
 
-		self.grid.toggle_solution_swarm(show_swarm=self.show_solution_swarm)
+		self.grid.show_solution_swarm = self.show_solution_swarm
 		self.grid.repaint()
 		pyqt_app.processEvents()
 
@@ -914,7 +919,7 @@ class main_window(QWidget):
 			self.use_gradient = True
 			self.toggle_gradient_action.setText("Turn Off Swarm Gradient")
 
-		self.grid.toggle_gradient(use_gradient=self.use_gradient)
+		self.grid.using_gradient = self.use_gradient
 		self.grid.repaint()
 		pyqt_app.processEvents()
 
@@ -927,7 +932,7 @@ class main_window(QWidget):
 			self.show_trace = True
 			self.toggle_trace_action.setText("Turn Off Swarm Gradient")
 
-		self.grid.toggle_trace(use_trace=self.show_trace)
+		self.grid.show_path_trace = self.show_trace
 		self.grid.repaint()
 		pyqt_app.processEvents()
 
@@ -964,7 +969,7 @@ class main_window(QWidget):
 			self.show_grid_lines = True
 			self.toggle_grid_lines_action.setText("Turn Off Grid Lines")
 
-		self.grid.toggle_grid_lines(grid_lines=self.show_grid_lines)
+		self.grid.draw_grid_lines = self.show_grid_lines
 		self.grid.repaint()
 
 	def weighted_astar_wrapper_default_heuristic(self):
@@ -1313,14 +1318,16 @@ class main_window(QWidget):
 def main():
 	global pyqt_app
 
+	# if no command line arguments, regular operation
 	if len(sys.argv)==1:
 		pyqt_app = QtGui.QApplication(sys.argv)
 		_ = main_window()
 		sys.exit(pyqt_app.exec_())
 
+	# if provided two arguments
 	elif len(sys.argv)==3:
-		action = sys.argv[1]
-		parameter = sys.argv[2]
+		action = sys.argv[1] # first input
+		parameter = sys.argv[2] # second input
 
 		if action in ["-g","--grid","--g","-grid"]:
 			# user wants to create a certain number of random .grid files
@@ -1349,8 +1356,10 @@ def main():
 		else:
 			print("Did not recognize command line paramters.")
 
+	# if provided a single argument
 	elif len(sys.argv)==2:
-		action = sys.argv[1]
+		action = sys.argv[1] # first input
+
 		if action in ["-b","--b","-benchmark","--benchmark"]:
 			# create 5 benchmark grids and a 10 start/end locations for each
 			# user wants to create a certain number of random .grid files

@@ -1163,7 +1163,6 @@ class eight_neighbor_grid(QWidget):
 
 		return ((approx + 512) >> 10)
 
-
 	def heuristic_manager(self, start, end, code):
 		if code == 0:
 			return self.euclidean_heuristic(start, end)
@@ -1925,21 +1924,6 @@ class eight_neighbor_grid(QWidget):
 			for cell in self.cells:
 				if x_coord==cell.x and y_coord==cell.y:
 					return cell.state
-
-	def toggle_grid_lines(self,grid_lines):
-		self.draw_grid_lines = grid_lines
-
-	def toggle_solution_swarm(self,show_swarm):
-		self.show_solution_swarm = show_swarm
-
-	def toggle_gradient(self,use_gradient):
-		self.using_gradient = use_gradient
-
-	def toggle_trace(self,use_trace):
-		self.show_path_trace = use_trace
-
-	def toggle_mouse(self,track):
-		self.allow_render_mouse = track
 
 	def set_attrib_color(self,attrib="free",color=[0,0,0]):
 		# called by the main_window, sets the color of a certain attribute
