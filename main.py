@@ -92,6 +92,8 @@ class attrib_value_window(QWidget):
 		self.current_line_types = ["SolidLine","SolidLine","DotLine","DashLine"]
 		self.all_line_types = ["SolidLine","DashLine","DotLine","DashDotLine","DashDotDotLine"]
 
+		self.is_valid = True # if false, user closed out of window
+
 	def init_ui(self):
 		# set up ui elements
 		self.layout = QVBoxLayout(self)
@@ -181,11 +183,16 @@ class attrib_value_window(QWidget):
 
 	def open_window(self):
 		# called from the main_window
+		self.is_valid = True 
 		self.show()
 
 	def hide_window(self):
 		# called from the main_window
 		self.hide()
+
+	def closeEvent(self,e):
+		self.is_valid = False
+		self.emit(SIGNAL("return_value_prefs()"))
 
 class attrib_color_window(QWidget):
 	# small window that opens if the user wants to change an attribute color
@@ -205,6 +212,8 @@ class attrib_color_window(QWidget):
 		# current attribute value
 		self.attrib_value = self.colors[self.attrib_index]
 		self.backend = False # if we are changing something backend, dont record it as user changed value
+
+		self.is_valid = True # if false, user closed out of window instead of accepting changes
 
 	def init_ui(self):
 		# set up ui elements
@@ -359,11 +368,16 @@ class attrib_color_window(QWidget):
 
 	def open_window(self):
 		# called from the main_window
+		self.is_valid = True
 		self.show()
 
 	def hide_window(self):
 		# called from the main_window
 		self.hide()
+
+	def closeEvent(self,e):
+		self.is_valid = False
+		self.emit(SIGNAL("return_color_prefs()"))
 
 class main_window(QWidget):
 
@@ -490,7 +504,7 @@ class main_window(QWidget):
 		self.file_menu.addSeparator()
 		self.file_menu.addAction("Clear Grid",self.clear,QKeySequence("Ctrl+C"))
 		self.file_menu.addAction("Clear Search Path", self.clear_path,"Ctrl+P")
-		self.file_menu.addAction("Create New Grid",self.create,QKeySequence("Ctrl+N"))
+		self.file_menu.addAction("Generate New Grid",self.create,QKeySequence("Ctrl+N"))
 		self.file_menu.addSeparator()
 		self.file_menu.addAction("Open New Window...",self.open_new_window,QKeySequence("Ctrl+Shift+N"))
 		self.file_menu.addSeparator()
@@ -538,9 +552,41 @@ class main_window(QWidget):
 		num_heuristics = 0
 		if self.is_benchmark==False: print("Performing Sequential A* Search with "+str(num_heuristics)+" heuristics...")
 
-	def integrated_astar(self):
-		num_heuristics = 0
-		if self.is_benchmark==False: print("Performing Integrated A* Search with "+str(num_heuristics)+" heuristics...")
+	def integrated_astar(self,w1=1.0,w2=1.0):
+		# f = g + h
+		# g = cost from current to start
+		# h = heuristic, cost from current to goal
+
+		# w1 >= 1.0 , to weight the heuristic ( return g(s) + w1*hi(s) )
+		# w2 >= 1.0 , weights the comparison ( OPENi.Minkey() <= w2*OPEN0.Minkey() )
+
+		# w1 --> used to inflate heuristic values for each of the search procedures
+		# w2 --> used as a factor to prioritize the inadmissible search processes over the anchor, admissible one
+
+		num_heuristics = 2
+		if self.is_benchmark==False: print("Performing Integrated A* Search with "+str(num_heuristics)+" heuristics using w1="+str(w1)+", w2="+str(w2))
+
+		self.set_ui_interaction(enabled=False) # turn off ui interaction
+		self.stop_executing = False # prevent from quitting search
+
+		self.fetch_current_grid_state() # set: self.cells, self.start_cell, self.end_cell, self.highways
+
+		cost_list = {} # initialize set that contains the cost to visit coordinates
+
+		self.last_cost_list = cost_list
+		self.grid.solution_path = self.explored
+		self.grid.shortest_path = rectify_path(self.path_end)
+		self.grid.update() # render grid with new solution path
+		pyqt_app.processEvents()
+		final_solution_cost = get_path_cost(self.path_end,self.highways)
+		print("\nFinished a* search in "+str(time.time()-overall_start)[:6]+" seconds, final cost: "+str(final_solution_cost)+", checked "+str(len(self.explored))+" cells\n")
+
+		if self.is_benchmark:
+			self.latest_search_cost = final_solution_cost
+			self.latest_num_explored = len(self.explored)
+			self.latest_frontier_length = self.frontier.length()
+
+		self.set_ui_interaction(enabled=True) # turn on ui interaction
 
 	def weighted_astar_wrapper_default_heuristic(self):
 		self.grid.allow_render_mouse = False
@@ -575,21 +621,11 @@ class main_window(QWidget):
 
 	def a_star(self, weight=1, code=0):
 		if self.is_benchmark==False: print("Performing A* Seach with weight: "+str(weight)+", and heuristic: "+str(code)+"...")
-		# put a* implementation here
-		self.grid.render_mouse = False
-		self.grid.allow_render_mouse = False
-		self.grid.verbose = False # dont print render update info to terminal during execution
+
+		self.set_ui_interaction(False) # turn off ui interaction
 		self.stop_executing = False
-		self.cells = self.grid.cells #current state of grid cells
-		self.start_cell = self.grid.start_cell #current start cell
+		self.fetch_current_grid_state() # set: self.cells, self.start_cell, self.end_cell, self.highways
 
-		for item in self.cells:
-			if item.x==self.start_cell[0] and item.y==self.start_cell[1]:
-				self.start_cell = item
-				break
-
-		self.end_cell = self.grid.end_cell # current end cell
-		self.highways = self.grid.highways # current highways on grid
 		cost_list = {}; #initialize set that contains the cost to visit coordinates
 
 		self.frontier = PriorityQueue()
@@ -664,15 +700,12 @@ class main_window(QWidget):
 			self.latest_num_explored = len(self.explored)
 			self.latest_frontier_length = self.frontier.length()
 
-		self.grid.verbose = True # resume printing render timing info for the window
-		self.grid.render_mouse = True
-		self.grid.allow_render_mouse = True
+		self.set_ui_interaction(True) # turn on ui interaction
 
 	def uniform_cost(self):
 		if self.is_benchmark==False: print("\nPerforming uniform_cost search...")
-		self.grid.render_mouse = False
+		self.set_ui_interaction(False) # turn off ui interaction
 		self.stop_executing = False # Ctrl+C calls clear which will set this to true
-		self.grid.verbose = False # Don't output all the render details
 
 		# indicate the refresh rate here
 		refresh_rate = 0.1 # at least every this many seconds refresh
@@ -680,17 +713,7 @@ class main_window(QWidget):
 		explored_refresh_rate = 100 # refresh if the algo has increased the explorted count by this much
 
 		self.overall_start = time.time()
-
-		self.cells = self.grid.cells # current state of cells in grid
-		self.start_cell = self.grid.start_cell  # current start cell
-
-		for item in self.cells:
-			if item.x==self.start_cell[0] and item.y==self.start_cell[1]:
-				self.start_cell = item
-				break
-
-		self.end_cell = self.grid.end_cell # current end cell
-		self.highways = self.grid.highways # current highways on grid
+		self.fetch_current_grid_state() # set: self.cells, self.start_cell, self.end_cell, self.highways
 
 		if USE_UCS_MULTITHREADED:
 			self.ucs_agent = uniform_cost_search()
@@ -728,8 +751,7 @@ class main_window(QWidget):
 			self.latest_num_explored = len(self.explored)
 			self.latest_frontier_length = self.frontier.length()
 
-		self.grid.verbose = True
-		self.grid.render_mouse = True
+		self.set_ui_interaction(True) # turn on ui interaction
 
 	def uniform_cost_step(self,refresh_rate,cost_refresh_rate,explored_refresh_rate):
 		# helper function for uniform_cost search, performs only refresh_rate seconds then returns
@@ -806,14 +828,6 @@ class main_window(QWidget):
 		# run a_star on all different heuristic types
 		for i in range(3):
 			self.a_star_benchmark(weight=1,code=i)
-
-	def get_all_grids(self):
-		# gets all grid filenames in /grids directory
-		grids = [f for f in listdir("grids") if isfile(join("grids",f))]
-		grid_filenames = []
-		for g in grids:
-			grid_filenames.append("grids/"+g)
-		return grid_filenames,grids
 
 	def a_star_benchmark(self,weight=1,code=0):
 		# benchmark the efficiency of the A* algorithm on all files in /grids
@@ -921,9 +935,8 @@ class main_window(QWidget):
 		f.write("Weighted A* Benchmark on "+str(len(grids))+" .grid files with weight: "+str(weight)+":\n\n")
 
 		# turning off all UI interaction
-		self.grid.allow_render_mouse = False
-		self.grid.suppress_output = True
-		self.grid.verbose = False
+		self.set_ui_interaction(False) # turn off ui interaction
+		self.grid.suppress_output = True # turn off warning signals
 		self.grid.draw_grid_lines = False
 		self.grid.draw_outer_boundary = False
 		self.grid.show_path_trace = False
@@ -973,7 +986,7 @@ class main_window(QWidget):
 
 		f.write("\n\nTotal benchmark time: "+str(time.time()-overall_start))
 
-		self.grid.allow_render_mouse = True
+		self.set_ui_interaction(True) # turn ui interaction back on
 		self.is_benchmark = False
 		self.grid.suppress_output = False
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+")")
@@ -1054,6 +1067,30 @@ class main_window(QWidget):
 		print(">Uniform-Cost Search Benchmark Complete")
 
 	# State-changing utilities...
+	def get_all_grids(self):
+		# gets all grid filenames in /grids directory
+		grids = [f for f in listdir("grids") if isfile(join("grids",f))]
+		grid_filenames = []
+		for g in grids:
+			grid_filenames.append("grids/"+g)
+		return grid_filenames,grids
+
+	def fetch_current_grid_state(self):
+		self.cells = self.grid.cells # all cells
+		self.start_cell = self.grid.start_cell # start cell
+		for item in self.cells:
+			if item.x==self.start_cell[0] and item.y==self.start_cell[1]:
+				self.start_cell = item # get cell version of start cell
+				break
+		self.end_cell = self.grid.end_cell # current end cell
+		self.highways = self.grid.highways # current highways on grid
+
+	def set_ui_interaction(self,enabled):
+		# either turns off or on the user interaction with the grid widget
+		self.grid.verbose = enabled # render timing info
+		self.grid.render_mouse = enabled # current location information
+		self.grid.allow_render_mouse = enabled # current location information
+
 	def toggle_mouse_tracking(self):
 		# function called by pyqt when user chooses the appropriate menu item
 		if self.mouse_tracking == True:
@@ -1115,11 +1152,13 @@ class main_window(QWidget):
 
 	def save_screenshot(self):
 		# takes a screenshot of the current grid and saves as png
+		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - SAVING SCREENSHOT")
 		current_location = os.getcwd()
 		filename = QFileDialog.getSaveFileName(self, "Save Picture As",current_location+"/screenshots","Picture (*.png)")
 		if filename != "":
 			QPixmap.grabWindow(self.winId()).save(filename, 'png')
 			print("Saved screenshot to"+filename)
+		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+")")
 
 	def clear_path(self):
 		# function called by pyqt when user selects "Clear Search Path" File menu item
@@ -1132,22 +1171,26 @@ class main_window(QWidget):
 
 	def change_attrib_value(self):
 		# function called by pyqt when user chooses change_attrib_value_action menu item
+		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - Changing Attribute Values...")
+		self.setEnabled(False) 
 		self.value_preferences_window.open_window()
 
 	def finished_changing_values(self):
 		# called by the value preferences window when the user is done
-		self.value_preferences_window.hide_window()
-		new_value_prefs = self.value_preferences_window.values
-		new_value_attribs = self.value_preferences_window.attribs
-		for attrib,value in list(zip(new_value_attribs,new_value_prefs)):
-			self.grid.set_attrib_value(attrib,value)
-
-		new_line_types = self.value_preferences_window.current_line_types
-		line_names = self.value_preferences_window.lines
-		for attrib,value in list(zip(line_names,new_line_types)):
-			self.grid.set_line_type(attrib,value)
-
-		self.grid.repaint()
+		if self.value_preferences_window.is_valid:
+			self.value_preferences_window.hide_window()
+			new_value_prefs = self.value_preferences_window.values
+			new_value_attribs = self.value_preferences_window.attribs
+			for attrib,value in list(zip(new_value_attribs,new_value_prefs)):
+				self.grid.set_attrib_value(attrib,value)
+			new_line_types = self.value_preferences_window.current_line_types
+			line_names = self.value_preferences_window.lines
+			for attrib,value in list(zip(line_names,new_line_types)):
+				self.grid.set_line_type(attrib,value)
+			self.grid.repaint()
+			
+		self.setEnabled(True)
+		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+")")
 
 	def open_new_window(self):
 		# function called by pyqt when user chooses "Open New Window...", opens
@@ -1201,21 +1244,26 @@ class main_window(QWidget):
 
 	def finished_changing_colors(self):
 		# called by the color preferences window when the user is done
-		self.color_preferences_window.hide_window()
-		new_color_prefs = self.color_preferences_window.colors
-		new_color_attribs = self.color_preferences_window.attribs
-		for attrib,color in list(zip(new_color_attribs,new_color_prefs)):
-			if attrib == "fully blocked":
-				attrib = "full"
-			if attrib == "partially blocked":
-				attrib = "partial"
-			if attrib == "current location":
-				attrib = "current_location"
-			self.grid.set_attrib_color(attrib,color)
-		self.grid.repaint()
+		if self.color_preferences_window.is_valid:
+			self.color_preferences_window.hide_window()
+			new_color_prefs = self.color_preferences_window.colors
+			new_color_attribs = self.color_preferences_window.attribs
+			for attrib,color in list(zip(new_color_attribs,new_color_prefs)):
+				if attrib == "fully blocked":
+					attrib = "full"
+				if attrib == "partially blocked":
+					attrib = "partial"
+				if attrib == "current location":
+					attrib = "current_location"
+				self.grid.set_attrib_color(attrib,color)
+			self.grid.repaint()
+		self.setEnabled(True)
+		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+")")
 
 	def change_attrib_color(self):
 		# function called by pyqt when user chooses change_attrib_color_action menu item
+		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - Changing Attribute Colors...")
+		self.setEnabled(False)
 		self.color_preferences_window.open_window()
 
 	def toggle_grid_lines(self):
@@ -1232,6 +1280,8 @@ class main_window(QWidget):
 
 	def create(self):
 		# clears the current grid and creates a new random one
+		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - GENERATING NEW GRID")
+		self.setEnabled(False)
 		self.allow_render_mouse = False
 		self.stop_executing = True # if performing ucs w/o multhithreading, tell it to stop
 		self.ucs_agent.stop_executing = True # if using multithreading, tell usc_agent to stop executing
@@ -1240,6 +1290,8 @@ class main_window(QWidget):
 		self.grid.random()
 		self.grid.repaint()
 		self.allow_render_mouse = True
+		self.setEnabled(True)
+		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+")")
 
 	def clear(self):
 		# clears the current grid
@@ -1251,6 +1303,7 @@ class main_window(QWidget):
 
 	def save_as(self):
 		# allow user to save the current grid
+		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - SAVING")
 		current_location = os.getcwd()
 		filename = QFileDialog.getSaveFileName(self,"Save As", current_location+"/grids", "Grid Files (*.grid)")
 		if filename != "":
@@ -1258,9 +1311,11 @@ class main_window(QWidget):
 			print("Finished saving "+filename)
 		else:
 			print("Saving canceled")
+		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+")")
 
 	def load(self):
 		# load a new grid from file
+		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - LOADING")
 		current_location = os.getcwd()
 		filename = QFileDialog.getOpenFileName(self, "Select Grid File", current_location+"/grids", "Grid Files (*.grid)")
 		if filename != "":
@@ -1270,6 +1325,7 @@ class main_window(QWidget):
 			print("Finished loading "+filename)
 		else:
 			print("Loading canceled.")
+		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+")")
 
 	def quit(self):
 		# quits the application
