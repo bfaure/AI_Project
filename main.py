@@ -547,7 +547,7 @@ class main_window(QWidget):
 		num_heuristics = 0
 		if self.is_benchmark==False: print("Performing Sequential A* Search with "+str(num_heuristics)+" heuristics...")
 
-	def integrated_astar(self,w1=1.25,w2=1.25):
+	def integrated_astar(self,w1=1.00,w2=2):
 		# f = g + h
 		# g = cost from current to start
 		# h = heuristic, cost from current to goal
@@ -1289,7 +1289,7 @@ class main_window(QWidget):
 			temp = cell(cell_attributes.coordinates[0],cell_attributes.coordinates[1])
 			i = get_cell_index(temp,self.cells)
 
-			heuristic_value = self.grid.euclidean_heuristic(temp,self.grid.end_cell)
+			heuristic_value = self.grid.diagonal_distance_heuristic(temp,self.grid.end_cell)/4
 			self.h_value.setText(str(heuristic_value))
 
 			if cell_attributes.state=="full":
@@ -1310,10 +1310,18 @@ class main_window(QWidget):
 				self.f_value.setText(str(cost))
 
 				if cost != "None":
-					self.g_value.setText(str(cost-heuristic_value))
+					cost_to_start = -1
+					for item in self.grid.solution_path:
+						if item.x==temp.x and item.y==temp.y:
+							cost_to_start = get_path_cost(item,self.highways)
+							break
+					if cost_to_start!=-1:
+						self.g_value.setText(str(cost_to_start))
+						self.h_value.setText(str(cost-cost_to_start))
+					else:
+						self.g_value.setText(str(cost-heuristic_value))
 				else:
 					self.g_value.setText("None")
-
 			else:
 				self.f_value.setText("None")
 				self.g_value.setText("None")

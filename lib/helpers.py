@@ -800,6 +800,7 @@ class eight_neighbor_grid(QWidget):
 		self.solution_path = [] # the path eventually filled by one of the search algos
 		self.shortest_path = []
 		self.path_traces = [] # list of all paths tried (shown to user)
+		self.current_path = None # path under cursor
 		if leave_empty: return
 
 		if self.suppress_output==False: print("\nGenerating a random grid...")
@@ -809,6 +810,7 @@ class eight_neighbor_grid(QWidget):
 		self.init_blocked_cells() # initialize the completely blocked cells
 		self.init_start_end_cells() # initialize the start/end locations
 		self.solution_path = [] # the path eventually filled by one of the search algos
+		
 		if self.suppress_output==False: print("Finished generating random grid, "+str(time.time()-start_time)+" seconds\n")
 
 	def mouseMoveEvent(self, event):
@@ -836,6 +838,19 @@ class eight_neighbor_grid(QWidget):
 			current_cell_attributes.h = self.get_h_value(x,y)
 			current_cell_attributes.g = self.get_g_value(x,y)
 			current_cell_attributes.f = current_cell_attributes.h+current_cell_attributes.g
+
+			if len(self.solution_path)>0:
+				head = None
+				for item in self.solution_path:
+					if item.x==current_cell_attributes.coordinates[0] and item.y==current_cell_attributes.coordinates[1]:
+						head = item
+						break
+
+				if head!=None:
+					self.current_path = rectify_path(head)
+				else:
+					self.current_path = None
+
 			self.emit(SIGNAL("return_current_cell_attributes(PyQt_PyObject)"),current_cell_attributes)
 		else:
 			self.setMouseTracking(False)
@@ -1924,6 +1939,22 @@ class eight_neighbor_grid(QWidget):
 							qp.drawRect(cell.render_coordinate[0],cell.render_coordinate[1],horizontal_step,vertical_step)
 							break
 
+				if self.current_path != None:
+					pen = QPen(QColor(self.mouse_color[0],self.mouse_color[1],self.mouse_color[2]),self.solution_render_width,Qt.__dict__[self.solution_line_type])
+					qp.setPen(pen)
+
+					last_location = None 
+					for location in self.current_path:
+						if last_location==None:
+							last_location = location
+							continue
+						x1 = (last_location[0]*horizontal_step)+(horizontal_step/2)
+						x2 = (location[0]*horizontal_step)+(horizontal_step/2)
+						y1 = (last_location[1]*vertical_step)+(vertical_step/2)
+						y2 = (location[1]*vertical_step)+(vertical_step/2)
+						qp.drawLine(x1,y1,x2,y2)
+						last_location = location
+
 		if self.verbose:
 			if self.suppress_output==False:
 				print("                                                                           ",end="\r")
@@ -2088,8 +2119,9 @@ class PriorityQueue:
 
 	def pop(self):
 		# Return the item with the lowest cost
-		return heapq.heappop(self._queue)[-1]
+		item = heapq.heappop(self._queue)[-1]
 		self._index += -1
+		return item
 
 	def top(self):
 		temp = heapq.heappop(self._queue)[-1]
