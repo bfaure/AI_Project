@@ -26,8 +26,8 @@ class cell:
 		self.x = x_coordinate # not using anymore
 		self.y = y_coordinate # not using anymore
 		self.cost = 0 # used for Priority Queue to remember cost
-		self.parent = None
-		self.render_coordinate = None
+		self.parent = None # used in search algos to denote parent of cell
+		self.render_coordinate = None # x0,y0,x1,y1 render pixel coordinates
 
 # similar to eight_neigbor_grid but is only used if the user provides
 # command line arguments and is just trying to utilize those functions
@@ -1071,72 +1071,138 @@ class eight_neighbor_grid(QWidget):
 	def euclidean_heuristic(self, start, end):
 		#end referes to end cell
 		#start refers to the node form which euclidean distance is being calculated
+		x_run = -1
+		y_run = -1
+
 		if (type(start) is tuple) and (type(end) is tuple):
 			x_run = abs(start[0] - end[0])
 			y_run = abs(start[1] - end[1])
-			return sqrt((x_run**2)+(y_run**2))
-		else:
+		elif (type(start) is cell) and (type(end) is tuple):
 			x_run = abs(start.x - end[0])
 			y_run = abs(start.y - end[1])
+		elif (type(start) is cell) and (type(end) is cell):
+			x_run = abs(start.x - end.x)
+			y_run = abs(start.y - end.y)
+		elif (type(start) is tuple) and (type(end) is cell):
+			x_run = abs(start[0] - end.x)
+			y_run = abs(start[1] - end.y)
+		
+		if x_run!=-1 and y_run!=-1:
 			return sqrt((x_run**2)+(y_run**2))
+		else:
+			print("ERROR: Input types (start="+str(type(start))+"), (end="+str(type(end))+") to heuristic are unknown.")
+			return 1
 
 	def diagonal_distance_heuristic(self, start, end):
+		x_run = -1
+		y_run = -1
+
 		if (type(start) is tuple) and (type(end) is tuple):
 			x_run = abs(start[0] - end[0])
 			y_run = abs(start[1] - end[1])
 
+		elif (type(start) is cell) and (type(end) is tuple):
+			x_run = abs(start.x - end[0])
+			y_run = abs(start.y - end[1])
+
+		elif (type(start) is cell) and (type(end) is cell):
+			x_run = abs(start.x - end.x)
+			y_run = abs(start.y - end.y)
+
+		elif (type(start) is tuple) and (type(end) is cell):
+			x_run = abs(start[0] - end.x)
+			y_run = abs(start[1] - end.y)
+
+		if x_run!=-1 and y_run!=-1:
 			d_max = max(x_run, y_run)
 			d_min = min(x_run, y_run)
 
 			diag = (1.414 * d_min) + (d_max - d_min)
 			return diag
 		else:
-			x_run = abs(start.x - end[0])
-			y_run = abs(start.y - end[1])
-
-			d_max = max(x_run, y_run)
-			d_min = min(x_run, y_run)
-
-			diag = (1.414 * d_min) + (d_max - d_min)
-			return diag
+			print("ERROR: Input types (start="+str(type(start))+"), (end="+str(type(end))+") to heuristic are unknown.")
+			return 1
 
 	def approximate_euclidean_heuristic(self, start, end):
+		x_run = -1
+		y_run = -1
+
 		if (type(start) is tuple) and (type(end) is tuple):
 			x_run = abs(start[0] - end[0])
 			y_run = abs(start[1] - end[1])
 
+		elif (type(start) is cell) and (type(end) is tuple):
+			x_run = abs(start.x - end[0])
+			y_run = abs(start.y - end[1])
+
+		elif (type(start) is cell) and (type(end) is cell):
+			x_run = abs(start.x - end.x)
+			y_run = abs(start.y - end.y)
+
+		elif (type(start) is tuple) and (type(end) is cell):
+			x_run = abs(start[0] - end.x)
+			y_run = abs(start[1] - end.y)
+
+		if x_run!=-1 and y_run!=-1:
 			if(y_run >= x_run):
 				return 0.41*x_run + 0.94126*y_run
 			else:
 				return 0.41*y_run + 0.94126*x_run
 		else:
-			x_run = abs(start.x - end[0])
-			y_run = abs(start.y - end[1])
-
-			if(y_run >= x_run):
-				return 0.41*x_run + 0.94126*y_run
-			else:
-				return 0.41*y_run + 0.94126*x_run
+			print("ERROR: Input types (start="+str(type(start))+"), (end="+str(type(end))+") to heuristic are unknown.")
+			return 1
 
 	def manhattan_heuristic(self,start,end):
+		x_run = -1
+		y_run = -1
+
 		if (type(start) is tuple) and (type(end) is tuple):
 			x_run = abs(start[0] - end[0])
 			y_run = abs(start[1] - end[1])
-			return x_run + y_run
-		else:
+			
+		elif (type(start) is cell) and (type(end) is tuple):
 			x_run = abs(start.x - end[0])
 			y_run = abs(start.y - end[1])
+
+		elif (type(start) is cell) and (type(end) is cell):
+			x_run = abs(start.x - end.x)
+			y_run = abs(start.y - end.y)
+
+		elif (type(start) is tuple) and (type(end) is cell):
+			x_run = abs(start[0] - end.x)
+			y_run = abs(start[1] - end.y)
+
+		if x_run!=-1 and y_run!=-1:
 			return x_run + y_run
+		else:
+			print("ERROR: Input types (start="+str(type(start))+"), (end="+str(type(end))+") to heuristic are unknown.")
+			return 1
 
 	def approx_distance_heuristic_wrapper(self, start, end):
+		x_run = -1
+		y_run = -1
+
 		if (type(start) is tuple) and (type(end) is tuple):
 			x_run = abs(start[0] - end[0])
 			y_run = abs(start[1] - end[1])
-			return self.approx_distance(x_run, y_run)
-		else:
+			
+		elif (type(start) is cell) and (type(end) is tuple):
 			x_run = abs(start.x - end[0])
 			y_run = abs(start.y - end[1])
-			return self.approx_distance(x_run, y_run)
+
+		elif (type(start) is cell) and (type(end) is cell):
+			x_run = abs(start.x - end.x)
+			y_run = abs(start.y - end.y)
+
+		elif (type(start) is tuple) and (type(end) is cell):
+			x_run = abs(start[0] - end.x)
+			y_run = abs(start[1] - end.y)
+
+		if x_run!=-1 and y_run!=-1:
+			return self.approx_distance(x_run,y_run)
+		else:
+			print("ERROR: Input types (start="+str(type(start))+"), (end="+str(type(end))+") to heuristic are unknown.")
+			return 1
 
 	def approx_distance(self, x_run, y_run):
 		min_value = 0
@@ -2001,7 +2067,7 @@ class eight_neighbor_grid(QWidget):
 		QtCore.QObject.connect(agent_handle,QtCore.SIGNAL("send_update_to_ui(PyQt_PyObject)"),self.get_update)
 
 class PriorityQueue:
-	
+
 	def __init__(self):
 		self._queue = []
 		self._index = 0
@@ -2032,6 +2098,30 @@ class PriorityQueue:
 				return True
 		return False
 
+	def update_or_insert(self,cell,cost,parent):
+		# either updates the cell cost or inserts it as a new cell if not yet in queue
+		i = 0
+		for item in self._queue:
+			queued_cell = item[2]
+			if cell.x==queued_cell.x and cell.y==queued_cell.y:
+				self._queue[i][2].cost = cost 
+				self._queue[i][2].parent = parent 
+				return
+			i+=1
+
+		# dont already have the cell so insert it
+		self.push(cell,cost,parent)
+
+	def remove(self,cell):
+		i = 0
+		for item in self._queue:
+			queued_cell = item[2]
+			if cell.x==queued_cell.x and cell.y==queued_cell.y:
+				del self._queue[i]
+				return True 
+			i+=1
+		return False
+
 	def replace_cell(self,cell,new_cost,parent):
 		i = 0
 		for item in self._queue:
@@ -2046,6 +2136,10 @@ class PriorityQueue:
 		for item in self._queue:
 			if cell.x==item[2].x and cell.y==item[2].y:
 				return item[2].cost
+
+	def Minkey(self):
+		# returns the value of the smallest cost
+		return self._queue[-1][2].cost
 
 def get_neighbors(current,cells):
 	# Returns a list of all 8 neighbor cells to "current"
@@ -2301,3 +2395,4 @@ def get_path_cost(node,highways):
 		total_cost += get_transition_cost(current_node,next_node,highways)
 		current_node = next_node
 	print("ERROR: Got to end of get_path_cost without reaching a node w/o a parent")
+

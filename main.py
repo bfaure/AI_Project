@@ -23,7 +23,7 @@ import heapq # for priority queue implementation
 # set to true to disable Cython, if you don't have a Cython
 # installation that doesnt mean you need to change this, should
 # be used only for debugging and testing purposes.
-TURN_OFF_CYTHON = False
+TURN_OFF_CYTHON = True
 USE_UCS_MULTITHREADED = False
 
 try:
@@ -54,9 +54,6 @@ if using_cython:
 
 	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message
 	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index, get_path_cost
-
-	from helpers import non_gui_eight_neighbor_grid
-
 	from helpers import non_gui_eight_neighbor_grid, cell
 
 else:
@@ -65,8 +62,6 @@ else:
 	sys.path.insert(0, lib_folder)
 	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message
 	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index, get_path_cost
-
-	from helpers import non_gui_eight_neighbor_grid
 	from helpers import non_gui_eight_neighbor_grid, cell
 
 pyqt_app = ""
@@ -571,22 +566,93 @@ class main_window(QWidget):
 
 		self.fetch_current_grid_state() # set: self.cells, self.start_cell, self.end_cell, self.highways
 
-		cost_list = {} # initialize set that contains the cost to visit coordinates
+		self.open_t = [] # list of CellQueue structs, open[0] is all open cells for anchor
+		for i in range(num_heuristics):
+			temp = PriorityQueue()
+			temp.push(item=self.start_cell, cost=0, parent=None)
+			self.open_t.append(temp)
 
-		self.last_cost_list = cost_list
-		self.grid.solution_path = self.explored
-		self.grid.shortest_path = rectify_path(self.path_end)
-		self.grid.update() # render grid with new solution path
-		pyqt_app.processEvents()
-		final_solution_cost = get_path_cost(self.path_end,self.highways)
-		print("\nFinished a* search in "+str(time.time()-overall_start)[:6]+" seconds, final cost: "+str(final_solution_cost)+", checked "+str(len(self.explored))+" cells\n")
+		self.closed_anchor = [] # all cells closed by anchor heuristic
+		self.closed_inad = [] # all cells closed by inadmissible heuristic
 
-		if self.is_benchmark:
-			self.latest_search_cost = final_solution_cost
-			self.latest_num_explored = len(self.explored)
-			self.latest_frontier_length = self.frontier.length()
+		inf = sys.maxint # pseudo infinity value
+
+		self.g = {}
+		s_start = get_cell_index(self.start_cell,self.cells) # get the index of the start_cell
+		self.g[s_start] = 0
+
+		s_goal = get_cell_index(self.end_cell_t,self.cells) # get the index of the end_cell
+		self.g[s_goal] = inf
+
+		self.expanded = [False] * len(self.cells)
+		self.expanded[s_start] = True 
+
+		done = False # if true, the while loop will be broken
+
+		start_time = time.time()
+
+		num_iterations = 0
+		while self.open_t[0].Minkey() < inf and done==False:
+			print("explored: "+str(len(self.g))+", num_iterations: "+str(num_iterations)+", time: "+str(time.time()-start_time)[:5], end="\r")
+			num_iterations += 1
+
+			for i in range(1,num_heuristics):
+				if self.open_t[i].Minkey() <= ( w2 * self.open_t[0].Minkey() ):
+
+					if self.g[s_goal] <= self.open_t[i].Minkey():
+						if self.g[s_goal] < inf:
+							print("\nFinished 1.")
+							done = True 
+							break
+					else:
+						s = self.open_t[i].pop()
+						self.ExpandState(s,w1,w2)
+						self.closed_inad.append(s)
+				else:
+					if self.g[s_goal] <= self.open_t[0].Minkey():
+						if self.g[s_goal] < inf:
+							print("\nFinished 2.")
+							done = True
+							break
+					else:
+						s = self.open_t[0].pop()
+						self.ExpandState(s,w1,w2)
+						self.closed_anchor.append(s)
 
 		self.set_ui_interaction(enabled=True) # turn on ui interaction
+		print("\nFinished Integrated A* Search.")
+
+	def ExpandState(self,s,w1,w2):
+		# remove s from all OPENi
+		for i in range(len(self.open_t)):
+			self.open_t[i].remove(s)
+
+		s_index = get_cell_index(s,self.cells)
+		successors = get_neighbors(s,self.cells)
+
+		for succ in successors: # foreach s' in Succ(s)
+			succ_index = get_cell_index(succ,self.cells)
+
+			if self.expanded[succ_index]==False: # if s' was never generated
+				self.expanded[succ_index] = True 
+				self.g[succ_index] = sys.maxint # g(s') = infinity
+
+			if self.g[succ_index] > (self.g[s_index] + get_transition_cost(s,succ,self.highways)): # if g(s') > g(s)+c(s,s')
+				self.g[succ_index] = self.g[s_index] + get_transition_cost(s,succ,self.highways) # g(s') = g(s) + c(s,s') 
+
+				if cell_in_list(succ,self.closed_anchor)==False: # if s' not in CLOSEDanchor
+					anchor_cost = self.Key(succ,0,succ_index,w1)
+					self.open_t[0].update_or_insert(succ,anchor_cost)
+
+					if cell_in_list(succ,self.closed_inad):
+						for i in range(len(self.open_t)):
+							inad_cost = self.Key(succ,i,succ_index,w1)
+
+							if inad_cost <= ( w2 * anchor_cost ):
+								self.open_t[i].update_or_insert(succ,inad_cost)
+
+	def Key(self,s,i,s_index,w1):
+		return self.g[s_index] + w1*self.grid.heuristic_manager(s,self.end_cell_t,i) 
 
 	def weighted_astar_wrapper_default_heuristic(self):
 		self.grid.allow_render_mouse = False
@@ -655,7 +721,6 @@ class main_window(QWidget):
 
 			cur_node = self.frontier.pop()
 			self.explored.append(cur_node)
-
 
 			# update the ui window
 			if time.time()-start_time > refresh_rate:
@@ -1083,6 +1148,11 @@ class main_window(QWidget):
 				self.start_cell = item # get cell version of start cell
 				break
 		self.end_cell = self.grid.end_cell # current end cell
+		print(self.end_cell)
+		for item in self.cells:
+			if item.x==self.end_cell[0] and item.y==self.end_cell[1]:
+				self.end_cell_t = item 
+				break
 		self.highways = self.grid.highways # current highways on grid
 
 	def set_ui_interaction(self,enabled):
@@ -1188,7 +1258,7 @@ class main_window(QWidget):
 			for attrib,value in list(zip(line_names,new_line_types)):
 				self.grid.set_line_type(attrib,value)
 			self.grid.repaint()
-			
+
 		self.setEnabled(True)
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+")")
 
