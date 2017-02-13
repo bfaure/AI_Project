@@ -23,7 +23,7 @@ import heapq # for priority queue implementation
 # set to true to disable Cython, if you don't have a Cython
 # installation that doesnt mean you need to change this, should
 # be used only for debugging and testing purposes.
-TURN_OFF_CYTHON = True
+TURN_OFF_CYTHON = False
 USE_UCS_MULTITHREADED = False
 
 try:
@@ -547,7 +547,7 @@ class main_window(QWidget):
 		num_heuristics = 0
 		if self.is_benchmark==False: print("Performing Sequential A* Search with "+str(num_heuristics)+" heuristics...")
 
-	def integrated_astar(self,w1=1.0,w2=1.0):
+	def integrated_astar(self,w1=1.25,w2=1.25):
 		# f = g + h
 		# g = cost from current to start
 		# h = heuristic, cost from current to goal
@@ -558,19 +558,13 @@ class main_window(QWidget):
 		# w1 --> used to inflate heuristic values for each of the search procedures
 		# w2 --> used as a factor to prioritize the inadmissible search processes over the anchor, admissible one
 
-		num_heuristics = 2
+		num_heuristics = 5
 		if self.is_benchmark==False: print("Performing Integrated A* Search with "+str(num_heuristics)+" heuristics using w1="+str(w1)+", w2="+str(w2))
 
 		self.set_ui_interaction(enabled=False) # turn off ui interaction
 		self.stop_executing = False # prevent from quitting search
 
 		self.fetch_current_grid_state() # set: self.cells, self.start_cell, self.end_cell, self.highways
-
-		self.open_t = [] # list of CellQueue structs, open[0] is all open cells for anchor
-		for i in range(num_heuristics):
-			temp = PriorityQueue()
-			temp.push(item=self.start_cell, cost=0, parent=None)
-			self.open_t.append(temp)
 
 		self.closed_anchor = [] # all cells closed by anchor heuristic
 		self.closed_inad = [] # all cells closed by inadmissible heuristic
@@ -587,69 +581,169 @@ class main_window(QWidget):
 		self.expanded = [False] * len(self.cells)
 		self.expanded[s_start] = True 
 
+		self.open_t = [] # list of CellQueue structs, open[0] is all open cells for anchor
+		for i in range(num_heuristics):
+			temp = PriorityQueue()
+			temp.push(item=self.start_cell, cost=self.Key(self.start_cell,i,s_start,w1), parent=None)
+			self.open_t.append(temp)
+
 		done = False # if true, the while loop will be broken
+		self.explored = []
 
 		start_time = time.time()
+		step_time = time.time()
+
+		f = open("debug_log.txt","w")
+
+		#print("s_start: "+str(s_start)+", s_goal: "+str(s_goal)+", g[s_goal]: "+str(self.g[s_goal])+", g[s_start]: "+str(self.g[s_start]))
+		#f.write("s_start: "+str(s_start)+", s_goal: "+str(s_goal)+", g[s_goal]: "+str(self.g[s_goal])+", g[s_start]: "+str(self.g[s_start])+"\n")
+
+		refresh_rate = 0.1
+		last_cell = None 
 
 		num_iterations = 0
 		while self.open_t[0].Minkey() < inf and done==False:
+			# update the ui window
+			if (time.time()-step_time > refresh_rate) and last_cell!=None:
+				self.grid.solution_path = self.explored
+				self.grid.shortest_path = rectify_path(last_cell)
+				self.grid.update()
+				pyqt_app.processEvents()
+				step_time = time.time()
+
+			#print("---------------------\n")
+			#f.write("\n-----------------------------------------------\n")
+			print("                                                                           ",end="\r")
 			print("explored: "+str(len(self.g))+", num_iterations: "+str(num_iterations)+", time: "+str(time.time()-start_time)[:5], end="\r")
 			num_iterations += 1
+			#print("g[s_goal]: "+str(self.g[s_goal])+", g[s_start]: "+str(self.g[s_start])+", explored: "+str(len(self.g)),end="\r")
+
+			#f.write("\nopen_t[anchor]: ")
+			#for elem in self.open_t[0]._queue:
+			#	f.write("[ "+elem[2].to_string()+" ], ")
+			#f.write("\n")
 
 			for i in range(1,num_heuristics):
+				#f.write("\nopen_t["+str(i)+"]: ")
+				#for elem in self.open_t[i]._queue:
+				#	f.write("[ "+elem[2].to_string()+" ], ")
+				#f.write("\n")
+				#print(self.open_t[i]._queue)
 				if self.open_t[i].Minkey() <= ( w2 * self.open_t[0].Minkey() ):
 
 					if self.g[s_goal] <= self.open_t[i].Minkey():
+						#f.write("\nhere 1a")
+						#print("\nhere 1a")
 						if self.g[s_goal] < inf:
-							print("\nFinished 1.")
+							#print("\nFinished 1.")
 							done = True 
 							break
 					else:
-						s = self.open_t[i].pop()
-						self.ExpandState(s,w1,w2)
+						#f.write("\nhere 1b")
+						#print("\nhere 1b")
+						s = self.open_t[i].top()
+						last_cell = s
+						self.explored.append(s)
+						self.ExpandState(s,w1,w2,f)
 						self.closed_inad.append(s)
 				else:
 					if self.g[s_goal] <= self.open_t[0].Minkey():
+						#print("\nhere 2a")
+						#f.write("\nhere 2a")
 						if self.g[s_goal] < inf:
-							print("\nFinished 2.")
+							#print("\nFinished 2.")
 							done = True
 							break
 					else:
-						s = self.open_t[0].pop()
-						self.ExpandState(s,w1,w2)
+						#f.write("\nhere 2b")
+						#print("\nhere 2b")
+						s = self.open_t[0].top()
+						last_cell = s
+						self.explored.append(s)
+						self.ExpandState(s,w1,w2,f)
 						self.closed_anchor.append(s)
 
-		self.set_ui_interaction(enabled=True) # turn on ui interaction
-		print("\nFinished Integrated A* Search.")
+		self.last_cost_list = self.g
+		final_solution_cost = self.g[s_goal]
+		self.grid.solution_path = self.explored
 
-	def ExpandState(self,s,w1,w2):
+		self.path_end = None
+		for queue in self.open_t:
+			for cell in queue._queue:
+				cell = cell[2]
+				if cell.x==self.end_cell[0] and cell.y==self.end_cell[1]:
+					if cell.cost == final_solution_cost:
+						self.path_end = cell 
+						break
+
+		self.grid.shortest_path = rectify_path(self.path_end)
+		self.grid.update() # render grid with new solution path
+		pyqt_app.processEvents()
+		#final_solution_cost = get_path_cost(self.path_end,self.highways)
+		print("\nFinished Integrated A* search in "+str(time.time()-start_time)[:6]+" seconds, final cost: "+str(final_solution_cost)+", checked "+str(len(self.explored))+" cells\n")
+
+		'''
+		if self.is_benchmark:
+			self.latest_search_cost = final_solution_cost
+			self.latest_num_explored = len(self.explored)
+			#self.latest_frontier_length = self.frontier.length()
+		'''
+
+		self.set_ui_interaction(enabled=True) # turn on ui interaction
+
+	def ExpandState(self,s,w1,w2,f):
+		#print("Inside expand state")
+		#f.write("\ninside ExpandState")
 		# remove s from all OPENi
 		for i in range(len(self.open_t)):
 			self.open_t[i].remove(s)
 
 		s_index = get_cell_index(s,self.cells)
 		successors = get_neighbors(s,self.cells)
+		#print(successors)
+		self.expanded[s_index] = True
 
 		for succ in successors: # foreach s' in Succ(s)
 			succ_index = get_cell_index(succ,self.cells)
+			#f.write("\nsucc_index: "+str(succ_index))
+			#print("\n")
 
 			if self.expanded[succ_index]==False: # if s' was never generated
-				self.expanded[succ_index] = True 
+				#f.write("\n here 3a")
+				#print("here 3a")
+				#self.expanded[succ_index] = True 
 				self.g[succ_index] = sys.maxint # g(s') = infinity
+
+				if succ.state == "full":
+					continue
 
 			if self.g[succ_index] > (self.g[s_index] + get_transition_cost(s,succ,self.highways)): # if g(s') > g(s)+c(s,s')
 				self.g[succ_index] = self.g[s_index] + get_transition_cost(s,succ,self.highways) # g(s') = g(s) + c(s,s') 
 
-				if cell_in_list(succ,self.closed_anchor)==False: # if s' not in CLOSEDanchor
-					anchor_cost = self.Key(succ,0,succ_index,w1)
-					self.open_t[0].update_or_insert(succ,anchor_cost)
+				#f.write("\n here 4a")
+				#f.write("\n g[succ_index]: "+str(self.g[succ_index]))
+				#print("here 4a")
 
-					if cell_in_list(succ,self.closed_inad):
-						for i in range(len(self.open_t)):
+				if cell_in_list(succ,self.closed_anchor)==False: # if s' not in CLOSEDanchor
+					#print("here 5a")
+					#f.write("\n  here 5a")
+					anchor_cost = self.Key(succ,0,succ_index,w1)
+					#f.write("\n  anchor_cost: "+str(anchor_cost))
+					self.open_t[0].update_or_insert(succ,anchor_cost,parent=s)
+
+					if cell_in_list(succ,self.closed_inad)==False:
+						#print("here 6a")
+						#f.write("\n   here 6a")
+						for i in range(1, len(self.open_t)):
+							#print("here 7a")
+							#f.write("\n    here 7a")
 							inad_cost = self.Key(succ,i,succ_index,w1)
+							#f.write("\n    inad_cost: "+str(inad_cost))
 
 							if inad_cost <= ( w2 * anchor_cost ):
-								self.open_t[i].update_or_insert(succ,inad_cost)
+								#print("here 7b")
+								#f.write("\n     here 7b")
+								self.open_t[i].update_or_insert(succ,inad_cost,parent=s)
 
 	def Key(self,s,i,s_index,w1):
 		return self.g[s_index] + w1*self.grid.heuristic_manager(s,self.end_cell_t,i) 
@@ -1148,7 +1242,6 @@ class main_window(QWidget):
 				self.start_cell = item # get cell version of start cell
 				break
 		self.end_cell = self.grid.end_cell # current end cell
-		print(self.end_cell)
 		for item in self.cells:
 			if item.x==self.end_cell[0] and item.y==self.end_cell[1]:
 				self.end_cell_t = item 

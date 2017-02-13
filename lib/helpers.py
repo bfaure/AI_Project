@@ -20,7 +20,7 @@ updating_ui = False # will be set by eight_neighbor_grid.update_ui
 ui_update_time = 0.05 # will be set by eight_neighbor_grid.update_ui
 
 # class to hold details for a single cell
-class cell:
+class cell(object):
 	def __init__(self,x_coordinate=None,y_coordinate=None):
 		self.state = "free"
 		self.x = x_coordinate # not using anymore
@@ -28,6 +28,13 @@ class cell:
 		self.cost = 0 # used for Priority Queue to remember cost
 		self.parent = None # used in search algos to denote parent of cell
 		self.render_coordinate = None # x0,y0,x1,y1 render pixel coordinates
+
+	def to_string(self):
+		cell_str = ""
+		cell_str += "("+str(self.x)+","+str(self.y)+"), "
+		cell_str += self.state+", "
+		cell_str += "cost: "+str(self.cost)
+		return cell_str
 
 # similar to eight_neigbor_grid but is only used if the user provides
 # command line arguments and is just trying to utilize those functions
@@ -2082,6 +2089,12 @@ class PriorityQueue:
 	def pop(self):
 		# Return the item with the lowest cost
 		return heapq.heappop(self._queue)[-1]
+		self._index += -1
+
+	def top(self):
+		temp = heapq.heappop(self._queue)[-1]
+		heapq.heappush(self._queue, (temp.cost, self._index, temp))
+		return temp
 
 	def length(self):
 		# Return the length of the queue
@@ -2109,6 +2122,7 @@ class PriorityQueue:
 				return
 			i+=1
 
+		#print("pushing new cell to queue")
 		# dont already have the cell so insert it
 		self.push(cell,cost,parent)
 
@@ -2139,7 +2153,9 @@ class PriorityQueue:
 
 	def Minkey(self):
 		# returns the value of the smallest cost
-		return self._queue[-1][2].cost
+		#print(self._queue)
+		temp = self.top()
+		return temp.cost 
 
 def get_neighbors(current,cells):
 	# Returns a list of all 8 neighbor cells to "current"
@@ -2220,7 +2236,7 @@ def get_transition_cost(current_cell,new_cell,highways):
 		return cost
 
 	else:
-		if self.suppress_output==False: print("Could not decode cell transition from "+current_state+" to "+new_state)
+		print("Could not decode cell transition from "+current_state+" to "+new_state)
 		cost = -1
 		return cost
 
