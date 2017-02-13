@@ -1128,6 +1128,41 @@ class eight_neighbor_grid(QWidget):
 			y_run = abs(start.y - end[1])
 			return x_run + y_run
 
+	def approx_distance_heuristic_wrapper(self, start, end):
+		if (type(start) is tuple) and (type(end) is tuple):
+			x_run = abs(start[0] - end[0])
+			y_run = abs(start[1] - end[1])
+			return self.approx_distance(x_run, y_run)
+		else:
+			x_run = abs(start.x - end[0])
+			y_run = abs(start.y - end[1])
+			return self.approx_distance(x_run, y_run)
+
+	def approx_distance(self, x_run, y_run):
+		min_value = 0
+		max_value = 0
+		approx = 0
+
+		if(x_run < 0):
+			x_run = -1*x_run
+
+		if(y_run < 0):
+			y_run = -1*y_run
+
+		if(x_run < y_run):
+			min_value = x_run
+			max_value = y_run
+		else:
+			min_value = y_run
+			max_value = x_run
+
+		approx = (max_value * 1007) + (min_value * 441)
+
+		if(max_value < (min_value << 4)):
+			approx = approx - (max_value * 40)
+
+		return ((approx + 512) >> 10)
+
 
 	def heuristic_manager(self, start, end, code):
 		if code == 0:
@@ -1138,6 +1173,8 @@ class eight_neighbor_grid(QWidget):
 			return self.approximate_euclidean_heuristic(start, end)
 		elif code == 3:
 			return self.manhattan_heuristic(start,end)
+		elif code == 4:
+			return self.approx_distance_heuristic_wrapper(start, end)
 		else:
 			print("WARNING: Using invalid heuristic code: "+str(code))
 			return 0
