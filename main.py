@@ -657,7 +657,7 @@ class main_window(QWidget):
 		#populate the sets with values for start and end node_neigbors
 		for i in range(num_heuristics):
 			self.cost_set_list[i][start_index] = 0
-			self.cost_set_list[i][goal_index] = sys.maxint
+			self.cost_set_list[i][goal_index] = inf
 
 		#initialize 5 frontiers for each of the 5 heuristics
 		self.frontier_list = []
@@ -670,7 +670,7 @@ class main_window(QWidget):
 
 		result_code = 0
 		print("Finished initializing everything")
-		
+
 		last_cell = None # to hold the last node expanded (for updating ui)
 		start_time = time.time()
 		step_time = time.time()
@@ -699,7 +699,7 @@ class main_window(QWidget):
 			#print("Inside While loop")
 			for i in range(1, num_heuristics):
 				if self.frontier_list[i].Minkey() <= ( w2 * self.frontier_list[0].Minkey() ):
-					if self.cost_set_list[i][goal_index] <= self.frontier_list[i].Minkey:
+					if self.cost_set_list[i][goal_index] <= self.frontier_list[i].Minkey():
 						if self.cost_set_list[i][goal_index] < inf:
 							done = True #exit out of the loop
 							result_code = i
@@ -708,7 +708,7 @@ class main_window(QWidget):
 					else:
 						#print("Inside else for i")
 						s = self.frontier_list[i].top()
-						
+
 						last_cell = s
 						self.explored.append(s)
 
@@ -758,7 +758,7 @@ class main_window(QWidget):
 		neighbors = get_neighbors(cell_obj, self.cells)
 
 		c_index = get_cell_index(cell_obj, self.cells)
-		self.visited_lists[h_index][neighbor_index] = True
+		self.visited_lists[h_index][c_index] = True
 
 		for neighbor in neighbors:
 			neighbor_index = get_cell_index(neighbor, self.cells)
@@ -1237,7 +1237,7 @@ class main_window(QWidget):
 				self.integrated_astar_benchmark(w1,w2)
 
 	def sequential_astar_benchmark(self,w1,w2):
-		pass 
+		pass
 
 	def integrated_astar_benchmark(self,w1,w2):
 		# benchmark the efficiency of the A* algorithm on all files in /grids
