@@ -682,6 +682,7 @@ class main_window(QWidget):
 		self.explored = [] # to hold all cells visited
 		num_iterations = 0 # number of times while loop is run
 		self.stop_executing = False
+		last_heuristic = 0
 
 		while self.frontier_list[0].Minkey() < inf and done==False:
 			log.write("\n----- While Loop Iteration #"+str(num_iterations)+"-----\n")
@@ -696,7 +697,6 @@ class main_window(QWidget):
 				self.set_ui_interaction(enabled=True)
 				return
 
-			
 			# update the ui window
 			if ((time.time()-step_time) > refresh_rate) and last_cell!=None:
 				log.write("Updating UI\n")
@@ -708,7 +708,7 @@ class main_window(QWidget):
 			
 
 			print("                                                                           ",end="\r")
-			print("explored: "+str(len(self.explored))+", num_iterations: "+str(num_iterations)+", time: "+str(time.time()-start_time)[:5], end="\r")
+			print("explored: "+str(len(self.explored_set_list[last_heuristic]))+", num_iterations: "+str(num_iterations)+", time: "+str(time.time()-start_time)[:5], end="\r")
 			num_iterations += 1
 
 			log.write("explored: "+str(len(self.explored))+"\n")
@@ -724,7 +724,6 @@ class main_window(QWidget):
 							log.write(" 1AA\n")
 							done = True #exit out of the loop
 							result_code = i
-							print("About to exit")
 							break
 					else:
 						log.write("1B\n")
@@ -733,6 +732,7 @@ class main_window(QWidget):
 						log.write("Expanding: "+s.to_string()+"\n")
 
 						last_cell = s
+						last_heuristic = i
 						#self.explored.append(s)
 						
 						self.sequential_astar_expand(i, w1, s)
@@ -753,6 +753,7 @@ class main_window(QWidget):
 
 						log.write("Expanding: "+s.to_string()+"\n")
 						last_cell = s
+						last_heuristic = 0
 						#self.explored.append(s)
 
 						self.sequential_astar_expand(0, w1, s)
@@ -772,7 +773,7 @@ class main_window(QWidget):
 				self.path_end = cell
 				break
 
-		#self.grid.shortest_path = rectify_path(self.path_end)
+		self.grid.shortest_path = rectify_path(self.path_end,break_short=True)
 		self.grid.update()
 		pyqt_app.processEvents()
 
@@ -795,6 +796,8 @@ class main_window(QWidget):
 		for neighbor in neighbors:
 			
 			neighbor_index = get_cell_index(neighbor, self.cells)
+			if neighbor_index==c_index:
+				continue
 
 			log.write("Iterating over neighbors, neighbor_index="+neighbor.to_string()+"...\n")
 

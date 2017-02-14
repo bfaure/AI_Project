@@ -1986,7 +1986,7 @@ class eight_neighbor_grid(QWidget):
 							qp.drawRect(cell.render_coordinate[0],cell.render_coordinate[1],horizontal_step,vertical_step)
 							break
 				if self.trace_highlighting:
-					
+
 					if self.current_path != None:
 						pen = QPen(QColor(self.mouse_color[0],self.mouse_color[1],self.mouse_color[2]),self.solution_render_width,Qt.__dict__[self.solution_line_type])
 						qp.setPen(pen)
@@ -2239,8 +2239,7 @@ class PriorityQueue:
 	def Minkey(self):
 		# returns the value of the smallest cost
 		#print(self._queue)
-		temp = self.top()
-		return temp.cost 
+		return self.top().cost 
 
 def get_neighbors(current,cells):
 	# Returns a list of all 8 neighbor cells to "current"
@@ -2332,11 +2331,25 @@ def get_transition_cost(current_cell,new_cell,highways):
 
 	return cost
 
-def rectify_path(path_end):
+
+function_log = open("function_log.txt","w")
+
+def rectify_path(path_end,break_short=False):
+	global function_log
 	path = []
 	cur = path_end
 	path.append([cur.x,cur.y])
+	i=0
 	while True:
+
+		if i>10000 and break_short==True:
+			function_log.write("\n\n")
+			for item in path:
+				function_log.write(str(item[0])+","+str(item[1])+"\n")
+			function_log.write("\n\n")
+			return path 
+		i+=1
+
 		cur = cur.parent
 		if cur == None:
 			break
