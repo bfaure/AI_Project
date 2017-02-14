@@ -23,7 +23,7 @@ import heapq # for priority queue implementation
 # set to true to disable Cython, if you don't have a Cython
 # installation that doesnt mean you need to change this, should
 # be used only for debugging and testing purposes.
-TURN_OFF_CYTHON = False
+TURN_OFF_CYTHON = True
 USE_UCS_MULTITHREADED = False
 
 TURN_OFF_DIAGONAL_MULTIPLIER = True
@@ -678,7 +678,7 @@ class main_window(QWidget):
 		last_cell = None # to hold the last node expanded (for updating ui)
 		start_time = time.time()
 		step_time = time.time()
-		refresh_rate = 0.01 # refresh the display after this many seconds
+		refresh_rate = 0.1 # refresh the display after this many seconds
 		self.explored = [] # to hold all cells visited
 		num_iterations = 0 # number of times while loop is run
 		self.stop_executing = False
@@ -696,14 +696,16 @@ class main_window(QWidget):
 				self.set_ui_interaction(enabled=True)
 				return
 
+			
 			# update the ui window
-			if (time.time()-step_time > refresh_rate) and last_cell!=None:
+			if ((time.time()-step_time) > refresh_rate) and last_cell!=None:
 				log.write("Updating UI\n")
 				self.grid.solution_path = self.explored_set_list[0]
-				self.grid.shortest_path = rectify_path(last_cell)
+				#self.grid.shortest_path = rectify_path(last_cell)
 				self.grid.update()
 				pyqt_app.processEvents()
 				step_time = time.time()
+			
 
 			print("                                                                           ",end="\r")
 			print("explored: "+str(len(self.explored))+", num_iterations: "+str(num_iterations)+", time: "+str(time.time()-start_time)[:5], end="\r")
@@ -763,14 +765,14 @@ class main_window(QWidget):
 		self.grid.solution_path = self.explored_set_list[result_code]
 		final_solution_cost = self.cost_set_list[result_code][goal_index]
 		self.path_end = None
-		for cell in frontier_list[result_code]._queue:
+		for cell in self.frontier_list[result_code]._queue:
 			cell = cell[1]
 			if cell.x == self.end_cell[0] and cell.y == self.end_cell[1]:
-				if cell.cost == final_solution_cost:
-					self.path_end = cell
-					break
+				#if cell.cost == final_solution_cost:
+				self.path_end = cell
+				break
 
-		self.grid.shortest_path = rectify_path(self.path_end)
+		#self.grid.shortest_path = rectify_path(self.path_end)
 		self.grid.update()
 		pyqt_app.processEvents()
 
@@ -781,7 +783,9 @@ class main_window(QWidget):
 	def sequential_astar_expand(self, h_index, w1, cell_obj):
 		log.write("Inside sequential_astar_expand h_index:"+str(h_index)+", cell_obj.x="+str(cell_obj.x)+", cell_obj.y="+str(cell_obj.y)+"...\n")
 		#Remove s from frontier
-		self.frontier_list[h_index].remove(cell_obj)
+		removed = self.frontier_list[h_index].remove(cell_obj)
+		if removed==False:
+			log.write("Could not remove cell from frontier_list\n")
 		#get neighbors
 		neighbors = get_neighbors(cell_obj, self.cells)
 
