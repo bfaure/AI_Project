@@ -702,7 +702,7 @@ class main_window(QWidget):
 			if ((time.time()-step_time) > refresh_rate) and last_cell!=None:
 				log.write("Updating UI\n")
 				self.grid.solution_path = self.explored_set_list[0]
-				#self.grid.shortest_path = rectify_path(last_cell)
+				self.grid.shortest_path = rectify_path(last_cell)
 				self.grid.update()
 				pyqt_app.processEvents()
 				step_time = time.time()
