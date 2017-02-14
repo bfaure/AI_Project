@@ -100,8 +100,19 @@ class attrib_value_window(QWidget):
 		second_row = QHBoxLayout()
 		save_row = QHBoxLayout()
 
+		row_divider = QFrame(self) # dividing line between save button an top row
+		row_divider.setFrameShape(QFrame.HLine)
+
+		divider = QHBoxLayout()
+		divider.addSpacing(40)
+		divider.addWidget(row_divider)
+		divider.addSpacing(40)
+
 		self.layout.addLayout(first_row)
 		self.layout.addLayout(second_row)
+		self.layout.addSpacing(10)
+		self.layout.addLayout(divider) # add dividing line
+		self.layout.addSpacing(10)
 		self.layout.addLayout(save_row)
 
 		self.setWindowTitle("Set Value Preferences")
@@ -220,8 +231,19 @@ class attrib_color_window(QWidget):
 		first_row = QHBoxLayout()
 		second_row = QHBoxLayout()
 
-		self.layout.addLayout(first_row)
-		self.layout.addLayout(second_row)
+		row_divider = QFrame(self) # dividing line between save button an top row
+		row_divider.setFrameShape(QFrame.HLine)
+
+		divider = QHBoxLayout()
+		divider.addSpacing(40)
+		divider.addWidget(row_divider)
+		divider.addSpacing(40)
+
+		self.layout.addLayout(first_row) # add color selection line
+		self.layout.addSpacing(10)
+		self.layout.addLayout(divider) # add dividing line
+		self.layout.addSpacing(10)
+		self.layout.addLayout(second_row) # add save button row
 
 		self.setWindowTitle("Set Color Preferences")
 		# selection box
@@ -399,13 +421,14 @@ class main_window(QWidget):
 		self.show_trace = True # true by default
 		self.updating_already = False
 		self.mouse_tracking = True
+		self.trace_highlighting = False
 		self.is_benchmark = False # true if benchmarking right now
 
 		self.child_windows = [] # to hold any extra windows opened by user
 		self.color_preferences_window = attrib_color_window()
 		self.value_preferences_window = attrib_value_window()
 
-		self.ucs_agent = uniform_cost_search() # separate thread for ucs execution
+		if USE_UCS_MULTITHREADED: self.ucs_agent = uniform_cost_search() # separate thread for ucs execution
 
 	def init_ui(self):
 		# initialize ui elements here
@@ -488,12 +511,20 @@ class main_window(QWidget):
 		self.benchmark_menu = self.menu_bar.addMenu("Benchmark")
 
 		# Benchmark menu actions
-		self.benchmark_menu.addAction("Benchmark A* Search",self.a_star_benchmark)
-		self.benchmark_menu.addAction("Benchmark Weighted A* Search",self.weighted_a_star_benchmark_wrapper)
+		astar_benchmark_action = self.benchmark_menu.addAction("Benchmark A* Search",self.a_star_benchmark)
+		astar_benchmark_action.setEnabled(False)
+		weighted_benchmark_action = self.benchmark_menu.addAction("Benchmark Weighted A* Search",self.weighted_a_star_benchmark_wrapper)
+		weighted_benchmark_action.setEnabled(False)
 		self.benchmark_menu.addAction("Benchmark Uniform-Cost Search",self.uniform_cost_benchmark)
 		self.benchmark_menu.addSeparator()
+		astar_weighted_benchmark_action = self.benchmark_menu.addAction("Benchmark A*, All Heuristics",self.astar_heuristic_wrapper)
+		astar_weighted_benchmark_action.setEnabled(False)
+		self.benchmark_menu.addAction("Benchmark A*, All Heuristics, Multiple Weights",self.astar_heuristic_weight_wrapper)
+		self.benchmark_menu.addSeparator()
+		self.benchmark_menu.addAction("Benchmark Sequential A*, Multiple Weights",self.sequential_astar_benchmark_wrapper)
+		self.benchmark_menu.addAction("Benchmark Integrated A*, Multiple Weights",self.integrated_astar_benchmark_wrapper)
+		self.benchmark_menu.addSeparator()
 		self.benchmark_menu.addAction("Benchmark All",self.all_benchmark)
-		self.benchmark_menu.addAction("Benchmark A*, All Heuristics",self.astar_heuristic_wrapper)
 
 		# File menu actions
 		self.file_menu.addAction("Load...",self.load,QKeySequence("Ctrl+L"))
@@ -513,12 +544,14 @@ class main_window(QWidget):
 		self.toggle_grid_lines_action = self.tools_menu.addAction("Turn On Grid Lines",self.toggle_grid_lines,QKeySequence("Ctrl+G"))
 		self.toggle_solution_swarm_action = self.tools_menu.addAction("Turn Off Solution Swarm",self.toggle_solution_swarm,QKeySequence("Ctrl+T"))
 		self.toggle_gradient_action = self.tools_menu.addAction("Turn Off Swarm Gradient",self.toggle_gradient)
+		self.tools_menu.addSeparator()
 		self.toggle_trace_action = self.tools_menu.addAction("Turn On Path Trace",self.toggle_trace)
+		self.toggle_trace_highlighting_action = self.tools_menu.addAction("Turn On Trace Highlighting",self.toggle_trace_highlighting)
 		self.tools_menu.addSeparator()
 		self.toggle_mouse_tracking_action = self.tools_menu.addAction("Turn Off Mouse Tracking",self.toggle_mouse_tracking)
 		self.tools_menu.addSeparator()
-		self.tools_menu.addAction("Set Attribute Color...",self.change_attrib_color,QKeySequence("Ctrl+M"))
-		self.tools_menu.addAction("Set Attribute Value...",self.change_attrib_value,QKeySequence("Ctrl+V"))
+		self.tools_menu.addAction("Color Preferences...",self.change_attrib_color,QKeySequence("Ctrl+M"))
+		self.tools_menu.addAction("Value Preferences...",self.change_attrib_value,QKeySequence("Ctrl+V"))
 		self.tools_menu.addSeparator()
 		self.tools_menu.addAction("New Start/End Cells...",self.regenerate_start_end)
 
@@ -849,8 +882,8 @@ class main_window(QWidget):
 						self.closed_anchor.append(s)
 
 		print("\n")
-		print("Heuristic Usage Counts: ",heuristics_used)
-		print("Heuristic Queue Emptied: ",heuristic_queue_emptied)
+		if self.is_benchmark==False: print("Heuristic Usage Counts: ",heuristics_used)
+		if self.is_benchmark==False: print("Heuristic Queue Emptied: ",heuristic_queue_emptied)
 
 		self.last_cost_list = self.g
 		final_solution_cost = self.g[s_goal]
@@ -872,12 +905,12 @@ class main_window(QWidget):
 		#final_solution_cost = get_path_cost(self.path_end,self.highways)
 		print("\nFinished Integrated A* search in "+str(time.time()-start_time)[:6]+" seconds, final cost: "+str(final_solution_cost)+", checked "+str(len(self.explored))+" cells\n")
 
-		'''
 		if self.is_benchmark:
 			self.latest_search_cost = final_solution_cost
 			self.latest_num_explored = len(self.explored)
-			#self.latest_frontier_length = self.frontier.length()
-		'''
+			self.latest_frontier_length = 0
+			for queue in self.open_t:
+				self.latest_frontier_length += queue.length()
 
 		self.set_ui_interaction(enabled=True) # turn on ui interaction
 
@@ -1165,6 +1198,97 @@ class main_window(QWidget):
 		return True
 
 	# Benchmarks...
+	def sequential_astar_benchmark_wrapper(self):
+		# benchmark sequential A* with multiple weights
+		print(">Benchmarking Sequential A* Search on several weights...")
+		for w1 in [1.0,1.25,1.75,2.0]:
+			for w2 in [1.0,1.25,1.75,2.0]:
+				self.sequential_astar_benchmark(w1,w2)
+
+	def integrated_astar_benchmark_wrapper(self):
+		# benchmark integrated A* with mutiple weights
+		# benchmark sequential A* with multiple weights
+		print(">Benchmarking Integrated A* Search on several weights...")
+		for w1 in [1.0,1.25,1.75,2.0]:
+			for w2 in [1.0,1.25,1.75,2.0]:
+				self.integrated_astar_benchmark(w1,w2)
+
+	def sequential_astar_benchmark(self,w1,w2):
+		pass 
+
+	def integrated_astar_benchmark(self,w1,w2):
+		# benchmark the efficiency of the A* algorithm on all files in /grids
+		self.is_benchmark = True
+		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
+
+		data_dir = "benchmarks/data/"
+		filename = data_dir+"integrated_a_star-[w1="+str(w1).replace(".","_")+"]-[w2="+str(w2).replace(".","_")+"].txt"
+		f = open(filename,"w")
+		print(">Writing results to "+filename+"...")
+
+		grids,short = self.get_all_grids()
+		f.write("Integrated A* Benchmark on "+str(len(grids))+" .grid files [w1="+str(w1)+"], [w2="+str(w2)+"]:\n\n")
+		print(">Integrated A* Benchmark on "+str(len(grids))+" .grid files [w1="+str(w1)+"], [w2="+str(w2)+"]...")
+
+		# turning off all UI interaction
+		self.grid.allow_render_mouse = False
+		self.grid.suppress_output = True
+		self.grid.verbose = False
+		self.grid.draw_grid_lines = False
+		self.grid.draw_outer_boundary = False
+		self.grid.show_path_trace = False
+
+		overall_start = time.time()
+		total_execution_time = 0
+
+		total_explored = 0
+		total_cost = 0
+		total_frontier = 0
+
+		current_location = os.getcwd()
+
+		for grid,short_name in list(zip(grids,short)):
+			print(">Running Integrated A* on "+grid+" with  [w1="+str(w1)+"], [w2="+str(w2)+"]...")
+			self.grid.load(grid)
+			start_time = time.time()
+			self.integrated_astar(w1,w2)
+			end_time = time.time()
+			total_execution_time += (end_time-start_time)
+
+			last_cost = self.latest_search_cost
+			total_cost += last_cost
+
+			frontier_length = self.latest_frontier_length
+			total_frontier += frontier_length
+
+			explored_length = self.latest_num_explored
+			total_explored += explored_length
+
+			f.write("\n"+grid+":\t time: "+str(end_time-start_time)+", cost: "+str(last_cost)+", frontier: "+str(frontier_length)+", explored: "+str(explored_length))
+
+			# save screenshot
+			ext = short_name[:short_name.find(".grid")]
+			filename = current_location+"/benchmarks/screenshots/integrated_a_star-[w1="+str(w1).replace(".","_")+"]-[w2="+str(w2).replace(".","_")+"]-["+ext+"].png"
+			QPixmap.grabWindow(self.winId()).save(filename,'png')
+
+		f.write("\n\nTotal algorithm time: "+str(total_execution_time))
+		f.write("\nTotal cells explored: "+str(total_explored))
+		f.write("\nTotal cost: "+str(total_cost))
+		f.write("\nTotal frontier length: "+str(total_frontier))
+
+		f.write("\n\nAverage algorithm time: "+str(total_execution_time/len(grids)))
+		f.write("\nAverage cells explored: "+str(total_explored/len(grids)))
+		f.write("\nAverage cost: "+str(total_cost/len(grids)))
+		f.write("\nAverage frontier length: "+str(total_frontier/len(grids)))
+
+		f.write("\n\nTotal benchmark time: "+str(time.time()-overall_start))
+
+		self.grid.allow_render_mouse = True
+		self.is_benchmark = False
+		self.grid.suppress_output = False
+		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+")")
+		print(">Integrated A* Search Benchmark [w1="+str(w1)+"], [w2="+str(w2)+"] Complete")
+
 	def all_benchmark(self):
 		# run benchmark on all algorithms
 		print(">Running benchmark on all three algorithms...")
@@ -1173,9 +1297,16 @@ class main_window(QWidget):
 		self.uniform_cost_benchmark()
 		print(">Entire benchmark complete")
 
+	def astar_heuristic_weight_wrapper(self):
+		# run a star on all different heuristic types and several weights
+		print(">Benchmarking A* Search on several weights and all heuristics...")
+		for weight in [1.0,1.25,1.75,2.0]:
+			for heuristic in range(6):
+				self.a_star_benchmark(weight,heuristic)
+
 	def astar_heuristic_wrapper(self):
 		# run a_star on all different heuristic types
-		for i in range(3):
+		for i in range(6):
 			self.a_star_benchmark(weight=1,code=i)
 
 	def a_star_benchmark(self,weight=1,code=0):
@@ -1185,21 +1316,21 @@ class main_window(QWidget):
 
 		data_dir = "benchmarks/data/"
 
-		if code==0:
-			f = open(data_dir+"a_star-benchmark-euclidean.txt","w")
-			print(">Writing results to "+data_dir+"a_star-benchmark-euclidean.txt...")
-		elif code==1:
-			f = open(data_dir+"a_star-benchmark-diagonal.txt","w")
-			print(">Writing results to "+data_dir+"a_star-benchmark-diagonal.txt...")
-		elif code==2:
-			f = open(data_dir+"a_star-benchmark-approx-euclidean.txt","w")
-			print(">Writing results to "+data_dir+"a_star-benchmark-approx-euclidean.txt...")
+		if code==0: filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[euclidean].txt"
+		elif code==1: filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[diagonal_distance].txt"
+		elif code==2: filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[approx_euclidean].txt"
+		elif code==3: filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[manhattan].txt"
+		elif code==4: filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[approx_distance].txt"
+		elif code==5: filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[highway].txt"
 		else:
 			print("Could not recognize a_star_benchmark input code.")
 			return
 
+		f = open(filename,"w")
+		print(">Writing results to "+filename+"...")
+
 		grids,short = self.get_all_grids()
-		f.write("A* Benchmark on "+str(len(grids))+" .grid files:\n\n")
+		f.write("A* Benchmark on "+str(len(grids))+" .grid files [weight="+str(weight)+"], [heuristic="+str(code)+"]:\n\n")
 
 		# turning off all UI interaction
 		self.grid.allow_render_mouse = False
@@ -1239,7 +1370,7 @@ class main_window(QWidget):
 
 			# save screenshot
 			ext = short_name[:short_name.find(".grid")]
-			filename = current_location+"/benchmarks/screenshots/a_star-"+ext+".png"
+			filename = current_location+"/benchmarks/screenshots/a_star-[weight="+str(weight).replace(".","_")+"]-[euclidean]-["+ext+"].png"
 			QPixmap.grabWindow(self.winId()).save(filename,'png')
 
 		f.write("\n\nTotal algorithm time: "+str(total_execution_time))
@@ -1347,10 +1478,12 @@ class main_window(QWidget):
 
 		data_dir = "benchmarks/data/"
 
-		f = open(data_dir+"ucs-benchmark.txt","w")
+		filename = data_dir+"ucs.txt"
+		f = open(filename,"w")
+
 		grids,short = self.get_all_grids()
 		print(">Benchmarking UCS on "+str(len(grids))+" .grid files...")
-		print(">Writing results to "+data_dir+"ucs-benchmark.txt...")
+		print(">Writing results to "+filename+"...")
 		f.write("Uniform-Cost Search Benchmark on "+str(len(grids))+" .grid files:\n\n")
 
 		# turning off all UI interaction
@@ -1443,6 +1576,19 @@ class main_window(QWidget):
 		self.grid.verbose = enabled # render timing info
 		self.grid.render_mouse = enabled # current location information
 		self.grid.allow_render_mouse = enabled # current location information
+
+	def toggle_trace_highlighting(self):
+		# function called by pyqt when user chooses the appropriate menu item
+		if self.trace_highlighting == True:
+			self.trace_highlighting = False
+			self.toggle_mouse_tracking_action.setText("Turn On Trace Highlighting")
+		else:
+			self.trace_highlighting = True
+			self.toggle_mouse_tracking_action.setText("Turn Off Trace Highlighting")
+
+		self.grid.trace_highlighting = self.trace_highlighting # set the correct tracking state in grid
+		self.grid.repaint()
+		pyqt_app.processEvents()
 
 	def toggle_mouse_tracking(self):
 		# function called by pyqt when user chooses the appropriate menu item
