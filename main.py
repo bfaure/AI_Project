@@ -178,7 +178,7 @@ class attrib_value_window(QWidget):
 
 	def open_window(self):
 		# called from the main_window
-		self.is_valid = True 
+		self.is_valid = True
 		self.show()
 
 	def hide_window(self):
@@ -552,10 +552,6 @@ class main_window(QWidget):
 	def integrated_astar_wrapper(self):
 		self.w1_w2_input_dialog("integrated_astar")
 
-	def sequential_astar(self,w1=1.25,w2=1.25):
-		num_heuristics = 0
-		if self.is_benchmark==False: print("Performing Sequential A* Search with "+str(num_heuristics)+" heuristics...")
-	
 	def w1_w2_input_dialog(self,target):
 		inputw1, ok = QInputDialog.getText(self, "Input Dialog", "Enter W1 value (>=1.0): ")
 		if ok:
@@ -579,16 +575,56 @@ class main_window(QWidget):
 								#self.integrated_astar(w1,w2)
 
 							else:
-								print("ERROR: W2 input must be whole number greater than or equal to 1.0")							
+								print("ERROR: W2 input must be whole number greater than or equal to 1.0")
 
 						except:
 							print("ERROR: W2 input must be whole number greater than or equal to 1.0")
 
 				else:
 					print("ERROR: W1 input must be whole number greater than or equal to 1.0")
-				
+
 			except:
 				print("ERROR: W1 input must be whole number greater than or equal to 1.0")
+
+	def sequential_astar(self,w1=1.25,w2=1.25):
+		num_heuristics = 5
+		if self.is_benchmark==False: print("Performing Sequential A* Search with "+str(num_heuristics)+" heuristics...")
+
+		self.fetch_current_grid_state()
+
+		#get start index
+		start_index = get_cell_index(self.start_cell, self.cells)
+
+		#get goal index
+		goal_index = get_cell_index(self.end_cell_t, self.cells)
+
+		#initialize 5 explored sets for each heuristics
+		self.explored_set_list = [[] for i in range(5)]
+
+		#initialize 5 empty cost sets for each heuristics
+		self.cost_set_list = [{} for i in range(5)]
+
+		#populate the sets with values for start and end node_neigbors
+		for i in range(num_heuristics):
+			self.cost_set_list[i][start_index] = 0
+			self.cost_set_list[i][goal_index] = sys.maxint
+
+		#initialize 5 frontiers for each of the 5 heuristics
+		self.frontier_list = []
+		for i in range(num_heuristics):
+			temp = PriorityQueue()
+			temp.push(item=self.start_cell, cost=self.sequential_astar_key(i, w1, self.start_cell, start_index), parent=None)
+			self.frontier_list.append(temp)
+
+		
+
+
+
+
+
+	def sequential_astar_key(self, h_index, w1, cell_obj, cell_index):
+		return self.cost_set_list[h_index][cell_index] + (w1 * float(self.grid.heuristic_manager(cell_obj, self.end_cell_t, h_index)) / 4.0)
+
 
 	def integrated_astar(self,w1=1.25,w2=1.25):
 		# f = g + h
@@ -622,7 +658,7 @@ class main_window(QWidget):
 		self.g[s_goal] = inf
 
 		self.expanded = [False] * len(self.cells)
-		self.expanded[s_start] = True 
+		self.expanded[s_start] = True
 
 		self.open_t = [] # list of CellQueue structs, open[0] is all open cells for anchor
 		for i in range(num_heuristics):
@@ -642,7 +678,7 @@ class main_window(QWidget):
 		#f.write("s_start: "+str(s_start)+", s_goal: "+str(s_goal)+", g[s_goal]: "+str(self.g[s_goal])+", g[s_start]: "+str(self.g[s_start])+"\n")
 
 		refresh_rate = 0.05
-		last_cell = None 
+		last_cell = None
 
 		num_iterations = 0
 		while self.open_t[0].Minkey() < inf and done==False:
@@ -687,7 +723,7 @@ class main_window(QWidget):
 						#print("\nhere 1a")
 						if self.g[s_goal] < inf:
 							#print("\nFinished 1.")
-							done = True 
+							done = True
 							break
 					else:
 						#f.write("\nhere 1b")
@@ -724,7 +760,7 @@ class main_window(QWidget):
 				cell = cell[2]
 				if cell.x==self.end_cell[0] and cell.y==self.end_cell[1]:
 					if cell.cost == final_solution_cost:
-						self.path_end = cell 
+						self.path_end = cell
 						break
 
 		self.grid.shortest_path = rectify_path(self.path_end)
@@ -762,14 +798,14 @@ class main_window(QWidget):
 			if self.expanded[succ_index]==False: # if s' was never generated
 				#f.write("\n here 3a")
 				#print("here 3a")
-				#self.expanded[succ_index] = True 
+				#self.expanded[succ_index] = True
 				self.g[succ_index] = sys.maxint # g(s') = infinity
 
 				if succ.state == "full":
 					continue
 
 			if self.g[succ_index] > (self.g[s_index] + get_transition_cost(s,succ,self.highways)): # if g(s') > g(s)+c(s,s')
-				self.g[succ_index] = self.g[s_index] + get_transition_cost(s,succ,self.highways) # g(s') = g(s) + c(s,s') 
+				self.g[succ_index] = self.g[s_index] + get_transition_cost(s,succ,self.highways) # g(s') = g(s) + c(s,s')
 
 				#f.write("\n here 4a")
 				#f.write("\n g[succ_index]: "+str(self.g[succ_index]))
@@ -1205,9 +1241,9 @@ class main_window(QWidget):
 		# benchmark the efficiency of the Uniform Cost Search algorithm on all files in /grids
 		self.is_benchmark = True
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
-		
+
 		data_dir = "benchmarks/data/"
-		
+
 		f = open(data_dir+"ucs-benchmark.txt","w")
 		grids,short = self.get_all_grids()
 		print(">Benchmarking UCS on "+str(len(grids))+" .grid files...")
@@ -1295,7 +1331,7 @@ class main_window(QWidget):
 		self.end_cell = self.grid.end_cell # current end cell
 		for item in self.cells:
 			if item.x==self.end_cell[0] and item.y==self.end_cell[1]:
-				self.end_cell_t = item 
+				self.end_cell_t = item
 				break
 		self.highways = self.grid.highways # current highways on grid
 
@@ -1391,7 +1427,7 @@ class main_window(QWidget):
 	def change_attrib_value(self):
 		# function called by pyqt when user chooses change_attrib_value_action menu item
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - Changing Attribute Values...")
-		self.setEnabled(False) 
+		self.setEnabled(False)
 		self.value_preferences_window.open_window()
 
 	def finished_changing_values(self):
