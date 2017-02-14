@@ -5,6 +5,7 @@ import sys
 # Python 2.7
 import time
 import random
+from copy import deepcopy
 
 from os import listdir
 from os.path import isfile,join
@@ -776,6 +777,7 @@ class main_window(QWidget):
 		self.grid.shortest_path = rectify_path(self.path_end,break_short=True)
 		self.grid.update()
 		pyqt_app.processEvents()
+		self.set_ui_interaction(enabled=True)
 
 	def sequential_astar_key(self, h_index, w1, cell_obj, cell_index):
 		log.write("Inside sequential_astar_key, h_index="+str(h_index)+"\n")
@@ -794,7 +796,8 @@ class main_window(QWidget):
 		self.visited_lists[h_index][c_index] = True
 
 		for neighbor in neighbors:
-			
+			neighbor = deepcopy(neighbor)
+
 			neighbor_index = get_cell_index(neighbor, self.cells)
 			if neighbor_index==c_index:
 				continue
@@ -804,6 +807,7 @@ class main_window(QWidget):
 			if self.visited_lists[h_index][neighbor_index] == False:
 				log.write("3A\n")
 				self.cost_set_list[h_index][neighbor_index] = sys.maxint
+				neighbor.parent = None
 
 				if neighbor.state == "full":
 					log.write("3AA\n")
