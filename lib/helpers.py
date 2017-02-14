@@ -19,6 +19,8 @@ import heapq
 updating_ui = False # will be set by eight_neighbor_grid.update_ui
 ui_update_time = 0.05 # will be set by eight_neighbor_grid.update_ui
 
+diagonal_movement_multiplier = sqrt(2) # used as global variable to increase speed
+
 # class to hold details for a single cell
 class cell(object):
 	def __init__(self,x_coordinate=None,y_coordinate=None):
@@ -1110,7 +1112,7 @@ class eight_neighbor_grid(QWidget):
 			y_run = abs(start[1] - end.y)
 		
 		if x_run!=-1 and y_run!=-1:
-			return sqrt((x_run**2)+(y_run**2))
+			return sqrt((x_run**2)+(y_run**2))*diagonal_movement_multiplier
 		else:
 			print("ERROR: Input types (start="+str(type(start))+"), (end="+str(type(end))+") to heuristic are unknown.")
 			return 1
@@ -1139,7 +1141,7 @@ class eight_neighbor_grid(QWidget):
 			d_max = max(x_run, y_run)
 			d_min = min(x_run, y_run)
 
-			diag = (1.414 * d_min) + (d_max - d_min)
+			diag = ((1.414 * d_min) + (d_max - d_min))
 			return diag
 		else:
 			print("ERROR: Input types (start="+str(type(start))+"), (end="+str(type(end))+") to heuristic are unknown.")
@@ -1167,9 +1169,9 @@ class eight_neighbor_grid(QWidget):
 
 		if x_run!=-1 and y_run!=-1:
 			if(y_run >= x_run):
-				return 0.41*x_run + 0.94126*y_run
+				return (0.41*x_run + 0.94126*y_run)
 			else:
-				return 0.41*y_run + 0.94126*x_run
+				return (0.41*y_run + 0.94126*x_run)
 		else:
 			print("ERROR: Input types (start="+str(type(start))+"), (end="+str(type(end))+") to heuristic are unknown.")
 			return 1
@@ -1249,18 +1251,55 @@ class eight_neighbor_grid(QWidget):
 		if(max_value < (min_value << 4)):
 			approx = approx - (max_value * 40)
 
-		return ((approx + 512) >> 10)
+		return ((approx + 512) >> 10)*diagonal_movement_multiplier
+
+	def highway_heuristic(self,start,end):
+		base_cost = self.manhattan_heuristic(start,end)
+
+		x0 = -1
+		y0 = -1
+		x1 = -1
+		y1 = -1
+
+		if type(start) is cell:
+			x0=start.x 
+			y0=start.y 
+		elif type(start) is tuple:
+			x0=start[0]
+			y0=start[1]
+		else:
+			print("ERROR: Input types (start="+str(type(start))+"), (end="+str(type(end))+") to heuristic are unknown.")
+			return 1
+
+		if type(end) is cell:
+			x1=end.x 
+			y2=end.y 
+		elif type(end) is tuple:
+			x1=end[0]
+			y1=end[1]
+		else:
+			print("ERROR: Input types (start="+str(type(start))+"), (end="+str(type(end))+") to heuristic are unknown.")
+			return 1
+		
+		if self.check_for_highway(x0,y0):
+			base_cost = base_cost*0.75
+		if self.check_for_highway(x1,y1):
+			base_cost = base_cost*0.75
+		return base_cost
 
 	def heuristic_manager(self, start, end, code):
 		if code == 0:
 			return self.euclidean_heuristic(start, end)
+			#return self.highway_heuristic(start,end)
 		elif code == 1:
 			return self.diagonal_distance_heuristic(start, end)
 		elif code == 2:
-			return self.approximate_euclidean_heuristic(start, end)
+			#return self.approximate_euclidean_heuristic(start, end)
+			return self.highway_heuristic(start,end)
 		elif code == 3:
 			return self.manhattan_heuristic(start,end)
 		elif code == 4:
+			#return self.highway_heuristic(start,end)
 			return self.approx_distance_heuristic_wrapper(start, end)
 		else:
 			print("WARNING: Using invalid heuristic code: "+str(code))
@@ -1695,7 +1734,7 @@ class eight_neighbor_grid(QWidget):
 		# it into individual lists that each represent an individual highway
 		self.highways = [] # list of lists of coordinates
 		if self.suppress_output==False: print("Reconstructing highways...")
-		self.reconstruct_highways(highways)
+		if len(highways)>0: self.reconstruct_highways(highways)
 		#print(self.highways)
 
 	def paintEvent(self, e):
@@ -2114,7 +2153,8 @@ class PriorityQueue:
 		# Push element onto queue
 		item.cost = cost # save the cost to the cell struct
 		item.parent = parent
-		heapq.heappush(self._queue, (cost, self._index, item))
+		#heapq.heappush(self._queue, (cost, self._index, item))
+		heapq.heappush(self._queue, (cost, item))
 		self._index += 1
 
 	def pop(self):
@@ -2125,7 +2165,10 @@ class PriorityQueue:
 
 	def top(self):
 		temp = heapq.heappop(self._queue)[-1]
-		heapq.heappush(self._queue, (temp.cost, self._index, temp))
+		self._index += -1
+		#heapq.heappush(self._queue, (temp.cost, self._index, temp))
+		heapq.heappush(self._queue, (temp.cost, temp))
+		self._index += 1
 		return temp
 
 	def length(self):
@@ -2133,37 +2176,33 @@ class PriorityQueue:
 		return len(self._queue)
 
 	def clear(self):
-		del self._queue[:]
+		self._queue = []
+		self._index = 0
 
 	def has_cell(self,cell):
 		# Returns True if the cell is in the queue, False if not
 		for item in self._queue:
-			queued_cell = item[2]
+			#queued_cell = item[2]
+			queued_cell = item[1]
 			if cell.x==queued_cell.x and cell.y==queued_cell.y:
 				return True
 		return False
 
 	def update_or_insert(self,cell,cost,parent):
 		# either updates the cell cost or inserts it as a new cell if not yet in queue
-		i = 0
-		for item in self._queue:
-			queued_cell = item[2]
-			if cell.x==queued_cell.x and cell.y==queued_cell.y:
-				self._queue[i][2].cost = cost 
-				self._queue[i][2].parent = parent 
-				return
-			i+=1
-
-		#print("pushing new cell to queue")
-		# dont already have the cell so insert it
-		self.push(cell,cost,parent)
+		if self.has_cell(cell):
+			self.replace_cell(cell,cost,parent)
+		else:
+			self.push(cell,cost,parent)
 
 	def remove(self,cell):
 		i = 0
 		for item in self._queue:
-			queued_cell = item[2]
+			#queued_cell = item[2]
+			queued_cell = item[1]
 			if cell.x==queued_cell.x and cell.y==queued_cell.y:
 				del self._queue[i]
+				self._index += -1
 				return True 
 			i+=1
 		return False
@@ -2171,17 +2210,22 @@ class PriorityQueue:
 	def replace_cell(self,cell,new_cost,parent):
 		i = 0
 		for item in self._queue:
-			queued_cell = item[2]
+			#queued_cell = item[2]
+			queued_cell = item[1]
 			if queued_cell.x==cell.x and queued_cell.y==cell.y:
 				del self._queue[i]
+				self._index += -1
 				break
 			i+=1
-		self.push(queued_cell,new_cost,parent)
+		self.push(cell,new_cost,parent)
 
 	def get_cell_cost(self,cell):
 		for item in self._queue:
-			if cell.x==item[2].x and cell.y==item[2].y:
-				return item[2].cost
+
+			#if cell.x==item[2].x and cell.y==item[2].y:
+			if cell.x==item[1].x and cell.y==item[1].y:
+				#return item[2].cost
+				return item[1].cost
 
 	def Minkey(self):
 		# returns the value of the smallest cost
