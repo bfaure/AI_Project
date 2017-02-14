@@ -529,6 +529,9 @@ class main_window(QWidget):
 		self.algo_menu.addAction("Run Sequential Heuristic A*",self.sequential_astar,QKeySequence("Ctrl+8"))
 		self.algo_menu.addAction("Run Integrated Heuristic A*",self.integrated_astar,QKeySequence("Ctrl+9"))
 		self.algo_menu.addSeparator()
+		self.algo_menu.addAction("Run Sequential Heuristic A*, Custom Parameters",self.sequential_astar_wrapper)
+		self.algo_menu.addAction("Run Integrated Heuristic A*, Custom Parameters",self.integrated_astar_wrapper)
+		self.algo_menu.addSeparator()
 		self.algo_menu.addAction("Stop Algorithm",self.stop_algorithm,QKeySequence("Ctrl+0"))
 
 		if os.name == "nt":
@@ -543,11 +546,51 @@ class main_window(QWidget):
 		self.show()
 
 	# Algorithms...
-	def sequential_astar(self):
+	def sequential_astar_wrapper(self):
+		self.w1_w2_input_dialog("sequential_astar")
+
+	def integrated_astar_wrapper(self):
+		self.w1_w2_input_dialog("integrated_astar")
+
+	def sequential_astar(self,w1=1.25,w2=1.25):
 		num_heuristics = 0
 		if self.is_benchmark==False: print("Performing Sequential A* Search with "+str(num_heuristics)+" heuristics...")
+	
+	def w1_w2_input_dialog(self,target):
+		inputw1, ok = QInputDialog.getText(self, "Input Dialog", "Enter W1 value (>=1.0): ")
+		if ok:
+			try:
+				inputw1 = float(inputw1)
+				if inputw1>=1.0:
 
-	def integrated_astar(self,w1=1.00,w2=2):
+					inputw2, ok = QInputDialog.getText(self, "Input Dialog",  "Enter W2 value (>=1.0): ")
+
+					if ok:
+						try:
+							inputw2 = float(inputw2)
+
+							if inputw2>=1.0:
+								if target=="integrated_astar":
+									self.integrated_astar(inputw1,inputw2)
+								elif target=="sequential_astar":
+									self.sequential_astar(inputw1,inputw2)
+								else:
+									print("ERROR: W1, W2 input dialog function.")
+								#self.integrated_astar(w1,w2)
+
+							else:
+								print("ERROR: W2 input must be whole number greater than or equal to 1.0")							
+
+						except:
+							print("ERROR: W2 input must be whole number greater than or equal to 1.0")
+
+				else:
+					print("ERROR: W1 input must be whole number greater than or equal to 1.0")
+				
+			except:
+				print("ERROR: W1 input must be whole number greater than or equal to 1.0")
+
+	def integrated_astar(self,w1=1.25,w2=1.25):
 		# f = g + h
 		# g = cost from current to start
 		# h = heuristic, cost from current to goal
@@ -593,7 +636,7 @@ class main_window(QWidget):
 		start_time = time.time()
 		step_time = time.time()
 
-		f = open("debug_log.txt","w")
+		#f = open("debug_log.txt","w")
 
 		#print("s_start: "+str(s_start)+", s_goal: "+str(s_goal)+", g[s_goal]: "+str(self.g[s_goal])+", g[s_start]: "+str(self.g[s_start]))
 		#f.write("s_start: "+str(s_start)+", s_goal: "+str(s_goal)+", g[s_goal]: "+str(self.g[s_goal])+", g[s_start]: "+str(self.g[s_start])+"\n")
@@ -603,6 +646,11 @@ class main_window(QWidget):
 
 		num_iterations = 0
 		while self.open_t[0].Minkey() < inf and done==False:
+
+			if (self.stop_executing):
+				self.set_ui_interaction(enabled=True)
+				return
+
 			# update the ui window
 			if (time.time()-step_time > refresh_rate) and last_cell!=None:
 				self.grid.solution_path = self.explored
@@ -647,7 +695,7 @@ class main_window(QWidget):
 						s = self.open_t[i].top()
 						last_cell = s
 						self.explored.append(s)
-						self.ExpandState(s,w1,w2,f)
+						self.ExpandState(s,w1,w2)
 						self.closed_inad.append(s)
 				else:
 					if self.g[s_goal] <= self.open_t[0].Minkey():
@@ -663,7 +711,7 @@ class main_window(QWidget):
 						s = self.open_t[0].top()
 						last_cell = s
 						self.explored.append(s)
-						self.ExpandState(s,w1,w2,f)
+						self.ExpandState(s,w1,w2)
 						self.closed_anchor.append(s)
 
 		self.last_cost_list = self.g
@@ -694,7 +742,7 @@ class main_window(QWidget):
 
 		self.set_ui_interaction(enabled=True) # turn on ui interaction
 
-	def ExpandState(self,s,w1,w2,f):
+	def ExpandState(self,s,w1,w2):
 		#print("Inside expand state")
 		#f.write("\ninside ExpandState")
 		# remove s from all OPENi
@@ -749,7 +797,7 @@ class main_window(QWidget):
 								self.open_t[i].update_or_insert(succ,inad_cost,parent=s)
 
 	def Key(self,s,i,s_index,w1):
-		return self.g[s_index] + w1*self.grid.heuristic_manager(s,self.end_cell_t,i) 
+		return self.g[s_index] + w1*(float(self.grid.heuristic_manager(s,self.end_cell_t,i))*0.25)
 
 	def weighted_astar_wrapper_default_heuristic(self):
 		self.grid.allow_render_mouse = False
@@ -1307,20 +1355,11 @@ class main_window(QWidget):
 				except:
 					cost = "None"
 
-				self.f_value.setText(str(cost))
-
 				if cost != "None":
-					cost_to_start = -1
-					for item in self.grid.solution_path:
-						if item.x==temp.x and item.y==temp.y:
-							cost_to_start = get_path_cost(item,self.highways)
-							break
-					if cost_to_start!=-1:
-						self.g_value.setText(str(cost_to_start))
-						self.h_value.setText(str(cost-cost_to_start))
-					else:
-						self.g_value.setText(str(cost-heuristic_value))
+					self.f_value.setText(str(cost+heuristic_value))
+					self.g_value.setText(str(cost))
 				else:
+					self.f_value.setText("None")
 					self.g_value.setText("None")
 			else:
 				self.f_value.setText("None")
