@@ -602,10 +602,13 @@ class main_window(QWidget):
 		goal_index = get_cell_index(self.end_cell_t, self.cells)
 
 		#initialize 5 explored sets for each heuristics
-		self.explored_set_list = [[] for i in range(5)]
+		self.explored_set_list = [[] for i in range(num_heuristics)]
 
 		#initialize 5 empty cost sets for each heuristics
-		self.cost_set_list = [{} for i in range(5)]
+		self.cost_set_list = [{} for i in range(num_heuristics)]
+
+		#initialize closed lists
+		self.closed_set_lists = [ [] for i in range(num_heuristics)]
 
 		#initialize visited arrays for each heuristics
 		self.visited_lists = [[False] * len(self.cells) for i in range(num_heuristics)]
