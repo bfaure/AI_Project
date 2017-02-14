@@ -632,6 +632,7 @@ class main_window(QWidget):
 		if self.is_benchmark==False: print("Performing Sequential A* Search with "+str(num_heuristics)+" heuristics...")
 
 		self.fetch_current_grid_state()
+		self.set_ui_interaction(enabled=False)
 
 		inf = sys.maxint
 
@@ -685,6 +686,12 @@ class main_window(QWidget):
 		while self.frontier_list[0].Minkey() < inf and done==False:
 			log.write("\n----- While Loop Iteration #"+str(num_iterations)+"-----\n")
 
+			for i in range(num_heuristics):
+				log.write("Length of Heuristic #"+str(i)+" explored = "+str(len(self.explored_set_list[i]))+"\n")
+				log.write("Length of Heuristic #"+str(i)+" cost_set_list = "+str(len(self.cost_set_list[i]))+"\n")
+				log.write("Length of Heuristic #"+str(i)+" closed_set_lists = "+str(len(self.closed_set_lists[i]))+"\n")
+				log.write("Length of Heuristic #"+str(i)+" frontier = "+str(self.frontier_list[i].length())+"\n\n")
+
 			if (self.stop_executing):
 				self.set_ui_interaction(enabled=True)
 				return
@@ -692,7 +699,7 @@ class main_window(QWidget):
 			# update the ui window
 			if (time.time()-step_time > refresh_rate) and last_cell!=None:
 				log.write("Updating UI\n")
-				self.grid.solution_path = self.explored
+				self.grid.solution_path = self.explored_set_list[0]
 				self.grid.shortest_path = rectify_path(last_cell)
 				self.grid.update()
 				pyqt_app.processEvents()
@@ -706,7 +713,8 @@ class main_window(QWidget):
 
 			#print("Inside While loop")
 			for i in range(1, num_heuristics):
-				log.write("Inside For Loop, Iteration#"+str(i)+"...\n")
+				log.write("\n\n---Inside For Loop, Iteration#"+str(i)+"---\n")
+				log.write("self.frontier_list[i].Minkey() == "+str(self.frontier_list[i].Minkey())+"\n")
 				if self.frontier_list[i].Minkey() <= ( w2 * self.frontier_list[0].Minkey() ):
 					if self.cost_set_list[i][goal_index] <= self.frontier_list[i].Minkey():
 						log.write("1A\n")
@@ -720,27 +728,30 @@ class main_window(QWidget):
 						log.write("1B\n")
 						#print("Inside else for i")
 						s = self.frontier_list[i].top()
+						log.write("Expanding: "+s.to_string()+"\n")
 
 						last_cell = s
-						self.explored.append(s)
-
-						self.explored_set_list[i].append(s)
+						#self.explored.append(s)
+						
 						self.sequential_astar_expand(i, w1, s)
+						self.explored_set_list[i].append(s)
 						self.closed_set_lists[i].append(s)
 				else:
 					if self.cost_set_list[0][goal_index] <= self.frontier_list[0].Minkey():
-						log.write("2A\n")
-						done = True
-						result_code = 0
-						#print("About to exit")
-						break
+						if self.cost_set_list[0][goal_index] < sys.maxint:
+							log.write("2A\n")
+							done = True
+							result_code = 0
+							#print("About to exit")
+							break
 					else:
 						log.write("2B\n")
 						#print("Inside else for i=0")
 						s = self.frontier_list[0].top()
 
+						log.write("Expanding: "+s.to_string()+"\n")
 						last_cell = s
-						self.explored.append(s)
+						#self.explored.append(s)
 
 						self.sequential_astar_expand(0, w1, s)
 						self.explored_set_list[0].append(s)
@@ -764,11 +775,11 @@ class main_window(QWidget):
 		pyqt_app.processEvents()
 
 	def sequential_astar_key(self, h_index, w1, cell_obj, cell_index):
-		log.write("Inside sequential_astar_key\n")
+		log.write("Inside sequential_astar_key, h_index="+str(h_index)+"\n")
 		return self.cost_set_list[h_index][cell_index] + (w1 * float(self.grid.heuristic_manager(cell_obj, self.end_cell_t, h_index)) / 4.0)
 
 	def sequential_astar_expand(self, h_index, w1, cell_obj):
-		log.write("Inside sequential_astar_expand...\n")
+		log.write("Inside sequential_astar_expand h_index:"+str(h_index)+", cell_obj.x="+str(cell_obj.x)+", cell_obj.y="+str(cell_obj.y)+"...\n")
 		#Remove s from frontier
 		self.frontier_list[h_index].remove(cell_obj)
 		#get neighbors
@@ -779,10 +790,9 @@ class main_window(QWidget):
 
 		for neighbor in neighbors:
 			
-
 			neighbor_index = get_cell_index(neighbor, self.cells)
 
-			log.write("Iterating over neighbors, neighbor_index="+str(neighbor_index)+"...\n")
+			log.write("Iterating over neighbors, neighbor_index="+neighbor.to_string()+"...\n")
 
 			if self.visited_lists[h_index][neighbor_index] == False:
 				log.write("3A\n")
