@@ -764,6 +764,7 @@ class main_window(QWidget):
 		pyqt_app.processEvents()
 
 	def sequential_astar_key(self, h_index, w1, cell_obj, cell_index):
+		log.write("Inside sequential_astar_key\n")
 		return self.cost_set_list[h_index][cell_index] + (w1 * float(self.grid.heuristic_manager(cell_obj, self.end_cell_t, h_index)) / 4.0)
 
 	def sequential_astar_expand(self, h_index, w1, cell_obj):
