@@ -1631,10 +1631,10 @@ class main_window(QWidget):
 		# function called by pyqt when user chooses the appropriate menu item
 		if self.trace_highlighting == True:
 			self.trace_highlighting = False
-			self.toggle_mouse_tracking_action.setText("Turn On Trace Highlighting")
+			self.toggle_trace_highlighting_action.setText("Turn On Trace Highlighting")
 		else:
 			self.trace_highlighting = True
-			self.toggle_mouse_tracking_action.setText("Turn Off Trace Highlighting")
+			self.toggle_trace_highlighting_action.setText("Turn Off Trace Highlighting")
 
 		self.grid.trace_highlighting = self.trace_highlighting # set the correct tracking state in grid
 		self.grid.repaint()
