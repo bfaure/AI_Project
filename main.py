@@ -593,6 +593,8 @@ class main_window(QWidget):
 
 		self.fetch_current_grid_state()
 
+		inf = sys.maxint
+
 		#get start index
 		start_index = get_cell_index(self.start_cell, self.cells)
 
@@ -605,6 +607,13 @@ class main_window(QWidget):
 		#initialize 5 empty cost sets for each heuristics
 		self.cost_set_list = [{} for i in range(5)]
 
+		#initialize visited arrays for each heuristics
+		self.visited_lists = [[False] * len(self.cells) for i in range(num_heuristics)]
+
+		#Mark the start nodes as visited (NOTE: might need to fuse loops later)
+		for i in range(num_heuristics):
+			self.visited_lists[i][start_index] = True
+
 		#populate the sets with values for start and end node_neigbors
 		for i in range(num_heuristics):
 			self.cost_set_list[i][start_index] = 0
@@ -616,6 +625,34 @@ class main_window(QWidget):
 			temp = PriorityQueue()
 			temp.push(item=self.start_cell, cost=self.sequential_astar_key(i, w1, self.start_cell, start_index), parent=None)
 			self.frontier_list.append(temp)
+
+		done = False #boolean used to break out of while loop
+
+		#last_cell = None
+
+		while self.frontier_list[0].Minkey() < inf and done==False:
+
+			for i in range(1, num_heuristics):
+				if self.frontier_list[i].Minkey() <= w2 * self.frontier_list[0].Minkey():
+					if self.cost_set_list[i][goal_index] <= self.frontier_list[i].Minkey:
+						if self.cost_set_list[i][goal_index] < inf:
+							done = True #exit out of the loop
+							break
+					else:
+						s = self.frontier_list[i].top()
+						#last_cell = s
+						self.explored_set_list[i].append(s)
+						#TODO: expand s here
+				else:
+					if self.cost_set_list[0][goal_index] <= self.frontier_list[0].Minkey():
+						done = True
+						breal
+					else:
+						s = self.frontier_list[0].top()
+						#TODO: expand s here
+						self.explored_set_list[i].append(s)
+
+
 
 	def sequential_astar_key(self, h_index, w1, cell_obj, cell_index):
 		return self.cost_set_list[h_index][cell_index] + (w1 * float(self.grid.heuristic_manager(cell_obj, self.end_cell_t, h_index)) / 4.0)
