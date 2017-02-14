@@ -26,6 +26,9 @@ import heapq # for priority queue implementation
 TURN_OFF_CYTHON = False
 USE_UCS_MULTITHREADED = False
 
+TURN_OFF_DIAGONAL_MULTIPLIER = True
+TURN_OFF_HIGHWAY_HEURISTIC = True
+
 try:
 	import Cython # test to see if Cython is installed
 	using_cython = True # need to compile helpers.pyx and import it
@@ -603,6 +606,8 @@ class main_window(QWidget):
 		# w2 --> used as a factor to prioritize the inadmissible search processes over the anchor, admissible one
 
 		num_heuristics = 6
+		if TURN_OFF_HIGHWAY_HEURISTIC: num_heuristics = 5
+
 		if self.is_benchmark==False: print("Performing Integrated A* Search with "+str(num_heuristics)+" heuristics using w1="+str(w1)+", w2="+str(w2))
 
 		self.set_ui_interaction(enabled=False) # turn off ui interaction
@@ -646,6 +651,7 @@ class main_window(QWidget):
 		last_cell = None 
 
 		heuristics_used = [0] * num_heuristics
+		heuristic_queue_emptied = [0] * num_heuristics
 
 		num_iterations = 0
 		while self.open_t[0].Minkey() < inf and done==False:
@@ -681,7 +687,8 @@ class main_window(QWidget):
 				#f.write("\n")
 				#print(self.open_t[i]._queue)
 				if len(self.open_t[i]._queue)==0:
-					print("WARNING: Heuristic at i="+str(i)+" has an empty PriorityQueue.")
+					heuristic_queue_emptied[i]+=1
+					#print("WARNING: Heuristic at i="+str(i)+" has an empty PriorityQueue.")
 					continue
 
 				if self.open_t[i].Minkey() <= ( w2 * self.open_t[0].Minkey() ):
@@ -721,7 +728,8 @@ class main_window(QWidget):
 						self.closed_anchor.append(s)
 
 		print("\n")
-		print(heuristics_used)
+		print("Heuristic Usage Counts: ",heuristics_used)
+		print("Heuristic Queue Emptied: ",heuristic_queue_emptied)
 
 		self.last_cost_list = self.g
 		final_solution_cost = self.g[s_goal]
@@ -807,7 +815,7 @@ class main_window(QWidget):
 								self.open_t[i].update_or_insert(succ,inad_cost,parent=s)
 
 	def Key(self,s,i,s_index,w1):
-		return self.g[s_index] + w1*(float(self.grid.heuristic_manager(s,self.end_cell_t,i))/4.0)
+		return self.g[s_index] + w1*(float(self.grid.heuristic_manager(s,self.end_cell_t,i,True if TURN_OFF_DIAGONAL_MULTIPLIER==False else False))/4.0)
 
 	def weighted_astar_wrapper_default_heuristic(self):
 		self.grid.allow_render_mouse = False
@@ -840,7 +848,7 @@ class main_window(QWidget):
 			self.a_star(weight=1, code=inputcode)
 		self.allow_render_mouse = True
 
-	def a_star(self, weight=1, code=0):
+	def a_star(self, weight=1.0, code=0):
 		if self.is_benchmark==False: print("Performing A* Seach with weight: "+str(weight)+", and heuristic: "+str(code)+"...")
 
 		self.set_ui_interaction(False) # turn off ui interaction

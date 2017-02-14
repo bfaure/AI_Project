@@ -20,6 +20,7 @@ updating_ui = False # will be set by eight_neighbor_grid.update_ui
 ui_update_time = 0.05 # will be set by eight_neighbor_grid.update_ui
 
 diagonal_movement_multiplier = sqrt(2) # used as global variable to increase speed
+#diagonal_movement_multiplier = 1.0 # used as global variable to increase speed
 
 # class to hold details for a single cell
 class cell(object):
@@ -1112,7 +1113,7 @@ class eight_neighbor_grid(QWidget):
 			y_run = abs(start[1] - end.y)
 		
 		if x_run!=-1 and y_run!=-1:
-			return sqrt((x_run**2)+(y_run**2))*diagonal_movement_multiplier
+			return sqrt((x_run**2)+(y_run**2))
 		else:
 			print("ERROR: Input types (start="+str(type(start))+"), (end="+str(type(end))+") to heuristic are unknown.")
 			return 1
@@ -1251,7 +1252,7 @@ class eight_neighbor_grid(QWidget):
 		if(max_value < (min_value << 4)):
 			approx = approx - (max_value * 40)
 
-		return ((approx + 512) >> 10)*diagonal_movement_multiplier
+		return ((approx + 512) >> 10)
 
 	def highway_heuristic(self,start,end):
 		base_cost = self.manhattan_heuristic(start,end)
@@ -1287,22 +1288,30 @@ class eight_neighbor_grid(QWidget):
 			base_cost = base_cost*0.75
 		return base_cost
 
-	def heuristic_manager(self, start, end, code):
+	def heuristic_manager(self, start, end, code, diagonal_multiplier=False):
 		if code == 0:
-			return self.euclidean_heuristic(start, end)
+			h = self.euclidean_heuristic(start, end)
+			if diagonal_multiplier: h *= diagonal_movement_multiplier
+
 		elif code == 1:
-			return self.diagonal_distance_heuristic(start, end)
+			h = self.diagonal_distance_heuristic(start, end)
+
 		elif code == 2:
-			return self.approximate_euclidean_heuristic(start, end)
+			h = self.approximate_euclidean_heuristic(start, end)
+
 		elif code == 3:
-			return self.manhattan_heuristic(start,end)
+			h = self.manhattan_heuristic(start,end)
+
 		elif code == 4:
-			return self.approx_distance_heuristic_wrapper(start, end)
+			h = self.approx_distance_heuristic_wrapper(start, end)
+
 		elif code == 5:
-			return self.highway_heuristic(start,end)
+			h = self.highway_heuristic(start,end)
+
 		else:
 			print("WARNING: Using invalid heuristic code: "+str(code))
-			return 0
+			h = 0
+		return h
 
 	def get_start_or_end_cell(self):
 		# helper function for the init_start_end_cells function, see the
