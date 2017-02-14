@@ -874,6 +874,8 @@ class main_window(QWidget):
 		heuristics_used = [0] * num_heuristics
 		heuristic_queue_emptied = [0] * num_heuristics
 
+		result_code = 0
+
 		num_iterations = 0
 		while self.open_t[0].Minkey() < inf and done==False:
 
@@ -920,6 +922,7 @@ class main_window(QWidget):
 						#print("\nhere 1a")
 						if self.g[s_goal] < inf:
 							#print("\nFinished 1.")
+							result_code = i
 							done = True
 							break
 					else:
@@ -937,6 +940,7 @@ class main_window(QWidget):
 						#f.write("\nhere 2a")
 						if self.g[s_goal] < inf:
 							#print("\nFinished 2.")
+							result_code = 0
 							done = True
 							break
 					else:
@@ -957,14 +961,14 @@ class main_window(QWidget):
 		self.grid.solution_path = self.explored
 
 		self.path_end = None
-		for queue in self.open_t:
-			for cell in queue._queue:
-				#cell = cell[2]
-				cell = cell[1]
-				if cell.x==self.end_cell[0] and cell.y==self.end_cell[1]:
-					if cell.cost == final_solution_cost:
-						self.path_end = cell
-						break
+
+		for cell in self.open_t[result_code]._queue:
+			#cell = cell[2]
+			cell = cell[1]
+			if cell.x==self.end_cell[0] and cell.y==self.end_cell[1]:
+				if cell.cost == final_solution_cost:
+					self.path_end = cell
+					break
 
 		self.grid.shortest_path = rectify_path(self.path_end)
 		self.grid.update() # render grid with new solution path
