@@ -377,9 +377,10 @@ class attrib_color_window(QWidget):
 class main_window(QWidget):
 
 	# Initializations...
-	def __init__(self):
+	def __init__(self,parent=None):
 		# constructor
 		super(main_window,self).__init__()
+		self.parent = parent
 		self.init_vars()
 		self.init_ui()
 
@@ -616,15 +617,8 @@ class main_window(QWidget):
 			temp.push(item=self.start_cell, cost=self.sequential_astar_key(i, w1, self.start_cell, start_index), parent=None)
 			self.frontier_list.append(temp)
 
-		
-
-
-
-
-
 	def sequential_astar_key(self, h_index, w1, cell_obj, cell_index):
 		return self.cost_set_list[h_index][cell_index] + (w1 * float(self.grid.heuristic_manager(cell_obj, self.end_cell_t, h_index)) / 4.0)
-
 
 	def integrated_astar(self,w1=1.25,w2=1.25):
 		# f = g + h
@@ -637,7 +631,7 @@ class main_window(QWidget):
 		# w1 --> used to inflate heuristic values for each of the search procedures
 		# w2 --> used as a factor to prioritize the inadmissible search processes over the anchor, admissible one
 
-		num_heuristics = 5
+		num_heuristics = 6
 		if self.is_benchmark==False: print("Performing Integrated A* Search with "+str(num_heuristics)+" heuristics using w1="+str(w1)+", w2="+str(w2))
 
 		self.set_ui_interaction(enabled=False) # turn off ui interaction
@@ -677,8 +671,15 @@ class main_window(QWidget):
 		#print("s_start: "+str(s_start)+", s_goal: "+str(s_goal)+", g[s_goal]: "+str(self.g[s_goal])+", g[s_start]: "+str(self.g[s_start]))
 		#f.write("s_start: "+str(s_start)+", s_goal: "+str(s_goal)+", g[s_goal]: "+str(self.g[s_goal])+", g[s_start]: "+str(self.g[s_start])+"\n")
 
+
 		refresh_rate = 0.05
 		last_cell = None
+
+		refresh_rate = 0.1
+		last_cell = None
+
+
+		heuristics_used = [0] * num_heuristics
 
 		num_iterations = 0
 		while self.open_t[0].Minkey() < inf and done==False:
@@ -714,9 +715,11 @@ class main_window(QWidget):
 				#f.write("\n")
 				#print(self.open_t[i]._queue)
 				if len(self.open_t[i]._queue)==0:
+					print("WARNING: Heuristic at i="+str(i)+" has an empty PriorityQueue.")
 					continue
 
 				if self.open_t[i].Minkey() <= ( w2 * self.open_t[0].Minkey() ):
+					heuristics_used[i]+=1
 
 					if self.g[s_goal] <= self.open_t[i].Minkey():
 						#f.write("\nhere 1a")
@@ -734,6 +737,7 @@ class main_window(QWidget):
 						self.ExpandState(s,w1,w2)
 						self.closed_inad.append(s)
 				else:
+					heuristics_used[0]+=1
 					if self.g[s_goal] <= self.open_t[0].Minkey():
 						#print("\nhere 2a")
 						#f.write("\nhere 2a")
@@ -750,6 +754,9 @@ class main_window(QWidget):
 						self.ExpandState(s,w1,w2)
 						self.closed_anchor.append(s)
 
+		print("\n")
+		print(heuristics_used)
+
 		self.last_cost_list = self.g
 		final_solution_cost = self.g[s_goal]
 		self.grid.solution_path = self.explored
@@ -757,7 +764,8 @@ class main_window(QWidget):
 		self.path_end = None
 		for queue in self.open_t:
 			for cell in queue._queue:
-				cell = cell[2]
+				#cell = cell[2]
+				cell = cell[1]
 				if cell.x==self.end_cell[0] and cell.y==self.end_cell[1]:
 					if cell.cost == final_solution_cost:
 						self.path_end = cell
@@ -833,7 +841,7 @@ class main_window(QWidget):
 								self.open_t[i].update_or_insert(succ,inad_cost,parent=s)
 
 	def Key(self,s,i,s_index,w1):
-		return self.g[s_index] + w1*(float(self.grid.heuristic_manager(s,self.end_cell_t,i))*0.25)
+		return self.g[s_index] + w1*(float(self.grid.heuristic_manager(s,self.end_cell_t,i))/4.0)
 
 	def weighted_astar_wrapper_default_heuristic(self):
 		self.grid.allow_render_mouse = False
@@ -930,7 +938,7 @@ class main_window(QWidget):
 
 				if (neighborIndex not in cost_list or updated_cost < cost_list[neighborIndex]) and (neighbor.state != "full") and visited[neighborIndex] == False:
 					cost_list[neighborIndex] = updated_cost
-					priority = updated_cost + (float(weight) * float(self.grid.heuristic_manager(neighbor, self.end_cell, code)))
+					priority = updated_cost + (float(weight) * float(self.grid.heuristic_manager(neighbor, self.end_cell, code))/4.0)
 					self.frontier.push(neighbor, priority, parent=cur_node)
 
 		self.last_cost_list = cost_list
@@ -1584,7 +1592,7 @@ class main_window(QWidget):
 
 	def quit(self):
 		# quits the application
-		sys.exit()
+		self.close()
 
 	# Context Menu...
 	def on_context_menu_request(self,point):
@@ -1633,6 +1641,8 @@ class main_window(QWidget):
 		#print(x,y)
 
 	def closeEvent(self,e):
+		if self.parent!=None:
+			self.parent.close()
 		sys.exit()
 
 def main():
