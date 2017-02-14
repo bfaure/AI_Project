@@ -634,34 +634,81 @@ class main_window(QWidget):
 
 		done = False #boolean used to break out of while loop
 
+		result_code = 0
+		print("Finished initializing everything")
 		#last_cell = None
 
 		while self.frontier_list[0].Minkey() < inf and done==False:
-
+			print("Inside While loop")
 			for i in range(1, num_heuristics):
 				if self.frontier_list[i].Minkey() <= w2 * self.frontier_list[0].Minkey():
 					if self.cost_set_list[i][goal_index] <= self.frontier_list[i].Minkey:
 						if self.cost_set_list[i][goal_index] < inf:
 							done = True #exit out of the loop
+							result_code = i
+							print("About to exit")
 							break
 					else:
+						print("Inside else for i")
 						s = self.frontier_list[i].top()
 						#last_cell = s
 						self.explored_set_list[i].append(s)
-						#TODO: expand s here
+						self.sequential_astar_expand(i, w1, s)
+						self.closed_set_lists[i].append(s)
 				else:
 					if self.cost_set_list[0][goal_index] <= self.frontier_list[0].Minkey():
 						done = True
-						breal
+						result_code = 0
+						print("About to exit")
+						break
 					else:
+						print("Inside else for i=0")
 						s = self.frontier_list[0].top()
-						#TODO: expand s here
-						self.explored_set_list[i].append(s)
+						self.sequential_astar_expand(0, w1, s)
+						self.explored_set_list[0].append(s)
+						self.closed_set_lists[0].append(s)
 
+		#render solution
+		self.grid.solution_path = self.explored_set_list[result_code]
+		final_solution_cost = self.cost_set_list[result_code][goal_index]
+		self.path_end = None
+		for cell in frontier_list[result_code]._queue:
+			cell = cell[1]
+			if cell.x == self.end_cell[0] and cell.y == self.end_cell[1]:
+				if cell.cost == final_solution_cost:
+					self.path_end = cell
+					break
 
+		self.grid.shortest_path = rectify_path(self.path_end)
+		self.grid.update()
+		pyqt_app.processEvents()
 
 	def sequential_astar_key(self, h_index, w1, cell_obj, cell_index):
 		return self.cost_set_list[h_index][cell_index] + (w1 * float(self.grid.heuristic_manager(cell_obj, self.end_cell_t, h_index)) / 4.0)
+
+	def sequential_astar_expand(self, h_index, w1, cell_obj):
+		#Remove s from frontier
+		self.frontier_list[h_index].remove(cell_obj)
+		#get neighbors
+		neighbors = get_neighbors(cell_obj, self.cells)
+
+		c_index = get_cell_index(cell_obj, self.cells)
+		self.visited_lists[h_index][neighbor_index] = True
+
+		for neighbor in neighbors:
+			neighbor_index = get_cell_index(neighbor, self.cells)
+
+			if self.visited_lists[h_index][neighbor_index] == False:
+				self.cost_set_list[h_index][neighbor_index] = sys.maxint
+
+				if neighbor.state == "full":
+					continue
+
+			if self.cost_set_list[h_index][neighbor_index] > (self.cost_set_list[h_index][c_index] + get_transition_cost(cell_obj, neighbor, self.highways)):
+				self.cost_set_list[h_index][neighbor_index] = self.cost_set_list[h_index][c_index] + get_transition_cost(cell_obj, neighbor, self.highways)
+
+				if cell_in_list(neighbor, self.closed_set_lists[h_index]) == False:
+					self.frontier_list[h_index].update_or_insert(neighbor, self.sequential_astar_key(h_index, w1, neighbor, neighbor_index),  parent=cell_obj)
 
 	def integrated_astar(self,w1=1.25,w2=1.25):
 		# f = g + h
