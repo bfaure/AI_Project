@@ -420,6 +420,7 @@ class main_window(QWidget):
 		self.use_gradient = False # False by default
 		self.show_trace = True # true by default
 		self.updating_already = False
+		self.stop_executing = False
 		self.mouse_tracking = True
 		self.trace_highlighting = False
 		self.is_benchmark = False # true if benchmarking right now
@@ -669,12 +670,35 @@ class main_window(QWidget):
 
 		result_code = 0
 		print("Finished initializing everything")
-		#last_cell = None
+		
+		last_cell = None # to hold the last node expanded (for updating ui)
+		start_time = time.time()
+		step_time = time.time()
+		refresh_rate = 0.1 # refresh the display after this many seconds
+		self.explored = [] # to hold all cells visited
+		num_iterations = 0 # number of times while loop is run
 
 		while self.frontier_list[0].Minkey() < inf and done==False:
-			print("Inside While loop")
+
+			if (self.stop_executing):
+				self.set_ui_interaction(enabled=True)
+				return
+
+			# update the ui window
+			if (time.time()-step_time > refresh_rate) and last_cell!=None:
+				self.grid.solution_path = self.explored
+				self.grid.shortest_path = rectify_path(last_cell)
+				self.grid.update()
+				pyqt_app.processEvents()
+				step_time = time.time()
+
+			print("                                                                           ",end="\r")
+			print("explored: "+str(len(self.explored))+", num_iterations: "+str(num_iterations)+", time: "+str(time.time()-start_time)[:5], end="\r")
+			num_iterations += 1
+
+			#print("Inside While loop")
 			for i in range(1, num_heuristics):
-				if self.frontier_list[i].Minkey() <= w2 * self.frontier_list[0].Minkey():
+				if self.frontier_list[i].Minkey() <= ( w2 * self.frontier_list[0].Minkey() ):
 					if self.cost_set_list[i][goal_index] <= self.frontier_list[i].Minkey:
 						if self.cost_set_list[i][goal_index] < inf:
 							done = True #exit out of the loop
@@ -682,9 +706,12 @@ class main_window(QWidget):
 							print("About to exit")
 							break
 					else:
-						print("Inside else for i")
+						#print("Inside else for i")
 						s = self.frontier_list[i].top()
-						#last_cell = s
+						
+						last_cell = s
+						self.explored.append(s)
+
 						self.explored_set_list[i].append(s)
 						self.sequential_astar_expand(i, w1, s)
 						self.closed_set_lists[i].append(s)
@@ -692,14 +719,19 @@ class main_window(QWidget):
 					if self.cost_set_list[0][goal_index] <= self.frontier_list[0].Minkey():
 						done = True
 						result_code = 0
-						print("About to exit")
+						#print("About to exit")
 						break
 					else:
-						print("Inside else for i=0")
+						#print("Inside else for i=0")
 						s = self.frontier_list[0].top()
+
+						last_cell = s
+						self.explored.append(s)
+
 						self.sequential_astar_expand(0, w1, s)
 						self.explored_set_list[0].append(s)
 						self.closed_set_lists[0].append(s)
+		print("\n")
 
 		#render solution
 		self.grid.solution_path = self.explored_set_list[result_code]
@@ -790,15 +822,6 @@ class main_window(QWidget):
 
 		start_time = time.time()
 		step_time = time.time()
-
-		#f = open("debug_log.txt","w")
-
-		#print("s_start: "+str(s_start)+", s_goal: "+str(s_goal)+", g[s_goal]: "+str(self.g[s_goal])+", g[s_start]: "+str(self.g[s_start]))
-		#f.write("s_start: "+str(s_start)+", s_goal: "+str(s_goal)+", g[s_goal]: "+str(self.g[s_goal])+", g[s_start]: "+str(self.g[s_start])+"\n")
-
-
-		refresh_rate = 0.05
-		last_cell = None
 
 		refresh_rate = 0.1
 		last_cell = None
