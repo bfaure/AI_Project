@@ -1290,17 +1290,16 @@ class eight_neighbor_grid(QWidget):
 	def heuristic_manager(self, start, end, code):
 		if code == 0:
 			return self.euclidean_heuristic(start, end)
-			#return self.highway_heuristic(start,end)
 		elif code == 1:
 			return self.diagonal_distance_heuristic(start, end)
 		elif code == 2:
-			#return self.approximate_euclidean_heuristic(start, end)
-			return self.highway_heuristic(start,end)
+			return self.approximate_euclidean_heuristic(start, end)
 		elif code == 3:
 			return self.manhattan_heuristic(start,end)
 		elif code == 4:
-			#return self.highway_heuristic(start,end)
 			return self.approx_distance_heuristic_wrapper(start, end)
+		elif code == 5:
+			return self.highway_heuristic(start,end)
 		else:
 			print("WARNING: Using invalid heuristic code: "+str(code))
 			return 0

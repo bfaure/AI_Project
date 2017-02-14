@@ -602,7 +602,7 @@ class main_window(QWidget):
 		# w1 --> used to inflate heuristic values for each of the search procedures
 		# w2 --> used as a factor to prioritize the inadmissible search processes over the anchor, admissible one
 
-		num_heuristics = 5
+		num_heuristics = 6
 		if self.is_benchmark==False: print("Performing Integrated A* Search with "+str(num_heuristics)+" heuristics using w1="+str(w1)+", w2="+str(w2))
 
 		self.set_ui_interaction(enabled=False) # turn off ui interaction
