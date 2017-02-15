@@ -810,15 +810,19 @@ class main_window(QWidget):
 		#self.grid.solution_path = self.explored
 		self.grid.solution_path = self.explored_set_list[result_code]
 		final_solution_cost = self.cost_set_list[result_code][goal_index]
-		self.path_end = None
-		for cell in self.frontier_list[result_code]._queue:
-			cell = cell[1]
-			if cell.x == self.end_cell[0] and cell.y == self.end_cell[1]:
-				#if cell.cost == final_solution_cost:
-				self.path_end = cell
-				break
 
-		self.grid.shortest_path = rectify_path(self.path_end)
+		self.path_end = None
+		for item in self.frontier_list[result_code]._queue:
+			cell = item[1]
+			if cell.index==self.end_cell_t.index:
+				self.path_end = cell 
+				break
+		if self.path_end==None:
+			print("\nERROR: Sequential A* Search self.path_end could not be located.")
+			self.grid.shortest_path = []
+		else:
+			self.grid.shortest_path = rectify_path(self.path_end)
+
 		self.grid.update()
 		pyqt_app.processEvents()
 		self.set_ui_interaction(enabled=True)
@@ -1312,9 +1316,9 @@ class main_window(QWidget):
 		print(">Starting custom benchmark...")
 		### put custom benchmark combinations here
 		print("\n<--------------------------------------------------->\n")
-		self.integrated_astar_benchmark_wrapper() # perform multi-weight Integrated A* Search Benchmark
+		#self.integrated_astar_benchmark_wrapper() # perform multi-weight Integrated A* Search Benchmark
 		print("\n<--------------------------------------------------->\n")
-		self.astar_heuristic_weight_wrapper() # perform multi-weight, multi-heuristic A* search Benchmark
+		#self.astar_heuristic_weight_wrapper() # perform multi-weight, multi-heuristic A* search Benchmark
 		print("\n<--------------------------------------------------->\n")
 		self.sequential_astar_benchmark_wrapper() # perform multi-weight Sequential A* Search Benchmark
 		print("\n<--------------------------------------------------->\n")
@@ -1540,7 +1544,8 @@ class main_window(QWidget):
 			short = grids[:MAX_GRIDS_TO_BENCHMARK]
 
 		f.write("A* Benchmark on "+str(len(grids))+" .grid files [weight="+str(weight)+"], [heuristic="+str(code)+"]:\n\n")
-
+		print(">A* Benchmark on "+str(len(grids))+" .grid files [w="+str(w1)+"], [heuristic="+str(code)+"]...")
+		
 		# turning off all UI interaction
 		self.grid.allow_render_mouse = False
 		self.grid.suppress_output = True
