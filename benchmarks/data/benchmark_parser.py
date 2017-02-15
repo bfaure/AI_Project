@@ -19,6 +19,11 @@ def parse_benchmark(file,target):
 			print value
 
 def main():
+
+	
+
+
+	'''
 	if len(sys.argv)==2:
 		# the file to parse is argv[1]
 		filename = sys.argv[1]
@@ -31,7 +36,7 @@ def main():
 		attribute = "time"
 
 	parse_benchmark(filename,attribute)
-
+	'''
 
 if __name__ == '__main__':
 	main()

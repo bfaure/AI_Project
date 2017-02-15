@@ -1,0 +1,13 @@
+Sequential A* Benchmark on 1 .grid files [w1=1.0], [w2=1.0]:
+
+sources: [grids/0-0.grid]
+times: [43.1180000305]
+costs: [149.784271247]
+frontiers: [873]
+explored: [10037]
+
+Average Time: 43.1180000305 seconds
+Average Cost: 149.784271247
+Average Frontier: 873 cells
+Average Explored: 10037 cells
+Total Time: 43.1180000305 seconds
