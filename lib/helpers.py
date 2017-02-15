@@ -2331,28 +2331,14 @@ def get_transition_cost(current_cell,new_cell,highways):
 
 	return cost
 
-
-function_log = open("function_log.txt","w")
-
 def rectify_path(path_end,break_short=False):
 	global function_log
 	path = []
 	cur = path_end
 	path.append([cur.x,cur.y])
-	i=0
 	while True:
-
-		if i>10000 and break_short==True:
-			function_log.write("\n\n")
-			for item in path:
-				function_log.write(str(item[0])+","+str(item[1])+"\n")
-			function_log.write("\n\n")
-			return path 
-		i+=1
-
 		cur = cur.parent
-		if cur == None:
-			break
+		if cur == None: break
 		path.append([cur.x,cur.y])
 	return path
 
