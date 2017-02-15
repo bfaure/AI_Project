@@ -1,5 +1,0 @@
-Weighted A* Benchmark on 50 .grid files with weight: 1.25:
-
-
-grids/0-0.grid:	 time: 1.02600002289, cost: 103.627416998, frontier: 172, explored: 100
-grids/0-1.grid:	 time: 6.0039999485, cost: 187.920201898, frontier: 792, explored: 648

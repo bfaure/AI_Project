@@ -32,7 +32,7 @@ TURN_OFF_HIGHWAY_HEURISTIC = True
 
 # this can be set to a lower number to reduce the amount of grids
 # that are used when benchmarking, normally set to 50
-MAX_GRIDS_TO_BENCHMARK = 1
+MAX_GRIDS_TO_BENCHMARK = 50
 
 # this is the value that is used by all of the search algoritms, it
 # denotes the maximum amount of time between grid updates while
@@ -664,10 +664,12 @@ class main_window(QWidget):
 		inf = sys.maxint
 
 		#get start index
-		start_index = get_cell_index(self.start_cell, self.cells)
+		#start_index = get_cell_index(self.start_cell, self.cells)
+		start_index = self.start_cell.index 
 
 		#get goal index
-		goal_index = get_cell_index(self.end_cell_t, self.cells)
+		#goal_index = get_cell_index(self.end_cell_t, self.cells)
+		goal_index = self.end_cell_t.index 
 
 		#initialize 5 explored sets for each heuristics
 		self.explored_set_list = [[] for i in range(num_heuristics)]
@@ -747,7 +749,6 @@ class main_window(QWidget):
 
 						s = self.frontier_list[i].top()
 
-
 						last_cell = s
 						last_heuristic = i
 						#if cell_in_list(s,self.explored)==False: self.explored.append(s)
@@ -761,12 +762,10 @@ class main_window(QWidget):
 
 							done = True
 							result_code = 0
-
 							break
 					else:
 
 						s = self.frontier_list[0].top()
-
 
 						last_cell = s
 						last_heuristic = 0
@@ -776,6 +775,9 @@ class main_window(QWidget):
 						self.explored_set_list[0].append(s)
 						self.closed_set_lists[0].append(s)
 
+		self.last_cost_list = ["None"] * len(self.cells)
+		for index,cost in self.cost_set_list[result_code].items():
+			self.last_cost_list[int(index)] = float(cost)
 
 		#render solution
 		#self.grid.solution_path = self.explored
@@ -789,12 +791,22 @@ class main_window(QWidget):
 				self.path_end = cell
 				break
 
-		print("\nFinished Sequential A* search in "+str(time.time()-start_time)[:6]+" seconds, final cost: "+str(final_solution_cost)+", checked "+str(len(self.explored_set_list[result_code]))+" cells\n")
-
 		self.grid.shortest_path = rectify_path(self.path_end)
 		self.grid.update()
 		pyqt_app.processEvents()
 		self.set_ui_interaction(enabled=True)
+
+		self.latest_search_cost = final_solution_cost
+		frontier_length = 0
+		for i in range(len(self.frontier_list)):
+			frontier_length+=self.frontier_list[i].length()
+		self.latest_frontier_length = frontier_length
+		total_explored=0
+		for i in range(len(self.closed_set_lists)):
+			total_explored+=len(self.closed_set_lists[i])
+		self.latest_num_explored = total_explored
+
+		print("\nFinished Sequential A* search in "+str(time.time()-start_time)[:6]+" seconds, final cost: "+str(final_solution_cost)+", checked "+str(self.latest_num_explored)+" cells")
 
 	def sequential_astar_key(self, h_index, w1, cell_obj, cell_index):
 		if h_index == 0:
@@ -809,13 +821,17 @@ class main_window(QWidget):
 		#get neighbors
 		neighbors = get_neighbors(cell_obj, self.cells)
 
-		c_index = get_cell_index(cell_obj, self.cells)
+		#c_index = get_cell_index(cell_obj, self.cells)
+		c_index = cell_obj.index 
+
 		self.visited_lists[h_index][c_index] = True
 
 		for neighbor in neighbors:
 			neighbor = deepcopy(neighbor)
 
-			neighbor_index = get_cell_index(neighbor, self.cells)
+			#neighbor_index = get_cell_index(neighbor, self.cells)
+			neighbor_index = neighbor.index 
+
 			if neighbor_index==c_index:
 				continue
 
@@ -849,16 +865,20 @@ class main_window(QWidget):
 
 		self.fetch_current_grid_state() # set: self.cells, self.start_cell, self.end_cell, self.highways
 
-		self.closed_anchor = [] # all cells closed by anchor heuristic
-		self.closed_inad = [] # all cells closed by inadmissible heuristic
+		#self.closed_anchor = [] # all cells closed by anchor heuristic
+		#self.closed_inad = [] # all cells closed by inadmissible heuristic
+		self.closed_anchor = [False] * len(self.cells)
+		self.closed_inad = [False] * len(self.cells)
 
 		inf = sys.maxint # pseudo infinity value
 
 		self.g = {}
-		s_start = get_cell_index(self.start_cell,self.cells) # get the index of the start_cell
+		#s_start = get_cell_index(self.start_cell,self.cells) # get the index of the start_cell
+		s_start = self.start_cell.index # get the index of the start_cell
 		self.g[s_start] = 0
 
-		s_goal = get_cell_index(self.end_cell_t,self.cells) # get the index of the end_cell
+		#s_goal = get_cell_index(self.end_cell_t,self.cells) # get the index of the end_cell
+		s_goal = self.end_cell_t.index # get the index of the end cell
 		self.g[s_goal] = inf
 
 		self.expanded = [False] * len(self.cells)
@@ -911,37 +931,35 @@ class main_window(QWidget):
 
 				if self.open_t[i].Minkey() <= ( w2 * self.open_t[0].Minkey() ):
 					heuristics_used[i]+=1
-
-					if self.g[s_goal] <= self.open_t[i].Minkey():
-						if self.g[s_goal] < inf:
-							result_code = i
-							done = True
-							break
+					if self.g[s_goal] <= self.open_t[i].Minkey() and self.g[s_goal]<inf:
+						result_code = i
+						done = True
+						break
 					else:
-
 						s = self.open_t[i].top()
 						last_cell = s
 						self.explored.append(s)
 						self.ExpandState(s,w1,w2)
-						self.closed_inad.append(s)
+						#self.closed_inad.append(s)
+						self.closed_inad[s.index]=True
 				else:
 					heuristics_used[0]+=1
-					if self.g[s_goal] <= self.open_t[0].Minkey():
-
-						if self.g[s_goal] < inf:
-
-							result_code = 0
-							done = True
-							break
+					if self.g[s_goal] <= self.open_t[0].Minkey() and self.g[s_goal]<inf:
+						result_code = 0
+						done = True
+						break
 					else:
-
 						s = self.open_t[0].top()
 						last_cell = s
 						self.explored.append(s)
 						self.ExpandState(s,w1,w2)
-						self.closed_anchor.append(s)
+						#self.closed_anchor.append(s)
+						self.closed_anchor[s.index]=True
 
-		self.last_cost_list = self.g
+		self.last_cost_list = ["None"] * len(self.cells)
+		for index,cost in self.g.items():
+			self.last_cost_list[int(index)] = float(cost)
+
 		final_solution_cost = self.g[s_goal]
 		self.grid.solution_path = self.explored
 
@@ -958,7 +976,7 @@ class main_window(QWidget):
 		self.grid.update() # render grid with new solution path
 		pyqt_app.processEvents()
 
-		print("\nFinished Integrated A* search in "+str(time.time()-start_time)[:6]+" seconds, final cost: "+str(final_solution_cost)+", checked "+str(len(self.explored))+" cells\n")
+		print("\nFinished Integrated A* search in "+str(time.time()-start_time)[:6]+" seconds, final cost: "+str(final_solution_cost)+", checked "+str(len(self.explored))+" cells")
 
 		if self.is_benchmark:
 			self.latest_search_cost = final_solution_cost
@@ -974,14 +992,15 @@ class main_window(QWidget):
 		for i in range(len(self.open_t)):
 			self.open_t[i].remove(s)
 
-		s_index = get_cell_index(s,self.cells)
+		#s_index = get_cell_index(s,self.cells)
+		s_index = s.index # get the index of the current cell
 		successors = get_neighbors(s,self.cells)
 
 		self.expanded[s_index] = True
 
 		for succ in successors: # foreach s' in Succ(s)
-			succ_index = get_cell_index(succ,self.cells)
-
+			#succ_index = get_cell_index(succ,self.cells)
+			succ_index = succ.index # index of the neighbor
 
 			if self.expanded[succ_index]==False: # if s' was never generated
 				self.g[succ_index] = sys.maxint # g(s') = infinity
@@ -992,11 +1011,12 @@ class main_window(QWidget):
 			if self.g[succ_index] > (self.g[s_index] + get_transition_cost(s,succ,self.highways)): # if g(s') > g(s)+c(s,s')
 				self.g[succ_index] = self.g[s_index] + get_transition_cost(s,succ,self.highways) # g(s') = g(s) + c(s,s')
 
-				if cell_in_list(succ,self.closed_anchor)==False: # if s' not in CLOSEDanchor
+				#if cell_in_list(succ,self.closed_anchor)==False: # if s' not in CLOSEDanchor
+				if self.closed_anchor[succ.index]==False: # if s' not in CLOSEDanchor
 					anchor_cost = self.Key(succ,0,succ_index,w1)
 					self.open_t[0].update_or_insert(succ,anchor_cost,parent=s)
 
-					if cell_in_list(succ,self.closed_inad)==False:
+					if self.closed_inad[succ.index]==False:
 						for i in range(1, len(self.open_t)):
 							inad_cost = self.Key(succ,i,succ_index,w1)
 
@@ -1004,7 +1024,13 @@ class main_window(QWidget):
 								self.open_t[i].update_or_insert(succ,inad_cost,parent=s)
 
 	def Key(self,s,i,s_index,w1):
-		return self.g[s_index] + w1*(float(self.grid.heuristic_manager(s,self.end_cell_t,i,True if TURN_OFF_DIAGONAL_MULTIPLIER==False else False))/4.0)
+		
+		if s_index==0:
+			return self.g[s_index] + w1*(float(self.grid.heuristic_manager(s,self.end_cell_t,i,True if TURN_OFF_DIAGONAL_MULTIPLIER==False else False))/4.0)
+		else:
+			return self.g[s_index] + w1*(float(self.grid.heuristic_manager(s,self.end_cell_t,i,True if TURN_OFF_DIAGONAL_MULTIPLIER==False else False)))	
+		
+		#return self.g[s_index] + w1*(float(self.grid.heuristic_manager(s,self.end_cell_t,i,True if TURN_OFF_DIAGONAL_MULTIPLIER==False else False))/4.0)
 
 	def weighted_astar_wrapper_default_heuristic(self):
 		self.grid.allow_render_mouse = False
@@ -1053,7 +1079,8 @@ class main_window(QWidget):
 		cost_root = float(self.grid.heuristic_manager(self.start_cell, self.end_cell, code))
 		self.frontier.push(self.start_cell,cost_root,parent=None)
 
-		rootIndex = get_cell_index(self.start_cell, self.cells)
+		#rootIndex = get_cell_index(self.start_cell, self.cells)
+		rootIndex = self.start_cell.index 
 		cost_list[rootIndex] = 0
 		visited[rootIndex] = rootIndex
 
@@ -1092,13 +1119,15 @@ class main_window(QWidget):
 			neighbor_list = get_neighbors(cur_node,self.cells)
 			#index_list = neighbor_index_list(neighbor_list, self.cells)
 			#pruned_list = prune_neighbors(neighbor_list, visited, index_list)
-			current_node_index = get_cell_index(cur_node, self.cells)
+			#current_node_index = get_cell_index(cur_node, self.cells)
+			current_node_index = cur_node.index 
 			visited[current_node_index] = True
 			#self.frontier.clear()
 			for neighbor in neighbor_list:
 				transition_cost = get_transition_cost(cur_node,neighbor,self.highways)
 				updated_cost = cost_list[current_node_index] + transition_cost
-				neighborIndex = get_cell_index(neighbor, self.cells)
+				#neighborIndex = get_cell_index(neighbor, self.cells)
+				neighborIndex = neighbor.index
 
 				if (neighborIndex not in cost_list or updated_cost < cost_list[neighborIndex]) and (neighbor.state != "full") and visited[neighborIndex] == False:
 					cost_list[neighborIndex] = updated_cost
@@ -1111,7 +1140,7 @@ class main_window(QWidget):
 		self.grid.update() # render grid with new solution path
 		pyqt_app.processEvents()
 		final_solution_cost = get_path_cost(self.path_end,self.highways)
-		print("\nFinished a* search in "+str(time.time()-overall_start)[:6]+" seconds, final cost: "+str(final_solution_cost)+", checked "+str(len(self.explored))+" cells\n")
+		print("\nFinished a* search in "+str(time.time()-overall_start)[:6]+" seconds, final cost: "+str(final_solution_cost)+", checked "+str(len(self.explored))+" cells")
 
 		if self.is_benchmark:
 			self.latest_search_cost = final_solution_cost
@@ -1252,9 +1281,13 @@ class main_window(QWidget):
 		print(">Starting custom benchmark...")
 		### put custom benchmark combinations here
 		print("\n<--------------------------------------------------->\n")
-		self.integrated_astar_benchmark_wrapper() # perform multi-weight Integrated A* Search
+		self.integrated_astar_benchmark_wrapper() # perform multi-weight Integrated A* Search Benchmark
 		print("\n<--------------------------------------------------->\n")
-		self.astar_heuristic_weight_wrapper() # perform multi-weight, multi-heuristic A* search
+		self.astar_heuristic_weight_wrapper() # perform multi-weight, multi-heuristic A* search Benchmark
+		print("\n<--------------------------------------------------->\n")
+		self.sequential_astar_benchmark_wrapper() # perform multi-weight Sequential A* Search Benchmark
+		print("\n<--------------------------------------------------->\n")
+		self.uniform_cost_benchmark() # perform ucs benchmark
 		print("\n<--------------------------------------------------->\n")
 		###
 		print(">Benchmark complete in "+str(time.time()-start_time)[:6]+" seconds.")
@@ -1277,7 +1310,81 @@ class main_window(QWidget):
 				self.integrated_astar_benchmark(w1,w2)
 
 	def sequential_astar_benchmark(self,w1,w2):
-		pass
+		# benchmark the efficiency of the A* algorithm on all files in /grids
+		self.is_benchmark = True
+		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
+
+		data_dir = "benchmarks/data/"
+		filename = data_dir+"sequential_a_star-[w1="+str(w1).replace(".","_")+"]-[w2="+str(w2).replace(".","_")+"].txt"
+		f = open(filename,"w")
+		print(">Writing results to "+filename+"...")
+
+		grids,short = self.get_all_grids()
+		if len(grids)>MAX_GRIDS_TO_BENCHMARK:
+			grids = grids[:MAX_GRIDS_TO_BENCHMARK]
+			short = grids[:MAX_GRIDS_TO_BENCHMARK]
+
+		f.write("Sequential A* Benchmark on "+str(len(grids))+" .grid files [w1="+str(w1)+"], [w2="+str(w2)+"]:\n\n")
+		print(">Sequential A* Benchmark on "+str(len(grids))+" .grid files [w1="+str(w1)+"], [w2="+str(w2)+"]...")
+
+		# turning off all UI interaction
+		self.grid.allow_render_mouse = False
+		self.grid.suppress_output = True
+		self.grid.verbose = False
+		self.grid.draw_grid_lines = False
+		self.grid.draw_outer_boundary = False
+		self.grid.show_path_trace = False
+
+		overall_start = time.time()
+		total_execution_time = 0
+
+		total_explored = 0
+		total_cost = 0
+		total_frontier = 0
+
+		current_location = os.getcwd()
+
+		for grid,short_name in list(zip(grids,short)):
+			print(">Running Sequential A* on "+grid+" with  [w1="+str(w1)+"], [w2="+str(w2)+"]...")
+			self.grid.load(grid)
+			start_time = time.time()
+			self.sequential_astar(w1,w2)
+			end_time = time.time()
+			total_execution_time += (end_time-start_time)
+
+			last_cost = self.latest_search_cost
+			total_cost += last_cost
+
+			frontier_length = self.latest_frontier_length
+			total_frontier += frontier_length
+
+			explored_length = self.latest_num_explored
+			total_explored += explored_length
+
+			f.write("\n"+grid+":\t time: "+str(end_time-start_time)+", cost: "+str(last_cost)+", frontier: "+str(frontier_length)+", explored: "+str(explored_length))
+
+			# save screenshot
+			ext = short_name[:short_name.find(".grid")]
+			filename = current_location+"/benchmarks/screenshots/sequential_a_star-[w1="+str(w1).replace(".","_")+"]-[w2="+str(w2).replace(".","_")+"]-["+ext+"].png"
+			QPixmap.grabWindow(self.winId()).save(filename,'png')
+
+		f.write("\n\nTotal algorithm time: "+str(total_execution_time))
+		f.write("\nTotal cells explored: "+str(total_explored))
+		f.write("\nTotal cost: "+str(total_cost))
+		f.write("\nTotal frontier length: "+str(total_frontier))
+
+		f.write("\n\nAverage algorithm time: "+str(total_execution_time/len(grids)))
+		f.write("\nAverage cells explored: "+str(total_explored/len(grids)))
+		f.write("\nAverage cost: "+str(total_cost/len(grids)))
+		f.write("\nAverage frontier length: "+str(total_frontier/len(grids)))
+
+		f.write("\n\nTotal benchmark time: "+str(time.time()-overall_start))
+
+		self.grid.allow_render_mouse = True
+		self.is_benchmark = False
+		self.grid.suppress_output = False
+		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+")")
+		print(">Sequential A* Search Benchmark [w1="+str(w1)+"], [w2="+str(w2)+"] Complete")
 
 	def integrated_astar_benchmark(self,w1,w2):
 		# benchmark the efficiency of the A* algorithm on all files in /grids
@@ -1700,7 +1807,8 @@ class main_window(QWidget):
 				self.state_value.setText("None")
 
 			temp = cell(cell_attributes.coordinates[0],cell_attributes.coordinates[1])
-			i = get_cell_index(temp,self.cells)
+			#i = get_cell_index(temp,self.cells)
+			i = temp.index 
 
 			heuristic_value = self.grid.diagonal_distance_heuristic(temp,self.grid.end_cell)/4
 			self.h_value.setText(str(heuristic_value))
@@ -1713,12 +1821,7 @@ class main_window(QWidget):
 
 			if hasattr(self,"last_cost_list"):
 				# if we have run an a* algorithm
-				temp = cell(cell_attributes.coordinates[0],cell_attributes.coordinates[1])
-				i = get_cell_index(temp,self.cells)
-				try:
-					cost = self.last_cost_list[i]
-				except:
-					cost = "None"
+				cost = self.last_cost_list[cell_attributes.index]
 
 				if cost != "None":
 					self.f_value.setText(str(cost+heuristic_value))

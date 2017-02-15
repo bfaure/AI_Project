@@ -24,8 +24,9 @@ diagonal_movement_multiplier = sqrt(2) # used as global variable to increase spe
 
 # class to hold details for a single cell
 class cell(object):
-	def __init__(self,x_coordinate=None,y_coordinate=None):
+	def __init__(self,x_coordinate=None,y_coordinate=None,index=None):
 		self.state = "free"
+		self.index = index # index in the self.cells list
 		self.x = x_coordinate # not using anymore
 		self.y = y_coordinate # not using anymore
 		self.cost = 0 # used for Priority Queue to remember cost
@@ -50,10 +51,12 @@ class non_gui_eight_neighbor_grid:
 
 	def init_cells(self,leave_empty=False):
 		self.cells = []
+		i = 0
 		for y in range(self.num_rows):
 			for x in range(self.num_columns):
-				new_cell = cell(x,y)
+				new_cell = cell(x,y,i)
 				self.cells.append(new_cell)
+				i+=1
 
 		self.start_cell = (0,0) # default start cell
 		self.end_cell = (self.num_columns-1,self.num_rows-1) # default end cell
@@ -622,6 +625,7 @@ class non_gui_eight_neighbor_grid:
 		highways 	= [] # list of disparate highway coordinates
 
 		y = 0
+		i=0
 		for line in lines: # iterate over each line of file
 
 			# parse the start cell
@@ -665,9 +669,10 @@ class non_gui_eight_neighbor_grid:
 					else:
 						cell_state = "free"
 
-					new_cell = cell(x,y)
+					new_cell = cell(x,y,i)
 					new_cell.state = cell_state
 					new_cells.append(new_cell)
+					i+=1
 					x+=1
 				y+=1
 
@@ -755,6 +760,7 @@ class eight_neighbor_grid(QWidget):
 		# initialize ui elements
 		self.mouse_location = None # the current location of the mouse over the widget
 		self.mouse_color = [243,243,21] # purple for cell under cursor
+		self.mouse_render_location = [0,0]
 
 		self.horizontal_step = 1 # set later
 		self.vertical_step = 1 # set later
@@ -803,11 +809,12 @@ class eight_neighbor_grid(QWidget):
 		# assignment pdf
 		self.cells = []
 		self.verbose = True # if true then the time to paint the grid will be printed to terminal
+		i=0
 		for y in range(self.num_rows):
 			for x in range(self.num_columns):
-				new_cell = cell(x,y)
+				new_cell = cell(x,y,i)
 				self.cells.append(new_cell)
-
+				i+=1
 		self.start_cell = (0,0) # default start cell
 		self.end_cell = (self.num_columns-1,self.num_rows-1) # default end cell
 		self.hard_to_traverse_regions = [] # empty by default
@@ -839,10 +846,14 @@ class eight_neighbor_grid(QWidget):
 			self.repaint()
 
 			current_cell_attributes = cell_information()
-			current_cell_attributes.coordinates = self.base_coordinates(x,y)
-			if current_cell_attributes.coordinates == [-1,-1]:
+			current_cell_attributes.coordinates = self.base_coordinates(x,y,and_index=True)
+			current_cell_attributes.index = current_cell_attributes.coordinates[2]
+			current_cell_attributes.coordinates = current_cell_attributes.coordinates[:2]
+			if current_cell_attributes.coordinates == [-1,-1] or current_cell_attributes.index==-1:
 				current_cell_attributes.is_valid = False
 				return
+
+			self.mouse_render_location = current_cell_attributes.coordinates
 
 			current_cell_attributes.is_valid = True
 			current_cell_attributes.state = self.get_cell_state(current_cell_attributes.coordinates[0],current_cell_attributes.coordinates[1])
@@ -893,17 +904,19 @@ class eight_neighbor_grid(QWidget):
 		# gets the cost of the path from the start node to (x,y)
 		return 0
 
-	def base_coordinates(self,x_coord,y_coord):
+	def base_coordinates(self,x_coord,y_coord,and_index=False):
 		# takes in coordinates of pixel location and returns x and y of closest cell
 		x = -1
 		y = -1
+		i = 0
 		for cell in self.cells:
 			if x_coord>=cell.render_coordinate[0] and x_coord<(cell.render_coordinate[0]+cell.render_coordinate[2]):
 				if y_coord>=cell.render_coordinate[1] and y_coord<(cell.render_coordinate[1]+cell.render_coordinate[3]):
-					return [cell.x,cell.y]
+					return [cell.x,cell.y,cell.index] if and_index else [cell.x,cell.y]
+			i+=1
 		if x==-1 and y==-1:
 			#print("ERROR: Could not locate cell in question ("+str(x)+","+str(y)+")")
-			return [-1,-1]
+			return [-1,-1,-1] if and_index else [-1,-1]
 
 	def clear_path(self):
 		# called from main_window when user selects appropriate File menu item
@@ -1693,6 +1706,7 @@ class eight_neighbor_grid(QWidget):
 
 		if self.suppress_output==False: print("Loading cell data...")
 		y = 0
+		i = 0
 		for line in lines: # iterate over each line of file
 
 			# parse the start cell
@@ -1737,9 +1751,10 @@ class eight_neighbor_grid(QWidget):
 						if self.suppress_output==False: print("WARNING: Came across invalid cell at location ("+str(x)+","+str(y)+") while loading file.")
 						cell_state = "free"
 
-					new_cell = cell(x,y)
+					new_cell = cell(x,y,i)
 					new_cell.state = cell_state
 					new_cells.append(new_cell)
+					i+=1
 					x+=1
 				y+=1
 
@@ -1991,11 +2006,20 @@ class eight_neighbor_grid(QWidget):
 				x = self.mouse_location[0] # = (x coordinate of mouse) / self.horizontal_step
 				y = self.mouse_location[1] # = (y coordinate of mouse) / self.vertical_step
 
+				if self.mouse_render_location!=None:
+					x = self.mouse_render_location[0]
+					y = self.mouse_render_location[1]
+
 				for cell in self.cells:
-					if x>=(cell.render_coordinate[0]) and x<(cell.render_coordinate[0]+horizontal_step):
-						if y>=(cell.render_coordinate[1]) and y<(cell.render_coordinate[1]+vertical_step):
-							qp.drawRect(cell.render_coordinate[0],cell.render_coordinate[1],horizontal_step,vertical_step)
-							break
+					if cell.x==x and cell.y==y:
+						qp.drawRect(cell.render_coordinate[0],cell.render_coordinate[1],horizontal_step,vertical_step)
+						break
+
+					#if x>=(cell.render_coordinate[0]) and x<(cell.render_coordinate[0]+horizontal_step):
+					#	if y>=(cell.render_coordinate[1]) and y<(cell.render_coordinate[1]+vertical_step):
+					#		qp.drawRect(cell.render_coordinate[0],cell.render_coordinate[1],horizontal_step,vertical_step)
+					#		break
+
 				if self.trace_highlighting:
 
 					if self.current_path != None:
@@ -2204,7 +2228,8 @@ class PriorityQueue:
 		for item in self._queue:
 			#queued_cell = item[2]
 			queued_cell = item[1]
-			if cell.x==queued_cell.x and cell.y==queued_cell.y:
+			#if cell.x==queued_cell.x and cell.y==queued_cell.y:
+			if cell.index==queued_cell.index:
 				return True
 		return False
 
@@ -2220,7 +2245,8 @@ class PriorityQueue:
 		for item in self._queue:
 			#queued_cell = item[2]
 			queued_cell = item[1]
-			if cell.x==queued_cell.x and cell.y==queued_cell.y:
+			#if cell.x==queued_cell.x and cell.y==queued_cell.y:
+			if cell.index==queued_cell.index:
 				del self._queue[i]
 				self._index += -1
 				return True
@@ -2232,7 +2258,8 @@ class PriorityQueue:
 		for item in self._queue:
 			#queued_cell = item[2]
 			queued_cell = item[1]
-			if queued_cell.x==cell.x and queued_cell.y==cell.y:
+			#if queued_cell.x==cell.x and queued_cell.y==cell.y:
+			if queued_cell.index==cell.index:
 				del self._queue[i]
 				self._index += -1
 				break
@@ -2241,11 +2268,12 @@ class PriorityQueue:
 
 	def get_cell_cost(self,cell):
 		for item in self._queue:
-
 			#if cell.x==item[2].x and cell.y==item[2].y:
-			if cell.x==item[1].x and cell.y==item[1].y:
-				#return item[2].cost
+			if cell.index==item[1].index:
 				return item[1].cost
+			#if cell.x==item[1].x and cell.y==item[1].y:
+				#return item[2].cost
+			#	return item[1].cost
 
 	def Minkey(self):
 		# returns the value of the smallest cost
@@ -2265,7 +2293,8 @@ def get_neighbors(current,cells):
 def cell_in_list(current,cells):
 	# Returns True if "current" is in the list, False if not
 	for cell in cells:
-		if current.x==cell.x and current.y==cell.y:
+		#if current.x==cell.x and current.y==cell.y:
+		if current.index==cell.index:
 			return True
 	return False
 
@@ -2281,6 +2310,7 @@ def get_cell_index(current, cells):
 def cell_in_highway(current,highways):
 	for h in highways:
 		for item in h:
+			#if item[0].index==current.index:
 			if item[0]==current.x and item[1]==current.y:
 				return True
 	return False
