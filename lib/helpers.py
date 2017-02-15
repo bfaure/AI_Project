@@ -2379,7 +2379,8 @@ def rectify_path(path_end,break_short=False):
 	path.append([cur.x,cur.y])
 	while True:
 		cur = cur.parent
-		if cur == None: break
+		if cur==None: 
+			break
 		path.append([cur.x,cur.y])
 	return path
 

@@ -535,10 +535,12 @@ class main_window(QWidget):
 		self.view_menu.addSeparator()
 		menu_label = self.view_menu.addAction("Snap To...")
 		menu_label.setEnabled(False)
+		self.view_menu.addSeparator()
 		self.view_menu.addAction("Small ("+str(self.small_size[0])+","+str(self.small_size[1])+")",self.snap_to_small)
 		self.view_menu.addAction("Medium ("+str(self.medium_size[0])+","+str(self.medium_size[1])+")",self.snap_to_medium)
 		self.view_menu.addAction("Large ("+str(self.large_size[0])+","+str(self.large_size[1])+")",self.snap_to_large)
-		
+		self.view_menu.addSeparator()
+
 		# Benchmark menu actions
 		astar_benchmark_action = self.benchmark_menu.addAction("Benchmark A* Search",self.a_star_benchmark)
 		astar_benchmark_action.setEnabled(False)
@@ -965,14 +967,18 @@ class main_window(QWidget):
 
 		self.path_end = None
 
-		for cell in self.open_t[result_code]._queue:
-			cell = cell[1]
-			if cell.x==self.end_cell[0] and cell.y==self.end_cell[1]:
-				if cell.cost == final_solution_cost:
-					self.path_end = cell
-					break
+		for item in self.open_t[result_code]._queue:
+			cell = item[1]
+			if cell.index==self.end_cell_t.index and cell.cost==final_solution_cost:
+				self.path_end = cell 
+				break
 
-		self.grid.shortest_path = rectify_path(self.path_end)
+		if self.path_end==None:
+			print("\nERROR: Integrated A* Search self.path_end could not be located.")
+			self.grid.shortest_path = []
+		else:
+			self.grid.shortest_path = rectify_path(self.path_end)
+
 		self.grid.update() # render grid with new solution path
 		pyqt_app.processEvents()
 
