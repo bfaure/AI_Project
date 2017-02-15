@@ -30,6 +30,20 @@ USE_UCS_MULTITHREADED = False
 TURN_OFF_DIAGONAL_MULTIPLIER = True
 TURN_OFF_HIGHWAY_HEURISTIC = True
 
+# this can be set to a lower number to reduce the amount of grids
+# that are used when benchmarking, normally set to 50
+MAX_GRIDS_TO_BENCHMARK = 1
+
+# this is the value that is used by all of the search algoritms, it
+# denotes the maximum amount of time between grid updates while
+# the search is proceeding. Normally set to 0.1, trying out higher
+# values to see if it increases performance
+GLOBAL_REFRESH_RATE = 0.1
+
+# during benchmarking, the GLOBAL_REFRESH_RATE is swapped out with this value
+BENCHMARK_REFRESH_RATE = 10 
+
+
 try:
 	import Cython # test to see if Cython is installed
 	using_cython = True # need to compile helpers.pyx and import it
@@ -432,6 +446,10 @@ class main_window(QWidget):
 
 		if USE_UCS_MULTITHREADED: self.ucs_agent = uniform_cost_search() # separate thread for ucs execution
 
+		self.small_size = [991,673]
+		self.medium_size = [1323,793]
+		self.large_size = [1623,1278]
+
 	def init_ui(self):
 		# initialize ui elements here
 		self.layout = QVBoxLayout(self) # layout for window
@@ -506,12 +524,21 @@ class main_window(QWidget):
 
 		# Creating menubar and menu items
 		self.menu_bar = QMenuBar(self)
-		self.menu_bar.setMinimumWidth(250)
+		self.menu_bar.setMinimumWidth(310)
 		self.file_menu = self.menu_bar.addMenu("File")
 		self.algo_menu = self.menu_bar.addMenu("Algorithm")
 		self.tools_menu = self.menu_bar.addMenu("Tools")
+		self.view_menu = self.menu_bar.addMenu("View")
 		self.benchmark_menu = self.menu_bar.addMenu("Benchmark")
 
+		# View menu actions
+		self.view_menu.addSeparator()
+		menu_label = self.view_menu.addAction("Snap To...")
+		menu_label.setEnabled(False)
+		self.view_menu.addAction("Small ("+str(self.small_size[0])+","+str(self.small_size[1])+")",self.snap_to_small)
+		self.view_menu.addAction("Medium ("+str(self.medium_size[0])+","+str(self.medium_size[1])+")",self.snap_to_medium)
+		self.view_menu.addAction("Large ("+str(self.large_size[0])+","+str(self.large_size[1])+")",self.snap_to_large)
+		
 		# Benchmark menu actions
 		astar_benchmark_action = self.benchmark_menu.addAction("Benchmark A* Search",self.a_star_benchmark)
 		astar_benchmark_action.setEnabled(False)
@@ -527,6 +554,8 @@ class main_window(QWidget):
 		self.benchmark_menu.addAction("Benchmark Integrated A*, Multiple Weights",self.integrated_astar_benchmark_wrapper)
 		self.benchmark_menu.addSeparator()
 		self.benchmark_menu.addAction("Benchmark All",self.all_benchmark)
+		self.benchmark_menu.addSeparator()
+		self.benchmark_menu.addAction("Benchmark Custom",self.custom_benchmark_wrapper)
 
 		# File menu actions
 		self.file_menu.addAction("Load...",self.load,QKeySequence("Ctrl+L"))
@@ -676,7 +705,8 @@ class main_window(QWidget):
 		last_cell = None # to hold the last node expanded (for updating ui)
 		start_time = time.time()
 		step_time = time.time()
-		refresh_rate = 0.1 # refresh the display after this many seconds
+		#refresh_rate = 0.1 # refresh the display after this many seconds
+		refresh_rate = GLOBAL_REFRESH_RATE if self.is_benchmark==False else BENCHMARK_REFRESH_RATE
 		self.explored = [] # to hold all cells visited
 		num_iterations = 0 # number of times while loop is run
 		self.stop_executing = False
@@ -803,10 +833,6 @@ class main_window(QWidget):
 					self.frontier_list[h_index].update_or_insert(neighbor, self.sequential_astar_key(h_index, w1, neighbor, neighbor_index),  parent=cell_obj)
 
 	def integrated_astar(self,w1=1.25,w2=1.25):
-		# f = g + h
-		# g = cost from current to start
-		# h = heuristic, cost from current to goal
-
 		# w1 >= 1.0 , to weight the heuristic ( return g(s) + w1*hi(s) )
 		# w2 >= 1.0 , weights the comparison ( OPENi.Minkey() <= w2*OPEN0.Minkey() )
 
@@ -850,7 +876,8 @@ class main_window(QWidget):
 		start_time = time.time()
 		step_time = time.time()
 
-		refresh_rate = 0.1
+		#refresh_rate = 0.1
+		refresh_rate = GLOBAL_REFRESH_RATE if self.is_benchmark==False else BENCHMARK_REFRESH_RATE
 		last_cell = None
 
 		heuristics_used = [0] * num_heuristics
@@ -873,43 +900,25 @@ class main_window(QWidget):
 				pyqt_app.processEvents()
 				step_time = time.time()
 
-			#print("---------------------\n")
-			#f.write("\n-----------------------------------------------\n")
 			print("                                                                           ",end="\r")
 			print("explored: "+str(len(self.g))+", num_iterations: "+str(num_iterations)+", time: "+str(time.time()-start_time)[:5], end="\r")
 			num_iterations += 1
-			#print("g[s_goal]: "+str(self.g[s_goal])+", g[s_start]: "+str(self.g[s_start])+", explored: "+str(len(self.g)),end="\r")
-
-			#f.write("\nopen_t[anchor]: ")
-			#for elem in self.open_t[0]._queue:
-			#	f.write("[ "+elem[2].to_string()+" ], ")
-			#f.write("\n")
 
 			for i in range(1,num_heuristics):
-				#f.write("\nopen_t["+str(i)+"]: ")
-				#for elem in self.open_t[i]._queue:
-				#	f.write("[ "+elem[2].to_string()+" ], ")
-				#f.write("\n")
-				#print(self.open_t[i]._queue)
 				if len(self.open_t[i]._queue)==0:
 					heuristic_queue_emptied[i]+=1
-					#print("WARNING: Heuristic at i="+str(i)+" has an empty PriorityQueue.")
 					continue
 
 				if self.open_t[i].Minkey() <= ( w2 * self.open_t[0].Minkey() ):
 					heuristics_used[i]+=1
 
 					if self.g[s_goal] <= self.open_t[i].Minkey():
-						#f.write("\nhere 1a")
-						#print("\nhere 1a")
 						if self.g[s_goal] < inf:
-							#print("\nFinished 1.")
 							result_code = i
 							done = True
 							break
 					else:
-						#f.write("\nhere 1b")
-						#print("\nhere 1b")
+
 						s = self.open_t[i].top()
 						last_cell = s
 						self.explored.append(s)
@@ -918,25 +927,19 @@ class main_window(QWidget):
 				else:
 					heuristics_used[0]+=1
 					if self.g[s_goal] <= self.open_t[0].Minkey():
-						#print("\nhere 2a")
-						#f.write("\nhere 2a")
+
 						if self.g[s_goal] < inf:
-							#print("\nFinished 2.")
+
 							result_code = 0
 							done = True
 							break
 					else:
-						#f.write("\nhere 2b")
-						#print("\nhere 2b")
+
 						s = self.open_t[0].top()
 						last_cell = s
 						self.explored.append(s)
 						self.ExpandState(s,w1,w2)
 						self.closed_anchor.append(s)
-
-		#print("\n")
-		#if self.is_benchmark==False: print("Heuristic Usage Counts: ",heuristics_used)
-		#if self.is_benchmark==False: print("Heuristic Queue Emptied: ",heuristic_queue_emptied)
 
 		self.last_cost_list = self.g
 		final_solution_cost = self.g[s_goal]
@@ -945,7 +948,6 @@ class main_window(QWidget):
 		self.path_end = None
 
 		for cell in self.open_t[result_code]._queue:
-			#cell = cell[2]
 			cell = cell[1]
 			if cell.x==self.end_cell[0] and cell.y==self.end_cell[1]:
 				if cell.cost == final_solution_cost:
@@ -955,7 +957,7 @@ class main_window(QWidget):
 		self.grid.shortest_path = rectify_path(self.path_end)
 		self.grid.update() # render grid with new solution path
 		pyqt_app.processEvents()
-		#final_solution_cost = get_path_cost(self.path_end,self.highways)
+
 		print("\nFinished Integrated A* search in "+str(time.time()-start_time)[:6]+" seconds, final cost: "+str(final_solution_cost)+", checked "+str(len(self.explored))+" cells\n")
 
 		if self.is_benchmark:
@@ -968,26 +970,20 @@ class main_window(QWidget):
 		self.set_ui_interaction(enabled=True) # turn on ui interaction
 
 	def ExpandState(self,s,w1,w2):
-		#print("Inside expand state")
-		#f.write("\ninside ExpandState")
-		# remove s from all OPENi
+
 		for i in range(len(self.open_t)):
 			self.open_t[i].remove(s)
 
 		s_index = get_cell_index(s,self.cells)
 		successors = get_neighbors(s,self.cells)
-		#print(successors)
+
 		self.expanded[s_index] = True
 
 		for succ in successors: # foreach s' in Succ(s)
 			succ_index = get_cell_index(succ,self.cells)
-			#f.write("\nsucc_index: "+str(succ_index))
-			#print("\n")
+
 
 			if self.expanded[succ_index]==False: # if s' was never generated
-				#f.write("\n here 3a")
-				#print("here 3a")
-				#self.expanded[succ_index] = True
 				self.g[succ_index] = sys.maxint # g(s') = infinity
 
 				if succ.state == "full":
@@ -996,29 +992,15 @@ class main_window(QWidget):
 			if self.g[succ_index] > (self.g[s_index] + get_transition_cost(s,succ,self.highways)): # if g(s') > g(s)+c(s,s')
 				self.g[succ_index] = self.g[s_index] + get_transition_cost(s,succ,self.highways) # g(s') = g(s) + c(s,s')
 
-				#f.write("\n here 4a")
-				#f.write("\n g[succ_index]: "+str(self.g[succ_index]))
-				#print("here 4a")
-
 				if cell_in_list(succ,self.closed_anchor)==False: # if s' not in CLOSEDanchor
-					#print("here 5a")
-					#f.write("\n  here 5a")
 					anchor_cost = self.Key(succ,0,succ_index,w1)
-					#f.write("\n  anchor_cost: "+str(anchor_cost))
 					self.open_t[0].update_or_insert(succ,anchor_cost,parent=s)
 
 					if cell_in_list(succ,self.closed_inad)==False:
-						#print("here 6a")
-						#f.write("\n   here 6a")
 						for i in range(1, len(self.open_t)):
-							#print("here 7a")
-							#f.write("\n    here 7a")
 							inad_cost = self.Key(succ,i,succ_index,w1)
-							#f.write("\n    inad_cost: "+str(inad_cost))
 
 							if inad_cost <= ( w2 * anchor_cost ):
-								#print("here 7b")
-								#f.write("\n     here 7b")
 								self.open_t[i].update_or_insert(succ,inad_cost,parent=s)
 
 	def Key(self,s,i,s_index,w1):
@@ -1075,7 +1057,8 @@ class main_window(QWidget):
 		cost_list[rootIndex] = 0
 		visited[rootIndex] = rootIndex
 
-		refresh_rate = 0.1 # update the ui window after this many seconds
+		#refresh_rate = 0.1 # update the ui window after this many seconds
+		refresh_rate = GLOBAL_REFRESH_RATE if self.is_benchmark==False else BENCHMARK_REFRESH_RATE
 		start_time = time.time() # used for updating the ui
 		overall_start = time.time() # used for saving execution time
 
@@ -1143,7 +1126,8 @@ class main_window(QWidget):
 		self.stop_executing = False # Ctrl+C calls clear which will set this to true
 
 		# indicate the refresh rate here
-		refresh_rate = 0.1 # at least every this many seconds refresh
+		#refresh_rate = 0.1 # at least every this many seconds refresh
+		refresh_rate = GLOBAL_REFRESH_RATE if self.is_benchmark==False else BENCHMARK_REFRESH_RATE
 		cost_refresh_rate = 1 # refresh if the algo has increased the current fringe cost by this much
 		explored_refresh_rate = 100 # refresh if the algo has increased the explorted count by this much
 
@@ -1232,6 +1216,7 @@ class main_window(QWidget):
 					if self.frontier.get_cell_cost(neighbor)>(self.path_cost+transition_cost):
 						self.frontier.replace_cell(neighbor,self.path_cost+transition_cost,parent=cur_node)
 
+			'''
 			# refresh the display if the algorithm has checked explored_refresh_rate cells
 			if len(self.explored)>(initial_explored+explored_refresh_rate):
 				self.path_end = cur_node
@@ -1241,6 +1226,7 @@ class main_window(QWidget):
 			if self.path_cost>(last_path_cost+cost_refresh_rate):
 				self.path_end = cur_node
 				return False # refresh the display
+			'''
 
 			# at least refresh every "refresh_rate" seconds
 			if int(time.time()-start_time)>refresh_rate:
@@ -1251,6 +1237,30 @@ class main_window(QWidget):
 		return True
 
 	# Benchmarks...
+	def custom_benchmark_wrapper(self):
+		# to be changed whenever we want
+		global TURN_OFF_DIAGONAL_MULTIPLIER
+		global TURN_OFF_HIGHWAY_HEURISTIC
+
+		TURN_OFF_HIGHWAY_HEURISTIC = True 
+		TURN_OFF_DIAGONAL_MULTIPLIER = True 
+
+		start_time = time.time()
+		self.is_benchmark = True
+		self.setEnabled(False)
+
+		print(">Starting custom benchmark...")
+		### put custom benchmark combinations here
+		print("\n<--------------------------------------------------->\n")
+		self.integrated_astar_benchmark_wrapper() # perform multi-weight Integrated A* Search
+		print("\n<--------------------------------------------------->\n")
+		self.astar_heuristic_weight_wrapper() # perform multi-weight, multi-heuristic A* search
+		print("\n<--------------------------------------------------->\n")
+		###
+		print(">Benchmark complete in "+str(time.time()-start_time)[:6]+" seconds.")
+		self.is_benchmark = False
+		self.setEnabled(True)
+
 	def sequential_astar_benchmark_wrapper(self):
 		# benchmark sequential A* with multiple weights
 		print(">Benchmarking Sequential A* Search on several weights...")
@@ -1280,6 +1290,10 @@ class main_window(QWidget):
 		print(">Writing results to "+filename+"...")
 
 		grids,short = self.get_all_grids()
+		if len(grids)>MAX_GRIDS_TO_BENCHMARK:
+			grids = grids[:MAX_GRIDS_TO_BENCHMARK]
+			short = grids[:MAX_GRIDS_TO_BENCHMARK]
+
 		f.write("Integrated A* Benchmark on "+str(len(grids))+" .grid files [w1="+str(w1)+"], [w2="+str(w2)+"]:\n\n")
 		print(">Integrated A* Benchmark on "+str(len(grids))+" .grid files [w1="+str(w1)+"], [w2="+str(w2)+"]...")
 
@@ -1354,12 +1368,12 @@ class main_window(QWidget):
 		# run a star on all different heuristic types and several weights
 		print(">Benchmarking A* Search on several weights and all heuristics...")
 		for weight in [1.0,1.25,1.75,2.0]:
-			for heuristic in range(6):
+			for heuristic in range(5):
 				self.a_star_benchmark(weight,heuristic)
 
 	def astar_heuristic_wrapper(self):
 		# run a_star on all different heuristic types
-		for i in range(6):
+		for i in range(5):
 			self.a_star_benchmark(weight=1,code=i)
 
 	def a_star_benchmark(self,weight=1,code=0):
@@ -1369,10 +1383,10 @@ class main_window(QWidget):
 
 		data_dir = "benchmarks/data/"
 
-		if code==0: filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[euclidean].txt"
+		if code==0: filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[manhattan].txt"
 		elif code==1: filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[diagonal_distance].txt"
 		elif code==2: filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[approx_euclidean].txt"
-		elif code==3: filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[manhattan].txt"
+		elif code==3: filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[euclidean].txt"
 		elif code==4: filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[approx_distance].txt"
 		elif code==5: filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[highway].txt"
 		else:
@@ -1383,6 +1397,10 @@ class main_window(QWidget):
 		print(">Writing results to "+filename+"...")
 
 		grids,short = self.get_all_grids()
+		if len(grids)>MAX_GRIDS_TO_BENCHMARK:
+			grids = grids[:MAX_GRIDS_TO_BENCHMARK]
+			short = grids[:MAX_GRIDS_TO_BENCHMARK]
+
 		f.write("A* Benchmark on "+str(len(grids))+" .grid files [weight="+str(weight)+"], [heuristic="+str(code)+"]:\n\n")
 
 		# turning off all UI interaction
@@ -1462,7 +1480,12 @@ class main_window(QWidget):
 		data_dir = "benchmarks/data/"
 
 		f = open(data_dir+"weighted_a_star-benchmark"+str(benchmark_index)+".txt","w")
+
 		grids,short = self.get_all_grids()
+		if len(grids)>MAX_GRIDS_TO_BENCHMARK:
+			grids = grids[:MAX_GRIDS_TO_BENCHMARK]
+			short = grids[:MAX_GRIDS_TO_BENCHMARK]
+
 		print(">Benchmarking Weighted A* on "+str(len(grids))+" .grid files with weight: "+str(weight)+"...")
 		print(">Writing results to "+data_dir+"weighted_a_star-benchmark"+str(benchmark_index)+".txt...")
 		f.write("Weighted A* Benchmark on "+str(len(grids))+" .grid files with weight: "+str(weight)+":\n\n")
@@ -1535,6 +1558,10 @@ class main_window(QWidget):
 		f = open(filename,"w")
 
 		grids,short = self.get_all_grids()
+		if len(grids)>MAX_GRIDS_TO_BENCHMARK:
+			grids = grids[:MAX_GRIDS_TO_BENCHMARK]
+			short = grids[:MAX_GRIDS_TO_BENCHMARK]
+
 		print(">Benchmarking UCS on "+str(len(grids))+" .grid files...")
 		print(">Writing results to "+filename+"...")
 		f.write("Uniform-Cost Search Benchmark on "+str(len(grids))+" .grid files:\n\n")
@@ -1888,6 +1915,18 @@ class main_window(QWidget):
 		# quits the application
 		self.close()
 
+	def snap_to_small(self):
+		self.resize(self.small_size[0],self.small_size[1])
+		self.grid.repaint()
+
+	def snap_to_medium(self):
+		self.resize(self.medium_size[0],self.medium_size[1])
+		self.grid.repaint()
+
+	def snap_to_large(self):
+		self.resize(self.large_size[0],self.large_size[1])
+		self.grid.repaint()
+
 	# Context Menu...
 	def on_context_menu_request(self,point):
 		# function called when user right clicks on grid
@@ -1988,18 +2027,26 @@ def main():
 			# create 5 benchmark grids and a 10 start/end locations for each
 			# user wants to create a certain number of random .grid files
 			count = 5
-			print("Generating "+str(count)+" randomized grids and 10 start/end locations.")
+			print("\n>Generating "+str(count)+" randomized grids and 10 start/end locations.")
 			temp_grid = non_gui_eight_neighbor_grid() # default size
 			current_location = os.getcwd()
 			for i in range(count):
-				print("Building grid "+str(i+1)+"...",end="\r")
+				print(">                                                 ",end="\r")
+				print(">Building grid "+str(i+1)+"...",end="\r")
+				sys.stdout.flush() # flush the cli
 				temp_grid.clear()
-				temp_grid.random() # create new grid
+				while True:
+					temp_grid.random() # create new grid
+					temp_grid.save(current_location+"/grids/temp_grid.grid")
+					if temp_grid.load(current_location+"/grids/temp_grid.grid"): 
+						os.remove(current_location+"/grids/temp_grid.grid")
+						break
 				for j in range(10):
+					print(">Building grid "+str(i+1)+"... start/end "+str(j+1),end="\r")
 					temp_grid.init_start_end_cells() # generate new start/end cells
 					filename = current_location+"/grids/"+str(i)+"-"+str(j)+".grid"
 					temp_grid.save(filename)
-			print("\nFinished saving "+str(count)+" randomized grids.")
+			print("\n>Finished saving "+str(count)+" randomized grids.")
 			return
 
 		else:

@@ -437,7 +437,7 @@ class non_gui_eight_neighbor_grid:
 			iterations+=1
 			if iterations>max_allowed:
 				self.highways = broken # save the current reconstruction state for debuggging
-				return
+				return False
 
 			segment = broken[0] # start,end of highway segment (coordinate form)
 			if segment == None:
@@ -484,13 +484,17 @@ class non_gui_eight_neighbor_grid:
 
 			# if we have reconstructed all highways
 			if len(broken)==4:
+				repaired_all = True
 				self.highways = broken
 				index = 0
 				for h in self.highways:
 					if self.is_finished_highway(h,conservative=False)==False:
-						self.repair_highway(index)
-					index+=1
-				return
+						if self.repair_highway(index)==False:
+							repaired_all = False
+					index+=1 
+
+				if repaired_all: return True 
+				else: return False
 
 	def get_closest_edge_and_distance(self,coordinates):
 		# get the closest wall and the distance to it
@@ -528,10 +532,10 @@ class non_gui_eight_neighbor_grid:
 			# extending the start of the highway to the wall
 			edge,distance = self.get_closest_edge_and_distance(start_cell)
 			if distance>5:
-				return
+				return False
 			#print("Start cell ("+str(start_cell[0])+","+str(start_cell[1])+") detached from "+edge+" by ",str(distance))
 			if edge == "None":
-				return
+				return False
 			if edge == "top":
 				const = start_cell[0]
 				y_start = start_cell[1]
@@ -571,10 +575,10 @@ class non_gui_eight_neighbor_grid:
 			# extending the end of the highway to the wall
 			edge,distance = self.get_closest_edge_and_distance(end_cell)
 			if distance>5:
-				return
+				return False
 			#print("End cell ("+str(end_cell[0])+","+str(end_cell[1])+") detached from "+edge+" by ",distance)
 			if edge == "None":
-				return
+				return False
 
 			if edge == "top":
 				const = end_cell[0]
@@ -603,8 +607,8 @@ class non_gui_eight_neighbor_grid:
 				for i in range(distance):
 					self.highways[index].append([x_start+i,const])
 
-		print("WARNING: Highway was repaired.")
-		return
+		#print("WARNING: Highway was repaired.")
+		return True
 
 	def load(self,filename):
 		# loads in a new set of cells from a file, see the assignment pdf for
@@ -676,7 +680,8 @@ class non_gui_eight_neighbor_grid:
 		# now need to flush the elements from the highways list and reorganize
 		# it into individual lists that each represent an individual highway
 		self.highways = [] # list of lists of coordinates
-		self.reconstruct_highways(highways)
+		if self.reconstruct_highways(highways): return True 
+		else: return False
 
 	def set_cell_state(self,x_coord,y_coord,state,add_adjustment=True):
 		# updates a single cell in the grid with a new state then reloads the ui
@@ -728,6 +733,12 @@ class non_gui_eight_neighbor_grid:
 
 			if x_coord==cell.x and y_coord==cell.y:
 				return cell.state
+	
+	def get_manhattan_distance(self,cell1,cell2):
+		# calculates manhattan distance
+		x_run = abs(cell1[0]-cell2[0])
+		y_run = abs(cell1[1]-cell2[1])
+		return x_run+y_run
 
 # UI element (widget) that represents the interface with the grid
 class eight_neighbor_grid(QWidget):
