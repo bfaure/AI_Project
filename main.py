@@ -696,7 +696,7 @@ class main_window(QWidget):
 				self.grid.update()
 				pyqt_app.processEvents()
 				step_time = time.time()
-			
+
 
 			print("                                                                           ",end="\r")
 			print("explored: "+str(len(self.explored_set_list[last_heuristic]))+", num_iterations: "+str(num_iterations)+", time: "+str(time.time()-start_time)[:5], end="\r")
@@ -721,7 +721,7 @@ class main_window(QWidget):
 						last_cell = s
 						last_heuristic = i
 						#if cell_in_list(s,self.explored)==False: self.explored.append(s)
-						
+
 						self.sequential_astar_expand(i, w1, s)
 						self.explored_set_list[i].append(s)
 						self.closed_set_lists[i].append(s)
@@ -767,7 +767,10 @@ class main_window(QWidget):
 		self.set_ui_interaction(enabled=True)
 
 	def sequential_astar_key(self, h_index, w1, cell_obj, cell_index):
-		return self.cost_set_list[h_index][cell_index] + (w1 * float(self.grid.heuristic_manager(cell_obj, self.end_cell_t, h_index)) / 4.0)
+		if h_index == 0:
+			return self.cost_set_list[h_index][cell_index] + (w1 * float(self.grid.heuristic_manager(cell_obj, self.end_cell_t, h_index)) / 4.0)
+		else:
+			return self.cost_set_list[h_index][cell_index] + (w1 * float(self.grid.heuristic_manager(cell_obj, self.end_cell_t, h_index)))
 
 	def sequential_astar_expand(self, h_index, w1, cell_obj):
 		#Remove s from frontier

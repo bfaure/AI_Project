@@ -814,7 +814,7 @@ class eight_neighbor_grid(QWidget):
 		self.init_blocked_cells() # initialize the completely blocked cells
 		self.init_start_end_cells() # initialize the start/end locations
 		self.solution_path = [] # the path eventually filled by one of the search algos
-		
+
 		if self.suppress_output==False: print("Finished generating random grid, "+str(time.time()-start_time)+" seconds\n")
 
 	def mouseMoveEvent(self, event):
@@ -1111,7 +1111,7 @@ class eight_neighbor_grid(QWidget):
 		elif (type(start) is tuple) and (type(end) is cell):
 			x_run = abs(start[0] - end.x)
 			y_run = abs(start[1] - end.y)
-		
+
 		if x_run!=-1 and y_run!=-1:
 			return sqrt((x_run**2)+(y_run**2))
 		else:
@@ -1184,7 +1184,7 @@ class eight_neighbor_grid(QWidget):
 		if (type(start) is tuple) and (type(end) is tuple):
 			x_run = abs(start[0] - end[0])
 			y_run = abs(start[1] - end[1])
-			
+
 		elif (type(start) is cell) and (type(end) is tuple):
 			x_run = abs(start.x - end[0])
 			y_run = abs(start.y - end[1])
@@ -1210,7 +1210,7 @@ class eight_neighbor_grid(QWidget):
 		if (type(start) is tuple) and (type(end) is tuple):
 			x_run = abs(start[0] - end[0])
 			y_run = abs(start[1] - end[1])
-			
+
 		elif (type(start) is cell) and (type(end) is tuple):
 			x_run = abs(start.x - end[0])
 			y_run = abs(start.y - end[1])
@@ -1263,8 +1263,8 @@ class eight_neighbor_grid(QWidget):
 		y1 = -1
 
 		if type(start) is cell:
-			x0=start.x 
-			y0=start.y 
+			x0=start.x
+			y0=start.y
 		elif type(start) is tuple:
 			x0=start[0]
 			y0=start[1]
@@ -1273,15 +1273,15 @@ class eight_neighbor_grid(QWidget):
 			return 1
 
 		if type(end) is cell:
-			x1=end.x 
-			y2=end.y 
+			x1=end.x
+			y2=end.y
 		elif type(end) is tuple:
 			x1=end[0]
 			y1=end[1]
 		else:
 			print("ERROR: Input types (start="+str(type(start))+"), (end="+str(type(end))+") to heuristic are unknown.")
 			return 1
-		
+
 		if self.check_for_highway(x0,y0):
 			base_cost = base_cost*0.75
 		if self.check_for_highway(x1,y1):
@@ -1290,8 +1290,7 @@ class eight_neighbor_grid(QWidget):
 
 	def heuristic_manager(self, start, end, code, diagonal_multiplier=False):
 		if code == 0:
-			h = self.euclidean_heuristic(start, end)
-			if diagonal_multiplier: h *= diagonal_movement_multiplier
+			h = self.manhattan_heuristic(start,end)
 
 		elif code == 1:
 			h = self.diagonal_distance_heuristic(start, end)
@@ -1300,7 +1299,8 @@ class eight_neighbor_grid(QWidget):
 			h = self.approximate_euclidean_heuristic(start, end)
 
 		elif code == 3:
-			h = self.manhattan_heuristic(start,end)
+			h = self.euclidean_heuristic(start, end)
+			if diagonal_multiplier: h *= diagonal_movement_multiplier
 
 		elif code == 4:
 			h = self.approx_distance_heuristic_wrapper(start, end)
@@ -1991,7 +1991,7 @@ class eight_neighbor_grid(QWidget):
 						pen = QPen(QColor(self.mouse_color[0],self.mouse_color[1],self.mouse_color[2]),self.solution_render_width,Qt.__dict__[self.solution_line_type])
 						qp.setPen(pen)
 
-						last_location = None 
+						last_location = None
 						for location in self.current_path:
 							if last_location==None:
 								last_location = location
@@ -2212,7 +2212,7 @@ class PriorityQueue:
 			if cell.x==queued_cell.x and cell.y==queued_cell.y:
 				del self._queue[i]
 				self._index += -1
-				return True 
+				return True
 			i+=1
 		return False
 
@@ -2239,7 +2239,7 @@ class PriorityQueue:
 	def Minkey(self):
 		# returns the value of the smallest cost
 		#print(self._queue)
-		return self.top().cost 
+		return self.top().cost
 
 def get_neighbors(current,cells):
 	# Returns a list of all 8 neighbor cells to "current"
@@ -2495,4 +2495,3 @@ def get_path_cost(node,highways):
 		total_cost += get_transition_cost(current_node,next_node,highways)
 		current_node = next_node
 	print("ERROR: Got to end of get_path_cost without reaching a node w/o a parent")
-
