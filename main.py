@@ -70,8 +70,6 @@ else:
 
 pyqt_app = ""
 
-#log = open("debug_log.txt","w")
-
 class attrib_value_window(QWidget):
 	# small window that opens if the user wants to change an attribute value
 	def __init__(self):
@@ -628,7 +626,6 @@ class main_window(QWidget):
 				print("ERROR: W1 input must be whole number greater than or equal to 1.0")
 
 	def sequential_astar(self,w1=1.25,w2=1.25):
-		global log 
 		num_heuristics = 5
 		if self.is_benchmark==False: print("Performing Sequential A* Search with "+str(num_heuristics)+" heuristics using w1="+str(w1)+", w2="+str(w2))
 
@@ -686,13 +683,6 @@ class main_window(QWidget):
 		last_heuristic = 0
 
 		while self.frontier_list[0].Minkey() < inf and done==False:
-			#log.write("\n----- While Loop Iteration #"+str(num_iterations)+"-----\n")
-
-			#for i in range(num_heuristics):
-			#	log.write("Length of Heuristic #"+str(i)+" explored = "+str(len(self.explored_set_list[i]))+"\n")
-			#	log.write("Length of Heuristic #"+str(i)+" cost_set_list = "+str(len(self.cost_set_list[i]))+"\n")
-			#	log.write("Length of Heuristic #"+str(i)+" closed_set_lists = "+str(len(self.closed_set_lists[i]))+"\n")
-			#	log.write("Length of Heuristic #"+str(i)+" frontier = "+str(self.frontier_list[i].length())+"\n\n")
 
 			if (self.stop_executing):
 				self.set_ui_interaction(enabled=True)
@@ -700,8 +690,8 @@ class main_window(QWidget):
 
 			# update the ui window
 			if ((time.time()-step_time) > refresh_rate) and last_cell!=None:
-				#log.write("Updating UI\n")
-				self.grid.solution_path = self.explored
+
+				self.grid.solution_path = self.explored_set_list[last_heuristic]
 				self.grid.shortest_path = rectify_path(last_cell)
 				self.grid.update()
 				pyqt_app.processEvents()
@@ -712,29 +702,25 @@ class main_window(QWidget):
 			print("explored: "+str(len(self.explored_set_list[last_heuristic]))+", num_iterations: "+str(num_iterations)+", time: "+str(time.time()-start_time)[:5], end="\r")
 			num_iterations += 1
 
-			#log.write("explored: "+str(len(self.explored))+"\n")
-
 			#print("Inside While loop")
 			for i in range(1, num_heuristics):
-				#log.write("\n\n---Inside For Loop, Iteration#"+str(i)+"---\n")
-				#log.write("self.frontier_list[i].Minkey() == "+str(self.frontier_list[i].Minkey())+"\n")
+
 				if self.frontier_list[i].Minkey() <= ( w2 * self.frontier_list[0].Minkey() ):
 					if self.cost_set_list[i][goal_index] <= self.frontier_list[i].Minkey():
-						#log.write("1A\n")
+
 						if self.cost_set_list[i][goal_index] < inf:
-							#log.write(" 1AA\n")
+
 							done = True #exit out of the loop
 							result_code = i
 							break
 					else:
-						#log.write("1B\n")
-						#print("Inside else for i")
+
 						s = self.frontier_list[i].top()
-						#log.write("Expanding: "+s.to_string()+"\n")
+
 
 						last_cell = s
 						last_heuristic = i
-						if cell_in_list(s,self.explored)==False: self.explored.append(s)
+						#if cell_in_list(s,self.explored)==False: self.explored.append(s)
 						
 						self.sequential_astar_expand(i, w1, s)
 						self.explored_set_list[i].append(s)
@@ -742,29 +728,28 @@ class main_window(QWidget):
 				else:
 					if self.cost_set_list[0][goal_index] <= self.frontier_list[0].Minkey():
 						if self.cost_set_list[0][goal_index] < sys.maxint:
-							#log.write("2A\n")
+
 							done = True
 							result_code = 0
-							#print("About to exit")
+
 							break
 					else:
-						#log.write("2B\n")
-						#print("Inside else for i=0")
+
 						s = self.frontier_list[0].top()
 
-						#log.write("Expanding: "+s.to_string()+"\n")
+
 						last_cell = s
 						last_heuristic = 0
-						if cell_in_list(s,self.explored)==False: self.explored.append(s)
+						#if cell_in_list(s,self.explored)==False: self.explored.append(s)
 
 						self.sequential_astar_expand(0, w1, s)
 						self.explored_set_list[0].append(s)
 						self.closed_set_lists[0].append(s)
-		#log.write("\nDone\n")
+
 
 		#render solution
-		self.grid.solution_path = self.explored
-		#self.grid.solution_path = self.explored_set_list[result_code]
+		#self.grid.solution_path = self.explored
+		self.grid.solution_path = self.explored_set_list[result_code]
 		final_solution_cost = self.cost_set_list[result_code][goal_index]
 		self.path_end = None
 		for cell in self.frontier_list[result_code]._queue:
@@ -782,15 +767,12 @@ class main_window(QWidget):
 		self.set_ui_interaction(enabled=True)
 
 	def sequential_astar_key(self, h_index, w1, cell_obj, cell_index):
-		#log.write("Inside sequential_astar_key, h_index="+str(h_index)+"\n")
 		return self.cost_set_list[h_index][cell_index] + (w1 * float(self.grid.heuristic_manager(cell_obj, self.end_cell_t, h_index)) / 4.0)
 
 	def sequential_astar_expand(self, h_index, w1, cell_obj):
-		#log.write("Inside sequential_astar_expand h_index:"+str(h_index)+", cell_obj.x="+str(cell_obj.x)+", cell_obj.y="+str(cell_obj.y)+"...\n")
 		#Remove s from frontier
 		self.frontier_list[h_index].remove(cell_obj)
-		#if removed==False:
-		#	log.write("Could not remove cell from frontier_list\n")
+
 		#get neighbors
 		neighbors = get_neighbors(cell_obj, self.cells)
 
@@ -804,26 +786,18 @@ class main_window(QWidget):
 			if neighbor_index==c_index:
 				continue
 
-			#log.write("Iterating over neighbors, neighbor_index="+neighbor.to_string()+"...\n")
-
 			if self.visited_lists[h_index][neighbor_index] == False:
-				#log.write("3A\n")
 				self.cost_set_list[h_index][neighbor_index] = sys.maxint
 				neighbor.parent = None
 
 				if neighbor.state == "full":
-					#log.write("3AA\n")
 					continue
 
 			if self.cost_set_list[h_index][neighbor_index] > (self.cost_set_list[h_index][c_index] + get_transition_cost(cell_obj, neighbor, self.highways)):
-				#log.write("3B\n")
 				self.cost_set_list[h_index][neighbor_index] = self.cost_set_list[h_index][c_index] + get_transition_cost(cell_obj, neighbor, self.highways)
 
 				if cell_in_list(neighbor, self.closed_set_lists[h_index]) == False:
-					#log.write("3BB\n")
 					self.frontier_list[h_index].update_or_insert(neighbor, self.sequential_astar_key(h_index, w1, neighbor, neighbor_index),  parent=cell_obj)
-
-			#log.write("Finished neighbor\n")
 
 	def integrated_astar(self,w1=1.25,w2=1.25):
 		# f = g + h
