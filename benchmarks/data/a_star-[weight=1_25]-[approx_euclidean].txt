@@ -1,0 +1,65 @@
+A* Benchmark on 50 .grid files [weight=1.25], [heuristic=2]:
+
+
+grids/0-0.grid:	 time: 38.0559999943, cost: 129.484018716, frontier: 639, explored: 13782
+grids/0-1.grid:	 time: 45.7730000019, cost: 116.556349186, frontier: 460, explored: 16329
+grids/0-2.grid:	 time: 45.0230000019, cost: 134.193542495, frontier: 417, explored: 16145
+grids/0-3.grid:	 time: 44.4679999352, cost: 116.634776311, frontier: 310, explored: 15811
+grids/0-4.grid:	 time: 15.9249999523, cost: 87.3626983722, frontier: 373, explored: 5713
+grids/0-5.grid:	 time: 47.3080000877, cost: 124.941125497, frontier: 232, explored: 16880
+grids/0-6.grid:	 time: 47.7109999657, cost: 116.798989873, frontier: 409, explored: 17175
+grids/0-7.grid:	 time: 41.2200000286, cost: 115.316125497, frontier: 462, explored: 14715
+grids/0-8.grid:	 time: 13.8930001259, cost: 75.4632034356, frontier: 339, explored: 5064
+grids/0-9.grid:	 time: 50.6150000095, cost: 115.470562748, frontier: 256, explored: 16337
+grids/1-0.grid:	 time: 19.1150000095, cost: 81.8994949366, frontier: 273, explored: 6791
+grids/1-1.grid:	 time: 26.0959999561, cost: 103.066125497, frontier: 320, explored: 9252
+grids/1-2.grid:	 time: 39.739000082, cost: 114.778174593, frontier: 529, explored: 14193
+grids/1-3.grid:	 time: 22.2509999275, cost: 84.938708499, frontier: 360, explored: 7900
+grids/1-4.grid:	 time: 30.0990002155, cost: 117.526911935, frontier: 364, explored: 10760
+grids/1-5.grid:	 time: 31.5880000591, cost: 113.062445841, frontier: 354, explored: 11209
+grids/1-6.grid:	 time: 22.6620001793, cost: 100.002416998, frontier: 342, explored: 8137
+grids/1-7.grid:	 time: 20.496999979, cost: 85.6421356237, frontier: 575, explored: 7262
+grids/1-8.grid:	 time: 19.7009999752, cost: 91.8994949366, frontier: 329, explored: 7116
+grids/1-9.grid:	 time: 46.8040001392, cost: 121.55266953, frontier: 544, explored: 16687
+grids/2-0.grid:	 time: 34.9300000668, cost: 108.558766184, frontier: 351, explored: 12661
+grids/2-1.grid:	 time: 39.3080000877, cost: 110.995057685, frontier: 354, explored: 14131
+grids/2-2.grid:	 time: 28.0879998207, cost: 112.29163056, frontier: 440, explored: 10086
+grids/2-3.grid:	 time: 29.7509999275, cost: 113.634776311, frontier: 373, explored: 10780
+grids/2-4.grid:	 time: 1.08099985123, cost: 38.0281745931, frontier: 346, explored: 374
+grids/2-5.grid:	 time: 49.2960000038, cost: 140.987698372, frontier: 212, explored: 17610
+grids/2-6.grid:	 time: 44.0239999294, cost: 117.159271247, frontier: 249, explored: 15917
+grids/2-7.grid:	 time: 36.0780000687, cost: 114.370057685, frontier: 496, explored: 12931
+grids/2-8.grid:	 time: 45.4889998436, cost: 137.16663056, frontier: 237, explored: 16397
+grids/2-9.grid:	 time: 48.5209999084, cost: 132.409271247, frontier: 286, explored: 17445
+grids/3-0.grid:	 time: 27.9360001087, cost: 88.6923881554, frontier: 523, explored: 10008
+grids/3-1.grid:	 time: 12.3310000896, cost: 96.3063491861, frontier: 520, explored: 4411
+grids/3-2.grid:	 time: 16.3250000477, cost: 82.3626983722, frontier: 542, explored: 5871
+grids/3-3.grid:	 time: 29.7540001869, cost: 103.470562748, frontier: 453, explored: 10589
+grids/3-4.grid:	 time: 52.8140001297, cost: 130.191125497, frontier: 165, explored: 19112
+grids/3-5.grid:	 time: 31.5609998703, cost: 112.605339059, frontier: 337, explored: 11223
+grids/3-6.grid:	 time: 20.8090000153, cost: 104.634776311, frontier: 559, explored: 7435
+grids/3-7.grid:	 time: 35.2869999409, cost: 113.847979746, frontier: 372, explored: 12586
+grids/3-8.grid:	 time: 26.8949999809, cost: 123.262193309, frontier: 317, explored: 9465
+grids/3-9.grid:	 time: 32.7380001545, cost: 123.847979746, frontier: 371, explored: 11738
+grids/4-0.grid:	 time: 43.9560000896, cost: 135.162950904, frontier: 321, explored: 15854
+grids/4-1.grid:	 time: 52.2929999828, cost: 160.234018716, frontier: 172, explored: 18732
+grids/4-2.grid:	 time: 42.1169998646, cost: 149.29163056, frontier: 261, explored: 15021
+grids/4-3.grid:	 time: 21.4090001583, cost: 91.3063491861, frontier: 204, explored: 7614
+grids/4-4.grid:	 time: 41.7810001373, cost: 141.634776311, frontier: 198, explored: 15024
+grids/4-5.grid:	 time: 47.9769999981, cost: 149.734018716, frontier: 205, explored: 17050
+grids/4-6.grid:	 time: 45.0710000992, cost: 152.669047558, frontier: 184, explored: 16154
+grids/4-7.grid:	 time: 17.5290000439, cost: 83.1494949366, frontier: 261, explored: 6291
+grids/4-8.grid:	 time: 40.6009998322, cost: 126.183766184, frontier: 163, explored: 14496
+grids/4-9.grid:	 time: 46.2620000839, cost: 137.319805153, frontier: 276, explored: 16558
+
+Total algorithm time: 1710.55600095
+Total cells explored: 610822
+Total cost: 5678.09855532
+Total frontier length: 17635
+
+Average algorithm time: 34.211120019
+Average cells explored: 12216
+Average cost: 113.561971106
+Average frontier length: 352
+
+Total benchmark time: 1714.72900009

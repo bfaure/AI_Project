@@ -447,13 +447,15 @@ class main_window(QWidget):
 		if USE_UCS_MULTITHREADED: self.ucs_agent = uniform_cost_search() # separate thread for ucs execution
 
 		if os.name=="nt": # good sizes for windows
-			self.small_size = [991,673]
-			self.medium_size = [1323,793]
-			self.large_size = [1623,1278]
+			self.small_size = [822,673]
+			self.medium_size = [984,793]
+			self.large_size = [1462,1156]
+			self.xl_size = [1623,1278]
 		else:
 			self.small_size = [840,552]
 			self.medium_size = [1001,673]
 			self.large_size = [1161,791]
+			self.xl_size = [1623,1278]
 
 	def init_ui(self):
 		# initialize ui elements here
@@ -473,12 +475,12 @@ class main_window(QWidget):
 
 		# make spacing between "Cell Information" label and details
 		if self.host_os == "nt":
-			top_row_layout.addSpacing(40)
+			top_row_layout.addSpacing(20) # 40
 		else:
 			top_row_layout.addSpacing(20)
 
 		if self.host_os == "nt":
-			top_row_space = 20
+			top_row_space = 10 # 20
 		else:
 			top_row_space = 10
 
@@ -517,17 +519,15 @@ class main_window(QWidget):
 
 		# setting the element sizes for the top row...
 		if self.host_os=="nt":
-			self.coordinates_value.setFixedWidth(100)
-			self.state_value.setFixedWidth(100)
-			self.f_value.setFixedWidth(100)
-			self.g_value.setFixedWidth(100)
-			self.h_value.setFixedWidth(100)
+			label_width = 75 # 100
 		else:
-			self.coordinates_value.setFixedWidth(75)
-			self.state_value.setFixedWidth(75)
-			self.f_value.setFixedWidth(75)
-			self.g_value.setFixedWidth(75)
-			self.h_value.setFixedWidth(75)
+			label_width = 75 
+
+		self.coordinates_value.setFixedWidth(label_width)
+		self.state_value.setFixedWidth(label_width)
+		self.f_value.setFixedWidth(label_width)
+		self.g_value.setFixedWidth(label_width)
+		self.h_value.setFixedWidth(label_width)
 
 		top_row_layout.addWidget(self.h_value)
 		top_row_layout.addSpacing(20)
@@ -564,6 +564,7 @@ class main_window(QWidget):
 		self.view_menu.addAction("Small ("+str(self.small_size[0])+","+str(self.small_size[1])+")",self.snap_to_small)
 		self.view_menu.addAction("Medium ("+str(self.medium_size[0])+","+str(self.medium_size[1])+")",self.snap_to_medium)
 		self.view_menu.addAction("Large ("+str(self.large_size[0])+","+str(self.large_size[1])+")",self.snap_to_large)
+		self.view_menu.addAction("X-Large ("+str(self.xl_size[0])+","+str(self.xl_size[1])+")",self.snap_to_xl)
 		self.view_menu.addSeparator()
 
 		# Benchmark menu actions
@@ -808,7 +809,13 @@ class main_window(QWidget):
 
 		#render solution
 		#self.grid.solution_path = self.explored
-		self.grid.solution_path = self.explored_set_list[result_code]
+		total_solution_swarm = []
+		for i in range(len(self.explored_set_list)):
+			for item in self.explored_set_list[i]:
+				if item not in total_solution_swarm:
+					total_solution_swarm.append(item)
+		self.grid.solution_path = total_solution_swarm
+		#self.grid.solution_path = self.explored_set_list[result_code]
 		final_solution_cost = self.cost_set_list[result_code][goal_index]
 
 		self.path_end = None
@@ -1305,13 +1312,15 @@ class main_window(QWidget):
 		# to be changed whenever we want
 		global TURN_OFF_DIAGONAL_MULTIPLIER
 		global TURN_OFF_HIGHWAY_HEURISTIC
+		
+		self.setEnabled(False) # turn off window
+		pyqt_app.processEvents()
 
 		TURN_OFF_HIGHWAY_HEURISTIC = True 
 		TURN_OFF_DIAGONAL_MULTIPLIER = True 
 
 		start_time = time.time()
 		self.is_benchmark = True
-		self.setEnabled(False)
 
 		print(">Starting custom benchmark...")
 		### put custom benchmark combinations here
@@ -1545,7 +1554,7 @@ class main_window(QWidget):
 
 		f.write("A* Benchmark on "+str(len(grids))+" .grid files [weight="+str(weight)+"], [heuristic="+str(code)+"]:\n\n")
 		print(">A* Benchmark on "+str(len(grids))+" .grid files [w="+str(w1)+"], [heuristic="+str(code)+"]...")
-		
+
 		# turning off all UI interaction
 		self.grid.allow_render_mouse = False
 		self.grid.suppress_output = True
@@ -2064,6 +2073,10 @@ class main_window(QWidget):
 
 	def snap_to_large(self):
 		self.resize(self.large_size[0],self.large_size[1])
+		self.grid.repaint()
+
+	def snap_to_xl(self):
+		self.resize(self.xl_size[0],self.xl_size[1])
 		self.grid.repaint()
 
 	# Context Menu...
