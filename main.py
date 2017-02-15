@@ -38,10 +38,10 @@ MAX_GRIDS_TO_BENCHMARK = 50
 # denotes the maximum amount of time between grid updates while
 # the search is proceeding. Normally set to 0.1, trying out higher
 # values to see if it increases performance
-GLOBAL_REFRESH_RATE = 0.1
+GLOBAL_REFRESH_RATE = 0.1 # 0.1
 
 # during benchmarking, the GLOBAL_REFRESH_RATE is swapped out with this value
-BENCHMARK_REFRESH_RATE = 10 
+BENCHMARK_REFRESH_RATE = 10 # 10
 
 
 try:

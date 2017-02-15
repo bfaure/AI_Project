@@ -1,4 +1,0 @@
-Sequential A* Benchmark on 50 .grid files [w1=1.0], [w2=1.0]:
-
-
-grids/0-0.grid:	 time: 48.1700000763, cost: 153.862698372, frontier: 725, explored: 10836
