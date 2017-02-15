@@ -446,9 +446,14 @@ class main_window(QWidget):
 
 		if USE_UCS_MULTITHREADED: self.ucs_agent = uniform_cost_search() # separate thread for ucs execution
 
-		self.small_size = [991,673]
-		self.medium_size = [1323,793]
-		self.large_size = [1623,1278]
+		if os.name=="nt": # good sizes for windows
+			self.small_size = [991,673]
+			self.medium_size = [1323,793]
+			self.large_size = [1623,1278]
+		else:
+			self.small_size = [840,552]
+			self.medium_size = [1001,673]
+			self.large_size = [1161,791]
 
 	def init_ui(self):
 		# initialize ui elements here
@@ -465,45 +470,65 @@ class main_window(QWidget):
 		self.layout.addLayout(top_row_layout) # add layout to overall layout
 		title_label = QLabel("Cell Information",self)
 		top_row_layout.addWidget(title_label)
-		top_row_layout.addSpacing(40)
+
+		# make spacing between "Cell Information" label and details
+		if self.host_os == "nt":
+			top_row_layout.addSpacing(40)
+		else:
+			top_row_layout.addSpacing(20)
+
+		if self.host_os == "nt":
+			top_row_space = 20
+		else:
+			top_row_space = 10
 
 		coordinates_label = QLabel("Coordinate:",self)
 		top_row_layout.addWidget(coordinates_label)
 		self.coordinates_value = QLineEdit("(0,0)",self)
 		self.coordinates_value.setEnabled(False)
-		self.coordinates_value.setFixedWidth(100)
 		top_row_layout.addWidget(self.coordinates_value)
-		top_row_layout.addSpacing(20)
+		top_row_layout.addSpacing(top_row_space)
 
 		state_label = QLabel("State:",self)
 		top_row_layout.addWidget(state_label)
 		self.state_value = QLineEdit("FREE",self)
 		self.state_value.setEnabled(False)
-		self.state_value.setFixedWidth(100)
 		top_row_layout.addWidget(self.state_value)
-		top_row_layout.addSpacing(20)
+		top_row_layout.addSpacing(top_row_space)
 
 		f_label = QLabel("f:",self)
 		top_row_layout.addWidget(f_label)
 		self.f_value = QLineEdit("0",self)
 		self.f_value.setEnabled(False)
-		self.f_value.setFixedWidth(100)
 		top_row_layout.addWidget(self.f_value)
-		top_row_layout.addSpacing(20)
+		top_row_layout.addSpacing(top_row_space)
 
 		g_label = QLabel("g:",self)
 		top_row_layout.addWidget(g_label)
 		self.g_value = QLineEdit("0",self)
 		self.g_value.setEnabled(False)
-		self.g_value.setFixedWidth(100)
 		top_row_layout.addWidget(self.g_value)
-		top_row_layout.addSpacing(20)
+		top_row_layout.addSpacing(top_row_space)
 
 		h_label = QLabel("h:",self)
 		top_row_layout.addWidget(h_label)
 		self.h_value = QLineEdit("0",self)
 		self.h_value.setEnabled(False)
-		self.h_value.setFixedWidth(100)
+
+		# setting the element sizes for the top row...
+		if self.host_os=="nt":
+			self.coordinates_value.setFixedWidth(100)
+			self.state_value.setFixedWidth(100)
+			self.f_value.setFixedWidth(100)
+			self.g_value.setFixedWidth(100)
+			self.h_value.setFixedWidth(100)
+		else:
+			self.coordinates_value.setFixedWidth(75)
+			self.state_value.setFixedWidth(75)
+			self.f_value.setFixedWidth(75)
+			self.g_value.setFixedWidth(75)
+			self.h_value.setFixedWidth(75)
+
 		top_row_layout.addWidget(self.h_value)
 		top_row_layout.addSpacing(20)
 		top_row_layout.addStretch()
@@ -1817,7 +1842,7 @@ class main_window(QWidget):
 			i = temp.index 
 
 			heuristic_value = self.grid.diagonal_distance_heuristic(temp,self.grid.end_cell)/4
-			self.h_value.setText(str(heuristic_value))
+			self.h_value.setText(str(heuristic_value)[:5])
 
 			if cell_attributes.state=="full":
 				self.g_value.setText("inf.")
@@ -1830,8 +1855,8 @@ class main_window(QWidget):
 				cost = self.last_cost_list[cell_attributes.index]
 
 				if cost != "None":
-					self.f_value.setText(str(cost+heuristic_value))
-					self.g_value.setText(str(cost))
+					self.f_value.setText(str(cost+heuristic_value)[:5])
+					self.g_value.setText(str(cost)[:5])
 				else:
 					self.f_value.setText("None")
 					self.g_value.setText("None")
