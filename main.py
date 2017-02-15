@@ -767,53 +767,58 @@ class main_window(QWidget):
 
 				if self.frontier_list[i].Minkey() <= ( w2 * self.frontier_list[0].Minkey() ):
 					if self.cost_set_list[i][goal_index] <= self.frontier_list[i].Minkey():
-
 						if self.cost_set_list[i][goal_index] < inf:
-
 							done = True #exit out of the loop
 							result_code = i
 							break
 					else:
-
 						s = self.frontier_list[i].top()
-
 						last_cell = s
 						last_heuristic = i
 						#if cell_in_list(s,self.explored)==False: self.explored.append(s)
-
 						self.sequential_astar_expand(i, w1, s)
 						self.explored_set_list[i].append(s)
 						self.closed_set_lists[i].append(s)
 				else:
 					if self.cost_set_list[0][goal_index] <= self.frontier_list[0].Minkey():
 						if self.cost_set_list[0][goal_index] < sys.maxint:
-
 							done = True
 							result_code = 0
 							break
 					else:
 
 						s = self.frontier_list[0].top()
-
 						last_cell = s
 						last_heuristic = 0
 						#if cell_in_list(s,self.explored)==False: self.explored.append(s)
-
 						self.sequential_astar_expand(0, w1, s)
 						self.explored_set_list[0].append(s)
 						self.closed_set_lists[0].append(s)
 
+		# convert the dictionary cost_set_list into a list called self.last_cost_list
 		self.last_cost_list = ["None"] * len(self.cells)
 		for index,cost in self.cost_set_list[result_code].items():
 			self.last_cost_list[int(index)] = float(cost)
 
-		#render solution
-		#self.grid.solution_path = self.explored
+		# combine all queues to create the overall solution swarm
 		total_solution_swarm = []
+		longest_queue = -1
+		for queue in self.explored_set_list:
+			if len(queue)>=longest_queue:
+				longest_queue = len(queue)
+		for i in range(longest_queue):
+			for queue in self.explored_set_list:
+				if len(queue)>i:
+					if queue[i] not in total_solution_swarm:
+						total_solution_swarm.append(queue[i])
+
+		'''
 		for i in range(len(self.explored_set_list)):
 			for item in self.explored_set_list[i]:
 				if item not in total_solution_swarm:
 					total_solution_swarm.append(item)
+		'''
+
 		self.grid.solution_path = total_solution_swarm
 		#self.grid.solution_path = self.explored_set_list[result_code]
 		final_solution_cost = self.cost_set_list[result_code][goal_index]
@@ -1436,7 +1441,15 @@ class main_window(QWidget):
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
 
 		data_dir = "benchmarks/data/"
-		filename = data_dir+"integrated_a_star-[w1="+str(w1).replace(".","_")+"]-[w2="+str(w2).replace(".","_")+"].txt"
+		filename = data_dir+"integrated_a_star-[w1="+str(w1).replace(".","_")+"]-[w2="+str(w2).replace(".","_")+"]"
+
+		# if any of these are False then append information to filename
+		if TURN_OFF_DIAGONAL_MULTIPLIER==False:
+			filename += "-[diagonal_multiplier_enabled]"
+		if TURN_OFF_HIGHWAY_HEURISTIC==False:
+			filename += "-[highway_heuristic_enabled]"
+		filename += ".txt"
+
 		f = open(filename,"w")
 		print(">Writing results to "+filename+"...")
 
