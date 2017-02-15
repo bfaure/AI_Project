@@ -630,7 +630,7 @@ class main_window(QWidget):
 	def sequential_astar(self,w1=1.25,w2=1.25):
 		global log 
 		num_heuristics = 5
-		if self.is_benchmark==False: print("Performing Sequential A* Search with "+str(num_heuristics)+" heuristics...")
+		if self.is_benchmark==False: print("Performing Sequential A* Search with "+str(num_heuristics)+" heuristics using w1="+str(w1)+", w2="+str(w2))
 
 		self.fetch_current_grid_state()
 		self.set_ui_interaction(enabled=False)
@@ -875,7 +875,6 @@ class main_window(QWidget):
 
 		refresh_rate = 0.1
 		last_cell = None
-
 
 		heuristics_used = [0] * num_heuristics
 		heuristic_queue_emptied = [0] * num_heuristics
@@ -1744,7 +1743,7 @@ class main_window(QWidget):
 	def clear_path(self):
 		# function called by pyqt when user selects "Clear Search Path" File menu item
 		self.stop_executing = True # tell search algo to stop
-		self.ucs_agent.stop_executing = True # if using multithreading, tell search ucs agent to stop
+		if USE_UCS_MULTITHREADED: self.ucs_agent.stop_executing = True # if using multithreading, tell search ucs agent to stop
 		pyqt_app.processEvents() # force process events in event queue
 		time.sleep(0.1) # give time for execution thread to stop
 		self.grid.clear_path() # clear the path attributes
