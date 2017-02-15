@@ -434,8 +434,12 @@ class main_window(QWidget):
 		self.show_solution_swarm = True # true by default
 		self.use_gradient = False # False by default
 		self.show_trace = True # true by default
+		
 		self.updating_already = False
-		self.stop_executing = False
+		
+		self.stop_executing = False # set to true if user cancels search algo execution
+		self.stop_benchmark = False # set to true if user cancels benchmark execution
+		
 		self.mouse_tracking = True
 		self.trace_highlighting = False
 		self.is_benchmark = False # true if benchmarking right now
@@ -584,6 +588,8 @@ class main_window(QWidget):
 		self.benchmark_menu.addAction("Benchmark All",self.all_benchmark)
 		self.benchmark_menu.addSeparator()
 		self.benchmark_menu.addAction("Benchmark Custom",self.custom_benchmark_wrapper)
+		self.benchmark_menu.addSeparator()
+		self.benchmark_menu.addAction("Stop Benchmark",self.cancel_benchmark,QKeySequence("Ctrl+B"))
 
 		# File menu actions
 		self.file_menu.addAction("Load...",self.load,QKeySequence("Ctrl+L"))
@@ -744,6 +750,7 @@ class main_window(QWidget):
 
 		while self.frontier_list[0].Minkey() < inf and done==False:
 
+			# if user cancelled execution
 			if (self.stop_executing):
 				self.set_ui_interaction(enabled=True)
 				return
@@ -757,12 +764,10 @@ class main_window(QWidget):
 				pyqt_app.processEvents()
 				step_time = time.time()
 
-
 			print("                                                                           ",end="\r")
 			print("explored: "+str(len(self.explored_set_list[last_heuristic]))+", num_iterations: "+str(num_iterations)+", time: "+str(time.time()-start_time)[:5], end="\r")
 			num_iterations += 1
 
-			#print("Inside While loop")
 			for i in range(1, num_heuristics):
 
 				if self.frontier_list[i].Minkey() <= ( w2 * self.frontier_list[0].Minkey() ):
@@ -812,32 +817,29 @@ class main_window(QWidget):
 					if queue[i] not in total_solution_swarm:
 						total_solution_swarm.append(queue[i])
 
-		'''
-		for i in range(len(self.explored_set_list)):
-			for item in self.explored_set_list[i]:
-				if item not in total_solution_swarm:
-					total_solution_swarm.append(item)
-		'''
-
 		self.grid.solution_path = total_solution_swarm
-		#self.grid.solution_path = self.explored_set_list[result_code]
 		final_solution_cost = self.cost_set_list[result_code][goal_index]
 
+		# locate the goal cell at the end of the linked list for the best path
 		self.path_end = None
 		for item in self.frontier_list[result_code]._queue:
 			cell = item[1]
 			if cell.index==self.end_cell_t.index:
 				self.path_end = cell 
 				break
+
+		# if we could not locate the goal cell
 		if self.path_end==None:
 			print("\nERROR: Sequential A* Search self.path_end could not be located.")
 			self.grid.shortest_path = []
 		else:
 			self.grid.shortest_path = rectify_path(self.path_end)
 
+		# update the grid
 		self.grid.update()
 		pyqt_app.processEvents()
 		self.set_ui_interaction(enabled=True)
+
 
 		self.latest_search_cost = final_solution_cost
 		frontier_length = 0
@@ -1348,6 +1350,11 @@ class main_window(QWidget):
 		print(">Benchmarking Sequential A* Search on several weights...")
 		for w1 in [1.0,1.25,1.75,2.0]:
 			for w2 in [1.0,1.25,1.75,2.0]:
+				
+				if self.stop_benchmark:
+					print("WARNING: Sequential A* Benchmark wrapper cancelled..")
+					return
+
 				self.sequential_astar_benchmark(w1,w2)
 
 	def integrated_astar_benchmark_wrapper(self):
@@ -1356,6 +1363,10 @@ class main_window(QWidget):
 		print(">Benchmarking Integrated A* Search on several weights...")
 		for w1 in [1.0,1.25,1.75,2.0]:
 			for w2 in [1.0,1.25,1.75,2.0]:
+
+				if self.stop_benchmark:
+					print("WARNING: Integrated A* Benchmark wrapper cancelled.")
+
 				self.integrated_astar_benchmark(w1,w2)
 
 	def sequential_astar_benchmark(self,w1,w2):
@@ -1394,6 +1405,11 @@ class main_window(QWidget):
 		current_location = os.getcwd()
 
 		for grid,short_name in list(zip(grids,short)):
+
+			if self.stop_benchmark:
+				print("WARNING: Sequential A* Benchmark cancelled.")
+				return
+
 			print(">Running Sequential A* on "+grid+" with  [w1="+str(w1)+"], [w2="+str(w2)+"]...")
 			self.grid.load(grid)
 			start_time = time.time()
@@ -1479,6 +1495,11 @@ class main_window(QWidget):
 		current_location = os.getcwd()
 
 		for grid,short_name in list(zip(grids,short)):
+			
+			if self.stop_benchmark:
+				print("WARNING: Integrated A* Benchmark cancelled.")
+				return
+
 			print(">Running Integrated A* on "+grid+" with  [w1="+str(w1)+"], [w2="+str(w2)+"]...")
 			self.grid.load(grid)
 			start_time = time.time()
@@ -1586,6 +1607,11 @@ class main_window(QWidget):
 		current_location = os.getcwd()
 
 		for grid,short_name in list(zip(grids,short)):
+
+			if self.stop_benchmark:
+				print("WARNING: A* Benchmark cancelled.")
+				return
+
 			print(">Running A* on "+grid+"...")
 			self.grid.load(grid)
 			start_time = time.time()
@@ -1672,6 +1698,11 @@ class main_window(QWidget):
 		current_location = os.getcwd()
 
 		for grid,short_name in list(zip(grids,short)):
+
+			if self.stop_benchmark:
+				print("WARNING: Weighted A* Benchmark cancelled.")
+				return
+
 			print(">Running Weighted A* on "+grid+" with weight: "+str(weight)+"...")
 			self.grid.load(grid)
 			start_time = time.time()
@@ -1754,6 +1785,11 @@ class main_window(QWidget):
 		current_location = os.getcwd()
 
 		for grid,short_name in list(zip(grids,short)):
+
+			if self.stop_benchmark:
+				print("WARNING: UCS Benchmark cancelled.")
+				return
+
 			print(">Running Uniform-Cost Search on "+grid+"...")
 			self.grid.load(grid)
 			start_time = time.time()
@@ -1894,6 +1930,10 @@ class main_window(QWidget):
 	def stop_algorithm(self):
 		# called from menu item
 		self.stop_executing = True
+
+	def cancel_benchmark(self):
+		# called from menu item
+		self.stop_benchmark = True
 
 	def save_screenshot(self):
 		# takes a screenshot of the current grid and saves as png
