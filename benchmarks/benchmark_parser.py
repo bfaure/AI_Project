@@ -9,7 +9,7 @@ def main():
 		if files[i].find(".txt")!=-1:
 			data_files.append(data_dir+files[i])
 	
-	algo_names = ["a_star","integrated_a_star","sequential_a_star"]
+	algo_names = ["a_star","integrated_a_star","sequential_a_star","ucs"]
 
 	for algo in algo_names:
 		print("Parsing data for "+algo+"...")
