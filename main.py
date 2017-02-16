@@ -1854,7 +1854,7 @@ class main_window(QWidget):
 
 			# save screenshot
 			ext = short_name[:short_name.find(".grid")]
-			filename = current_location+"/benchmarks/screenshots/[algo=ucs]-"+ext+".png"
+			filename = current_location+"/benchmarks/screenshots/[algo=ucs]-["+ext+"].png"
 			QPixmap.grabWindow(self.winId()).save(filename,'png')
 
 		data.save()
