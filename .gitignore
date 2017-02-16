@@ -61,3 +61,4 @@ ucs-benchmark.txt
 build/*
 helpers.c
 benchmarks/screenshots/*
+*.zip
