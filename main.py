@@ -24,15 +24,15 @@ import heapq # for priority queue implementation
 # set to true to disable Cython, if you don't have a Cython
 # installation that doesnt mean you need to change this, should
 # be used only for debugging and testing purposes.
-TURN_OFF_CYTHON = False
-USE_UCS_MULTITHREADED = False
+TURN_OFF_CYTHON = False # False
+USE_UCS_MULTITHREADED = False # False
 
-TURN_OFF_DIAGONAL_MULTIPLIER = True
-TURN_OFF_HIGHWAY_HEURISTIC = True
+TURN_OFF_DIAGONAL_MULTIPLIER = True # True
+TURN_OFF_HIGHWAY_HEURISTIC = True # True
 
 # this can be set to a lower number to reduce the amount of grids
 # that are used when benchmarking, normally set to 50
-MAX_GRIDS_TO_BENCHMARK = 50
+MAX_GRIDS_TO_BENCHMARK = 1 # 50
 
 # this is the value that is used by all of the search algoritms, it
 # denotes the maximum amount of time between grid updates while
@@ -43,6 +43,12 @@ GLOBAL_REFRESH_RATE = 0.1 # 0.1
 # during benchmarking, the GLOBAL_REFRESH_RATE is swapped out with this value
 BENCHMARK_REFRESH_RATE = 10 # 10
 
+# weights used for Sequential and Integrated A* benchmarks
+W1_BENCHMARK_WEIGHTS = [1.0,1.25,2.0,4.0]
+W2_BENCHMARK_WEIGHTS = [1.0,1.25,2.0,4.0]
+
+# weights used for A* benchmarks
+ASTAR_BENCHMARK_WEIGHTS = [1.0,1.25,2.0,4.0]
 
 try:
 	import Cython # test to see if Cython is installed
@@ -1425,13 +1431,11 @@ class main_window(QWidget):
 		# benchmark sequential A* with multiple weights
 		print(">Benchmarking Sequential A* Search on several weights...")
 		self.stop_benchmark = False # reset for exeuction
-		for w1 in [1.0,1.25,1.75,2.0]:
-			for w2 in [1.0,1.25,1.75,2.0]:
-				
+		for w1 in W1_BENCHMARK_WEIGHTS:
+			for w2 in W2_BENCHMARK_WEIGHTS:
 				if self.stop_benchmark:
 					print("WARNING: Sequential A* Benchmark wrapper cancelled..")
 					return
-
 				self.sequential_astar_benchmark(w1,w2)
 
 	def integrated_astar_benchmark_wrapper(self):
@@ -1439,12 +1443,11 @@ class main_window(QWidget):
 		# benchmark sequential A* with multiple weights
 		print(">Benchmarking Integrated A* Search on several weights...")
 		self.stop_benchmark = False # reset for execution
-		for w1 in [1.0,1.25,1.75,2.0]:
-			for w2 in [1.0,1.25,1.75,2.0]:
-
+		for w1 in W1_BENCHMARK_WEIGHTS:
+			for w2 in W2_BENCHMARK_WEIGHTS:
 				if self.stop_benchmark:
 					print("WARNING: Integrated A* Benchmark wrapper cancelled.")
-
+					return
 				self.integrated_astar_benchmark(w1,w2)
 
 	def sequential_astar_benchmark(self,w1,w2):
@@ -1453,7 +1456,7 @@ class main_window(QWidget):
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
 
 		data_dir = "benchmarks/data/"
-		filename = data_dir+"sequential_a_star-[w1="+str(w1).replace(".","_")+"]-[w2="+str(w2).replace(".","_")+"].txt"
+		filename = data_dir+"[algo=sequential_a_star]-[w1="+str(w1).replace(".","_")+"]-[w2="+str(w2).replace(".","_")+"].txt"
 		
 		print(">Writing results to "+filename+"...")
 
@@ -1463,7 +1466,7 @@ class main_window(QWidget):
 			short = grids[:MAX_GRIDS_TO_BENCHMARK]
 
 		data = benchmark_t(filename,short)
-		data.header_info = "Sequential A* Benchmark on "+str(len(grids))+" .grid files [w1="+str(w1)+"], [w2="+str(w2)+"]:"
+		data.header_info = "[algo=sequential_a_star]-[w1="+str(w1).replace(".","_")+"]-[w2="+str(w2).replace(".","_")+"]"
 
 		print(">Sequential A* Benchmark on "+str(len(grids))+" .grid files [w1="+str(w1)+"], [w2="+str(w2)+"]...")
 
@@ -1507,7 +1510,7 @@ class main_window(QWidget):
 
 			# save screenshot
 			ext = short_name[:short_name.find(".grid")]
-			filename = current_location+"/benchmarks/screenshots/sequential_a_star-[w1="+str(w1).replace(".","_")+"]-[w2="+str(w2).replace(".","_")+"]-["+ext+"].png"
+			filename = current_location+"/benchmarks/screenshots/[algo=sequential_a_star]-[w1="+str(w1).replace(".","_")+"]-[w2="+str(w2).replace(".","_")+"]-["+ext+"].png"
 			QPixmap.grabWindow(self.winId()).save(filename,'png')
 
 		data.save() # save the benchmark data
@@ -1523,7 +1526,7 @@ class main_window(QWidget):
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
 
 		data_dir = "benchmarks/data/"
-		filename = data_dir+"integrated_a_star-[w1="+str(w1).replace(".","_")+"]-[w2="+str(w2).replace(".","_")+"]"
+		filename = data_dir+"[algo=integrated_a_star]-[w1="+str(w1).replace(".","_")+"]-[w2="+str(w2).replace(".","_")+"]"
 
 		# if any of these are False then append information to filename
 		if TURN_OFF_DIAGONAL_MULTIPLIER==False:
@@ -1540,7 +1543,7 @@ class main_window(QWidget):
 			short = grids[:MAX_GRIDS_TO_BENCHMARK]
 
 		data = benchmark_t(filename,short)
-		data.header_info = "Integrated A* Benchmark on "+str(len(grids))+" .grid files [w1="+str(w1)+"], [w2="+str(w2)+"]:"
+		data.header_info = "[algo=integrated_a_star]-[w1="+str(w1).replace(".","_")+"]-[w2="+str(w2).replace(".","_")+"]"
 
 		print(">Integrated A* Benchmark on "+str(len(grids))+" .grid files [w1="+str(w1)+"], [w2="+str(w2)+"]...")
 
@@ -1584,7 +1587,7 @@ class main_window(QWidget):
 
 			# save screenshot
 			ext = short_name[:short_name.find(".grid")]
-			filename = current_location+"/benchmarks/screenshots/integrated_a_star-[w1="+str(w1).replace(".","_")+"]-[w2="+str(w2).replace(".","_")+"]-["+ext+"].png"
+			filename = current_location+"/benchmarks/screenshots/[algo=integrated_a_star]-[w1="+str(w1).replace(".","_")+"]-[w2="+str(w2).replace(".","_")+"]-["+ext+"].png"
 			QPixmap.grabWindow(self.winId()).save(filename,'png')
 
 		data.save() # save the benchmark data
@@ -1606,7 +1609,7 @@ class main_window(QWidget):
 		# run a star on all different heuristic types and several weights
 		print(">Benchmarking A* Search on several weights and all heuristics...")
 		self.stop_benchmark = False # reset prior to execution
-		for weight in [1.0,1.25,1.75,2.0]:
+		for weight in ASTAR_BENCHMARK_WEIGHTS:
 			for heuristic in range(5):
 				self.a_star_benchmark(weight,heuristic)
 
@@ -1620,25 +1623,25 @@ class main_window(QWidget):
 		self.is_benchmark = True
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
 
-		data_dir = "benchmarks/data/"
+		data_dir = "benchmarks/data/[algo=a_star]-"
 
 		if code==0: 
-			filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[manhattan].txt"
+			filename = data_dir+"[weight="+str(weight).replace(".","_")+"]-[manhattan].txt"
 			current_heuristic = "manhattan"
 		elif code==1: 
-			filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[diagonal_distance].txt"
+			filename = data_dir+"[weight="+str(weight).replace(".","_")+"]-[diagonal_distance].txt"
 			current_heuristic = "diagonal_distance"
 		elif code==2: 
-			filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[approx_euclidean].txt"
+			filename = data_dir+"[weight="+str(weight).replace(".","_")+"]-[approx_euclidean].txt"
 			current_heuristic = "approx_euclidean"
 		elif code==3: 
-			filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[euclidean].txt"
+			filename = data_dir+"[weight="+str(weight).replace(".","_")+"]-[euclidean].txt"
 			current_heuristic = "euclidean"
 		elif code==4: 
-			filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[approx_distance].txt"
+			filename = data_dir+"[weight="+str(weight).replace(".","_")+"]-[approx_distance].txt"
 			current_heuristic = "approx_distance"
 		elif code==5: 
-			filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[highway].txt"
+			filename = data_dir+"[weight="+str(weight).replace(".","_")+"]-[highway].txt"
 			current_heuristic = "highway"
 		else:
 			print("Could not recognize a_star_benchmark input code.")
@@ -1652,8 +1655,8 @@ class main_window(QWidget):
 			short = grids[:MAX_GRIDS_TO_BENCHMARK]
 
 		data = benchmark_t(filename,short)
-		data.header_info = "A* Benchmark on "+str(len(grids))+" .grid files [weight="+str(weight)+"], [heuristic="+str(current_heuristic)+"]:"
-
+		data.header_info = "[algo=a_star]-[weight="+str(weight).replace(".","_")+"]-["+current_heuristic+"]"
+		#data.header_info = "A* Benchmark on "+str(len(grids))+" .grid files [weight="+str(weight)+"], [heuristic="+str(current_heuristic)+"]:"
 		print(">A* Benchmark on "+str(len(grids))+" .grid files [weight="+str(weight)+"], [heuristic="+str(current_heuristic)+"]...")
 
 		# turning off all UI interaction
@@ -1696,7 +1699,7 @@ class main_window(QWidget):
 
 			# save screenshot
 			ext = short_name[:short_name.find(".grid")]
-			filename = current_location+"/benchmarks/screenshots/a_star-[weight="+str(weight).replace(".","_")+"]-["+current_heuristic+"]-["+ext+"].png"
+			filename = current_location+"/benchmarks/screenshots/[algo=a_star]-[weight="+str(weight).replace(".","_")+"]-["+current_heuristic+"]-["+ext+"].png"
 			QPixmap.grabWindow(self.winId()).save(filename,'png')
 
 		data.save()
@@ -1707,6 +1710,9 @@ class main_window(QWidget):
 		print(">A* Search Benchmark Complete")
 
 	def weighted_a_star_benchmark_wrapper(self):
+		# USE ASTAR_HEURISTIC_WEIGHT_WRAPPER instead
+
+
 		# benchmark on multiple weight values for Weighted A*
 		benchmark_weights = [1.25,2.0]
 		self.stop_benchmark = False # reset prior to execution
@@ -1718,6 +1724,9 @@ class main_window(QWidget):
 		print(">Weighted A* Search Benchmark Complete")
 
 	def weighted_a_star_benchmark(self,weight,benchmark_index):
+		# DONT USE THIS, USE ASTAR benchmarks
+
+
 		# benchmark the efficiency of the Weighted A* algorithm on all files in /grids
 		self.is_benchmark = True
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
@@ -1789,7 +1798,7 @@ class main_window(QWidget):
 
 		data_dir = "benchmarks/data/"
 
-		filename = data_dir+"ucs.txt"
+		filename = data_dir+"[algo=ucs].txt"
 
 		grids,short = self.get_all_grids()
 		if len(grids)>MAX_GRIDS_TO_BENCHMARK:
@@ -1797,7 +1806,8 @@ class main_window(QWidget):
 			short = grids[:MAX_GRIDS_TO_BENCHMARK]
 
 		data = benchmark_t(filename,short)
-		data.header_info = "Uniform-Cost Search Benchmark on "+str(len(grids))+" .grid files:"
+		data.header_info = "[algo=ucs]"
+		#data.header_info = "Uniform-Cost Search Benchmark on "+str(len(grids))+" .grid files:"
 
 		print(">Benchmarking UCS on "+str(len(grids))+" .grid files...")
 		print(">Writing results to "+filename+"...")
@@ -1844,7 +1854,7 @@ class main_window(QWidget):
 
 			# save screenshot
 			ext = short_name[:short_name.find(".grid")]
-			filename = current_location+"/benchmarks/screenshots/ucs-"+ext+".png"
+			filename = current_location+"/benchmarks/screenshots/[algo=ucs]-"+ext+".png"
 			QPixmap.grabWindow(self.winId()).save(filename,'png')
 
 		data.save()
