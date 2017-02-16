@@ -32,7 +32,7 @@ TURN_OFF_HIGHWAY_HEURISTIC = True # True
 
 # this can be set to a lower number to reduce the amount of grids
 # that are used when benchmarking, normally set to 50
-MAX_GRIDS_TO_BENCHMARK = 1 # 50
+MAX_GRIDS_TO_BENCHMARK = 50 # 50
 
 # this is the value that is used by all of the search algoritms, it
 # denotes the maximum amount of time between grid updates while
@@ -41,14 +41,14 @@ MAX_GRIDS_TO_BENCHMARK = 1 # 50
 GLOBAL_REFRESH_RATE = 0.1 # 0.1
 
 # during benchmarking, the GLOBAL_REFRESH_RATE is swapped out with this value
-BENCHMARK_REFRESH_RATE = 10 # 10
+BENCHMARK_REFRESH_RATE = 5 # 10
 
 # weights used for Sequential and Integrated A* benchmarks
 W1_BENCHMARK_WEIGHTS = [1.0,1.25,2.0,4.0]
 W2_BENCHMARK_WEIGHTS = [1.0,1.25,2.0,4.0]
 
 # weights used for A* benchmarks
-ASTAR_BENCHMARK_WEIGHTS = [1.0,1.25,2.0,4.0]
+ASTAR_BENCHMARK_WEIGHTS = [1.0,1.25,2.0]#,2.0,4.0]
 
 try:
 	import Cython # test to see if Cython is installed
