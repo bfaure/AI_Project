@@ -1452,6 +1452,11 @@ class main_window(QWidget):
 
 	def sequential_astar_benchmark(self,w1,w2):
 		# benchmark the efficiency of the A* algorithm on all files in /grids
+
+		# check to ensure the screenshots directory exists
+		screenshot_dir = "benchmarks/screenshots/"
+		if not os.path.exists(screenshot_dir): os.makedirs(screenshot_dir)
+
 		self.is_benchmark = True
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
 
@@ -1522,6 +1527,11 @@ class main_window(QWidget):
 
 	def integrated_astar_benchmark(self,w1,w2):
 		# benchmark the efficiency of the A* algorithm on all files in /grids
+
+		# check to ensure the screenshots directory exists
+		screenshot_dir = "benchmarks/screenshots/"
+		if not os.path.exists(screenshot_dir): os.makedirs(screenshot_dir)
+
 		self.is_benchmark = True
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
 
@@ -1620,6 +1630,11 @@ class main_window(QWidget):
 
 	def a_star_benchmark(self,weight=1,code=0):
 		# benchmark the efficiency of the A* algorithm on all files in /grids
+
+		# check to ensure the screenshots directory exists
+		screenshot_dir = "benchmarks/screenshots/"
+		if not os.path.exists(screenshot_dir): os.makedirs(screenshot_dir)
+
 		self.is_benchmark = True
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
 
@@ -1793,6 +1808,11 @@ class main_window(QWidget):
 
 	def uniform_cost_benchmark(self):
 		# benchmark the efficiency of the Uniform Cost Search algorithm on all files in /grids
+
+		# check to ensure the screenshots directory exists
+		screenshot_dir = "benchmarks/screenshots/"
+		if not os.path.exists(screenshot_dir): os.makedirs(screenshot_dir)
+		
 		self.is_benchmark = True
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
 
