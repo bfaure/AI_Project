@@ -1395,6 +1395,7 @@ class main_window(QWidget):
 		global TURN_OFF_DIAGONAL_MULTIPLIER
 		global TURN_OFF_HIGHWAY_HEURISTIC
 		
+		self.snap_to_small() # set to smallest size possible (increase benchmark speed)
 		self.setEnabled(False) # turn off window
 		pyqt_app.processEvents()
 
@@ -1423,6 +1424,7 @@ class main_window(QWidget):
 	def sequential_astar_benchmark_wrapper(self):
 		# benchmark sequential A* with multiple weights
 		print(">Benchmarking Sequential A* Search on several weights...")
+		self.stop_benchmark = False # reset for exeuction
 		for w1 in [1.0,1.25,1.75,2.0]:
 			for w2 in [1.0,1.25,1.75,2.0]:
 				
@@ -1436,6 +1438,7 @@ class main_window(QWidget):
 		# benchmark integrated A* with mutiple weights
 		# benchmark sequential A* with multiple weights
 		print(">Benchmarking Integrated A* Search on several weights...")
+		self.stop_benchmark = False # reset for execution
 		for w1 in [1.0,1.25,1.75,2.0]:
 			for w2 in [1.0,1.25,1.75,2.0]:
 
@@ -1471,6 +1474,7 @@ class main_window(QWidget):
 		self.grid.draw_grid_lines = False
 		self.grid.draw_outer_boundary = False
 		self.grid.show_path_trace = False
+		self.stop_benchmark = False # reset for execution
 
 		overall_start = time.time()
 		total_execution_time = 0
@@ -1547,6 +1551,7 @@ class main_window(QWidget):
 		self.grid.draw_grid_lines = False
 		self.grid.draw_outer_boundary = False
 		self.grid.show_path_trace = False
+		self.stop_benchmark = False # reset before execution
 
 		overall_start = time.time()
 		total_execution_time = 0
@@ -1600,6 +1605,7 @@ class main_window(QWidget):
 	def astar_heuristic_weight_wrapper(self):
 		# run a star on all different heuristic types and several weights
 		print(">Benchmarking A* Search on several weights and all heuristics...")
+		self.stop_benchmark = False # reset prior to execution
 		for weight in [1.0,1.25,1.75,2.0]:
 			for heuristic in range(5):
 				self.a_star_benchmark(weight,heuristic)
@@ -1657,6 +1663,7 @@ class main_window(QWidget):
 		self.grid.draw_grid_lines = False
 		self.grid.draw_outer_boundary = False
 		self.grid.show_path_trace = False
+		self.stop_benchmark = False # reset prior to execution
 
 		overall_start = time.time()
 		total_execution_time = 0
@@ -1702,6 +1709,7 @@ class main_window(QWidget):
 	def weighted_a_star_benchmark_wrapper(self):
 		# benchmark on multiple weight values for Weighted A*
 		benchmark_weights = [1.25,2.0]
+		self.stop_benchmark = False # reset prior to execution
 		print(">Benchmarking Weighted A* on "+str(len(benchmark_weights))+" weights: ",benchmark_weights)
 		i = 0
 		for weight in benchmark_weights:
@@ -1732,6 +1740,7 @@ class main_window(QWidget):
 		self.grid.draw_grid_lines = False
 		self.grid.draw_outer_boundary = False
 		self.grid.show_path_trace = False
+		self.stop_benchmark = False
 
 		overall_start = time.time()
 		total_execution_time = 0
@@ -1796,15 +1805,13 @@ class main_window(QWidget):
 		# turning off all UI interaction
 		self.grid.allow_render_mouse = False
 		self.grid.verbose = False
-
 		self.grid.draw_grid_lines = False
 		self.grid.draw_outer_boundary = False
-
 		self.grid.suppress_output = True
 		self.grid.draw_grid_lines = False
 		self.grid.draw_outer_boundary = False
-
 		self.grid.show_path_trace = False
+		self.stop_benchmark = False # reset prior to execution
 
 		overall_start = time.time()
 		total_execution_time = 0
