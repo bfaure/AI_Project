@@ -27,7 +27,7 @@ def main():
 			costs = []
 			frontiers = [] # length of frontier
 			explored = []  # number explored cells
-			efficiency = [] # time / cost 
+			efficiency = [] # time * cost 
 			speed = [] # explored / time
 
 			for filename in cur_algo_files:
@@ -80,10 +80,10 @@ def main():
 							explored.append(text)
 				f.close()
 
-				# calculate time / cost for the various data members
+				# calculate time * cost for the various data members
 				cur_efficiencies = []
 				for c,t in list(zip(costs[file_index],times[file_index])):
-					cur_efficiencies.append(str(float(t)/float(c)))
+					cur_efficiencies.append(str(float(t)*float(c)))
 				efficiency.append(cur_efficiencies)
 
 				cur_speed = []
@@ -91,7 +91,7 @@ def main():
 					if e=="": 
 						cur_speed.append(1) # if there was an error reading 
 						print("ERROR while reading "+filename+" explored data")
-						
+
 					else: cur_speed.append(str(float(e)/float(t)))
 				speed.append(cur_speed)
 
