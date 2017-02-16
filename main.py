@@ -1407,7 +1407,7 @@ class main_window(QWidget):
 		print(">Starting custom benchmark...")
 		### put custom benchmark combinations here
 		print("\n<--------------------------------------------------->\n")
-		self.integrated_astar_benchmark_wrapper() # perform multi-weight Integrated A* Search Benchmark
+		#self.integrated_astar_benchmark_wrapper() # perform multi-weight Integrated A* Search Benchmark
 		print("\n<--------------------------------------------------->\n")
 		self.astar_heuristic_weight_wrapper() # perform multi-weight, multi-heuristic A* search Benchmark
 		print("\n<--------------------------------------------------->\n")
@@ -1615,12 +1615,25 @@ class main_window(QWidget):
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
 
 		data_dir = "benchmarks/data/"
-		if code==0: filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[manhattan].txt"
-		elif code==1: filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[diagonal_distance].txt"
-		elif code==2: filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[approx_euclidean].txt"
-		elif code==3: filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[euclidean].txt"
-		elif code==4: filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[approx_distance].txt"
-		elif code==5: filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[highway].txt"
+
+		if code==0: 
+			filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[manhattan].txt"
+			current_heuristic = "manhattan"
+		elif code==1: 
+			filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[diagonal_distance].txt"
+			current_heuristic = "diagonal_distance"
+		elif code==2: 
+			filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[approx_euclidean].txt"
+			current_heuristic = "approx_euclidean"
+		elif code==3: 
+			filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[euclidean].txt"
+			current_heuristic = "euclidean"
+		elif code==4: 
+			filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[approx_distance].txt"
+			current_heuristic = "approx_distance"
+		elif code==5: 
+			filename = data_dir+"a_star-[weight="+str(weight).replace(".","_")+"]-[highway].txt"
+			current_heuristic = "highway"
 		else:
 			print("Could not recognize a_star_benchmark input code.")
 			return
@@ -1633,9 +1646,9 @@ class main_window(QWidget):
 			short = grids[:MAX_GRIDS_TO_BENCHMARK]
 
 		data = benchmark_t(filename,short)
-		data.header_info = "A* Benchmark on "+str(len(grids))+" .grid files [weight="+str(weight)+"], [heuristic="+str(code)+"]:"
+		data.header_info = "A* Benchmark on "+str(len(grids))+" .grid files [weight="+str(weight)+"], [heuristic="+str(current_heuristic)+"]:"
 
-		print(">A* Benchmark on "+str(len(grids))+" .grid files [w="+str(w1)+"], [heuristic="+str(code)+"]...")
+		print(">A* Benchmark on "+str(len(grids))+" .grid files [weight="+str(weight)+"], [heuristic="+str(current_heuristic)+"]...")
 
 		# turning off all UI interaction
 		self.grid.allow_render_mouse = False
@@ -1663,7 +1676,7 @@ class main_window(QWidget):
 					data.save()
 				return
 
-			print(">Running A* on "+grid+" with [weight="+str(weight)+"], [heuristic="+str(heuristic)+"]...")
+			print(">Running A* on "+grid+" with [weight="+str(weight)+"], [heuristic="+str(current_heuristic)+"]...")
 			self.grid.load(grid)
 			start_time = time.time()
 			self.a_star(weight,code)
@@ -1676,7 +1689,7 @@ class main_window(QWidget):
 
 			# save screenshot
 			ext = short_name[:short_name.find(".grid")]
-			filename = current_location+"/benchmarks/screenshots/a_star-[weight="+str(weight).replace(".","_")+"]-[euclidean]-["+ext+"].png"
+			filename = current_location+"/benchmarks/screenshots/a_star-[weight="+str(weight).replace(".","_")+"]-["+current_heuristic+"]-["+ext+"].png"
 			QPixmap.grabWindow(self.winId()).save(filename,'png')
 
 		data.save()
