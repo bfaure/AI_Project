@@ -1414,7 +1414,7 @@ class main_window(QWidget):
 		print(">Starting custom benchmark...")
 		### put custom benchmark combinations here
 		print("\n<--------------------------------------------------->\n")
-		#self.integrated_astar_benchmark_wrapper() # perform multi-weight Integrated A* Search Benchmark
+		self.integrated_astar_benchmark_wrapper() # perform multi-weight Integrated A* Search Benchmark
 		print("\n<--------------------------------------------------->\n")
 		self.astar_heuristic_weight_wrapper() # perform multi-weight, multi-heuristic A* search Benchmark
 		print("\n<--------------------------------------------------->\n")
@@ -1458,17 +1458,17 @@ class main_window(QWidget):
 		data_dir = "benchmarks/data/"
 		filename = data_dir+"[algo=sequential_a_star]-[w1="+str(w1).replace(".","_")+"]-[w2="+str(w2).replace(".","_")+"].txt"
 		
-		print(">Writing results to "+filename+"...")
+		#print(">Writing results to "+filename+"...")
 
 		grids,short = self.get_all_grids()
 		if len(grids)>MAX_GRIDS_TO_BENCHMARK:
 			grids = grids[:MAX_GRIDS_TO_BENCHMARK]
-			short = grids[:MAX_GRIDS_TO_BENCHMARK]
+			short = short[:MAX_GRIDS_TO_BENCHMARK]
 
 		data = benchmark_t(filename,short)
 		data.header_info = "[algo=sequential_a_star]-[w1="+str(w1).replace(".","_")+"]-[w2="+str(w2).replace(".","_")+"]"
 
-		print(">Sequential A* Benchmark on "+str(len(grids))+" .grid files [w1="+str(w1)+"], [w2="+str(w2)+"]...")
+		print("\n>Sequential A* Benchmark on "+str(len(grids))+" .grid files [w1="+str(w1)+"], [w2="+str(w2)+"]...")
 
 		# turning off all UI interaction
 		self.grid.allow_render_mouse = False
@@ -1535,17 +1535,17 @@ class main_window(QWidget):
 			filename += "-[highway_heuristic_enabled]"
 		filename += ".txt"
 
-		print(">Writing results to "+filename+"...")
+		#print(">Writing results to "+filename+"...")
 
 		grids,short = self.get_all_grids()
 		if len(grids)>MAX_GRIDS_TO_BENCHMARK:
 			grids = grids[:MAX_GRIDS_TO_BENCHMARK]
-			short = grids[:MAX_GRIDS_TO_BENCHMARK]
+			short = short[:MAX_GRIDS_TO_BENCHMARK]
 
 		data = benchmark_t(filename,short)
 		data.header_info = "[algo=integrated_a_star]-[w1="+str(w1).replace(".","_")+"]-[w2="+str(w2).replace(".","_")+"]"
 
-		print(">Integrated A* Benchmark on "+str(len(grids))+" .grid files [w1="+str(w1)+"], [w2="+str(w2)+"]...")
+		print("\n>Integrated A* Benchmark on "+str(len(grids))+" .grid files [w1="+str(w1)+"], [w2="+str(w2)+"]...")
 
 		# turning off all UI interaction
 		self.grid.allow_render_mouse = False
@@ -1647,17 +1647,17 @@ class main_window(QWidget):
 			print("Could not recognize a_star_benchmark input code.")
 			return
 
-		print(">Writing results to "+filename+"...")
+		#print(">Writing results to "+filename+"...")
 
 		grids,short = self.get_all_grids()
 		if len(grids)>MAX_GRIDS_TO_BENCHMARK:
 			grids = grids[:MAX_GRIDS_TO_BENCHMARK]
-			short = grids[:MAX_GRIDS_TO_BENCHMARK]
+			short = short[:MAX_GRIDS_TO_BENCHMARK]
 
 		data = benchmark_t(filename,short)
 		data.header_info = "[algo=a_star]-[weight="+str(weight).replace(".","_")+"]-["+current_heuristic+"]"
 		#data.header_info = "A* Benchmark on "+str(len(grids))+" .grid files [weight="+str(weight)+"], [heuristic="+str(current_heuristic)+"]:"
-		print(">A* Benchmark on "+str(len(grids))+" .grid files [weight="+str(weight)+"], [heuristic="+str(current_heuristic)+"]...")
+		print("\n>A* Benchmark on "+str(len(grids))+" .grid files [weight="+str(weight)+"], [heuristic="+str(current_heuristic)+"]...")
 
 		# turning off all UI interaction
 		self.grid.allow_render_mouse = False
@@ -1735,7 +1735,7 @@ class main_window(QWidget):
 		grids,short = self.get_all_grids()
 		if len(grids)>MAX_GRIDS_TO_BENCHMARK:
 			grids = grids[:MAX_GRIDS_TO_BENCHMARK]
-			short = grids[:MAX_GRIDS_TO_BENCHMARK]
+			short = short[:MAX_GRIDS_TO_BENCHMARK]
 
 		print(">Benchmarking Weighted A* on "+str(len(grids))+" .grid files with weight: "+str(weight)+"...")
 		print(">Writing results to "+data_dir+"weighted_a_star-benchmark"+str(benchmark_index)+".txt...")
@@ -1803,14 +1803,14 @@ class main_window(QWidget):
 		grids,short = self.get_all_grids()
 		if len(grids)>MAX_GRIDS_TO_BENCHMARK:
 			grids = grids[:MAX_GRIDS_TO_BENCHMARK]
-			short = grids[:MAX_GRIDS_TO_BENCHMARK]
+			short = short[:MAX_GRIDS_TO_BENCHMARK]
 
 		data = benchmark_t(filename,short)
 		data.header_info = "[algo=ucs]"
 		#data.header_info = "Uniform-Cost Search Benchmark on "+str(len(grids))+" .grid files:"
 
-		print(">Benchmarking UCS on "+str(len(grids))+" .grid files...")
-		print(">Writing results to "+filename+"...")
+		print("\n>Benchmarking UCS on "+str(len(grids))+" .grid files...")
+		#print(">Writing results to "+filename+"...")
 
 		# turning off all UI interaction
 		self.grid.allow_render_mouse = False
