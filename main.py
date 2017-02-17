@@ -92,6 +92,7 @@ else:
 
 pyqt_app = ""
 
+
 class attrib_value_window(QWidget):
 	# small window that opens if the user wants to change an attribute value
 	def __init__(self):
@@ -422,6 +423,7 @@ class attrib_color_window(QWidget):
 		self.is_valid = False
 		self.emit(SIGNAL("return_color_prefs()"))
 
+
 class benchmark_t(object):
 	def __init__(self,destination_filename,grid_filenames):
 		self.destination_filename = destination_filename # filename to save the data at
@@ -516,7 +518,7 @@ class main_window(QWidget):
 		print("Running Host OS: "+str(self.host_os))
 		self.show_grid_lines = False # true by default
 		self.show_solution_swarm = True # true by default
-		self.use_gradient = False # False by default
+		self.use_gradient = True # False by default
 		self.show_trace = True # true by default
 		
 		self.updating_already = False
@@ -1266,7 +1268,10 @@ class main_window(QWidget):
 					priority = updated_cost + (float(weight) * float(self.grid.heuristic_manager(neighbor, self.end_cell, code))/4.0)
 					self.frontier.push(neighbor, priority, parent=cur_node)
 
-		self.last_cost_list = cost_list
+		self.last_cost_list = ["None"] * len(self.cells)
+		for index,cost in cost_list.items():
+			self.last_cost_list[int(index)] = float(cost)
+
 		self.grid.solution_path = self.explored
 		self.grid.shortest_path = rectify_path(self.path_end)
 		self.grid.update() # render grid with new solution path
