@@ -9,6 +9,7 @@ from copy import deepcopy
 
 from os import listdir
 from os.path import isfile,join
+import subprocess # alternate for command line calls
 
 import shutil # for copying helpers.py to helpers.pyx
 import filecmp # to check if helpers.py == helpers.pyx (if exists)
@@ -69,12 +70,13 @@ if using_cython:
 
 	print("Building C code (if error here change python2 to python in main.py)...")
 	try:
-		os.system("python2 setup.py build_ext --inplace")
+		val = subprocess.Popen('python2 setup.py build_ext --inplace', shell=True).wait()
+		#os.system("python2 setup.py build_ext --inplace")
 		#if ret != 0:
 		#	os.system("python setup.py build_ext --inplace")
-	except:
-		print("here")
-		os.system("python setup.py build_ext --inplace")
+	except OSError:
+		print("python2 is not in environment, trying Python.exe...")
+		subprocess.Popen('python setup.py build_ext --inplace', shell=True).wait()
 
 	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message
 	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index, get_path_cost
