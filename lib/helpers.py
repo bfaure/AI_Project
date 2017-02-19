@@ -24,7 +24,7 @@ diagonal_movement_multiplier = sqrt(2) # used as global variable to increase spe
 
 # class to hold details for a single cell
 class cell(object):
-	def __init__(self,x_coordinate=None,y_coordinate=None,index=None):
+	def __init__(self,x_coordinate=None,y_coordinate=None,index=None,in_highway=False):
 		self.state = "free"
 		self.index = index # index in the self.cells list
 		self.x = x_coordinate # not using anymore
@@ -32,6 +32,7 @@ class cell(object):
 		self.cost = 0 # used for Priority Queue to remember cost
 		self.parent = None # used in search algos to denote parent of cell
 		self.render_coordinate = None # x0,y0,x1,y1 render pixel coordinates
+		self.in_highway = in_highway # set to True if cell is in highway path
 
 	def to_string(self):
 		cell_str = ""
@@ -248,6 +249,14 @@ class non_gui_eight_neighbor_grid:
 			else:
 				return
 			total_attempts+=self.get_highway(coord,edge,total_attempts) # try to place highway from that head
+		
+		# let cells know if they're in a highway
+		for h in self.highways:
+			for x,y in h:
+				for cell in self.cells:
+					if cell.x==x and cell.y==y:
+						self.cells[self.cells.index(cell)].in_highway = True
+						break
 
 	def init_blocked_cells(self):
 		# choose 20% of the remaining cells to mark as fully blocked, Sakai PDF
@@ -652,6 +661,7 @@ class non_gui_eight_neighbor_grid:
 				for char in line:
 
 					cell_state = None
+					in_highway = False
 					if char == '0':
 						cell_state = "full"
 					elif char == '1':
@@ -662,14 +672,16 @@ class non_gui_eight_neighbor_grid:
 						cell_state = "free"
 						coord = (x,y)
 						highways.append(coord)
+						in_highway = True
 					elif char == 'b':
 						cell_state = "partial"
 						coord = (x,y)
 						highways.append(coord)
+						in_highway = True
 					else:
 						cell_state = "free"
 
-					new_cell = cell(x,y,i)
+					new_cell = cell(x,y,i,in_highway)
 					new_cell.state = cell_state
 					new_cells.append(new_cell)
 					i+=1
@@ -1099,6 +1111,14 @@ class eight_neighbor_grid(QWidget):
 			total_attempts+=self.get_highway(coord,edge,total_attempts) # try to place highway from that head
 		if self.suppress_output: print("\n",end='\r') # save the last entry output from the get_highway() function
 
+		# let cells know if they're in a highway
+		for h in self.highways:
+			for x,y in h:
+				for cell in self.cells:
+					if cell.x==x and cell.y==y:
+						self.cells[self.cells.index(cell)].in_highway = True
+						break
+
 	def init_blocked_cells(self):
 		# choose 20% of the remaining cells to mark as fully blocked, Sakai PDF
 		if self.suppress_output==False: print("Creating fully blocked cells...")
@@ -1309,11 +1329,11 @@ class eight_neighbor_grid(QWidget):
 		s_highway = self.check_for_highway(x0,y0)
 		e_highway = self.check_for_highway(x1,y1)
 		if s_highway and e_highway:
-			return base_cost*0.5
+			return base_cost*0.1
 		if s_highway:
-			return base_cost*0.8
+			return base_cost*0.2
 		if e_highway:
-			return base_cost*0.8
+			return base_cost*0.2
 		return base_cost
 
 	def heuristic_manager(self, start, end, code, diagonal_multiplier=False):
@@ -1737,6 +1757,7 @@ class eight_neighbor_grid(QWidget):
 				for char in line:
 
 					cell_state = None
+					in_highway = False
 					if char == '0':
 						cell_state = "full"
 					elif char == '1':
@@ -1747,15 +1768,17 @@ class eight_neighbor_grid(QWidget):
 						cell_state = "free"
 						coord = (x,y)
 						highways.append(coord)
+						in_highway = True
 					elif char == 'b':
 						cell_state = "partial"
 						coord = (x,y)
 						highways.append(coord)
+						in_highway = True
 					else:
 						if self.suppress_output==False: print("WARNING: Came across invalid cell at location ("+str(x)+","+str(y)+") while loading file.")
 						cell_state = "free"
 
-					new_cell = cell(x,y,i)
+					new_cell = cell(x,y,i,in_highway)
 					new_cell.state = cell_state
 					new_cells.append(new_cell)
 					i+=1
@@ -2311,18 +2334,9 @@ def get_cell_index(current, cells):
 			return i
 	return -1
 
-def cell_in_highway(current,highways):
-	for h in highways:
-		for item in h:
-			#if item[0].index==current.index:
-			if item[0]==current.x and item[1]==current.y:
-				return True
-	return False
-
-def get_transition_cost(current_cell,new_cell,highways):
+def get_transition_cost(current_cell,new_cell):
 	# Calculates the cost of transitioning from current_cell to new_cell
 	# recall: state can be one of: "free", "partial", "full"
-
 	current_state = current_cell.state
 	new_state = new_cell.state
 
@@ -2371,9 +2385,8 @@ def get_transition_cost(current_cell,new_cell,highways):
 
 	# now need to check if both cells are in a highway
 	if orientation == "horizontal_or_vertical":
-		if cell_in_highway(current_cell,highways)==True and cell_in_highway(new_cell,highways)==True:
-			cost = cost*0.25
-
+		if current_cell.in_highway and new_cell.in_highway:
+			cost *= 0.25
 	return cost
 
 def rectify_path(path_end,break_short=False):
@@ -2495,7 +2508,7 @@ class uniform_cost_search(QThread):
 			node_neigbors = get_neighbors(cur_node,self.cells)
 
 			for neighbor in node_neigbors:
-				transition_cost = get_transition_cost(cur_node,neighbor,self.highways)
+				transition_cost = get_transition_cost(cur_node,neighbor)
 
 				# if not explored yet and not in frontier already
 				if cell_in_list(neighbor,self.explored)==False and self.frontier.has_cell(neighbor)==False:
@@ -2528,7 +2541,7 @@ class uniform_cost_search(QThread):
 		print("\nFinished uniform cost search in "+str(time.time()-self.overall_start)[:6]+" seconds, final cost: "+str(self.path_cost)+"\n")
 		return True
 
-def get_path_cost(node,highways):
+def get_path_cost(node):
 	# given an node, this function will traverse up all of the node parents
 	# and keep a tally of the cost of traverse up until the last parent
 	total_cost = 0
@@ -2538,6 +2551,6 @@ def get_path_cost(node,highways):
 		next_node = current_node.parent
 		if next_node == None:
 			return total_cost
-		total_cost += get_transition_cost(current_node,next_node,highways)
+		total_cost += get_transition_cost(current_node,next_node)
 		current_node = next_node
 	print("ERROR: Got to end of get_path_cost without reaching a node w/o a parent")

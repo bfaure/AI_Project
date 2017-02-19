@@ -45,8 +45,8 @@ GLOBAL_REFRESH_RATE = 0.1 # 0.1
 BENCHMARK_REFRESH_RATE = 10 # 10
 
 # weights used for Sequential and Integrated A* benchmarks
-W1_BENCHMARK_WEIGHTS = [1.0,1.25,2.0,4.0]
-W2_BENCHMARK_WEIGHTS = [1.0,1.25,2.0,4.0]
+W1_BENCHMARK_WEIGHTS = [1.0]#,1.25,2.0,4.0]
+W2_BENCHMARK_WEIGHTS = [1.0]#,1.25,2.0,4.0]
 
 # weights used for A* benchmarks
 ASTAR_BENCHMARK_WEIGHTS = [1.0,1.25,2.0]#,2.0,4.0]
@@ -78,7 +78,7 @@ if using_cython:
 		print("python2 is not in environment, trying Python.exe...")
 		subprocess.Popen('python setup.py build_ext --inplace', shell=True).wait()
 
-	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message
+	from helpers import PriorityQueue,get_neighbors,cell_in_list,uniform_cost_search,message
 	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index, get_path_cost
 	from helpers import non_gui_eight_neighbor_grid, cell
 
@@ -86,7 +86,7 @@ else:
 	print("Could not find Cython installation, using Python version of helpers.py")
 	lib_folder = "lib/"
 	sys.path.insert(0, lib_folder)
-	from helpers import PriorityQueue,get_neighbors,cell_in_list,cell_in_highway,uniform_cost_search,message
+	from helpers import PriorityQueue,get_neighbors,cell_in_list,uniform_cost_search,message
 	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index, get_path_cost
 	from helpers import non_gui_eight_neighbor_grid, cell
 
@@ -972,8 +972,8 @@ class main_window(QWidget):
 				if neighbor.state == "full":
 					continue
 
-			if self.cost_set_list[h_index][neighbor_index] > (self.cost_set_list[h_index][c_index] + get_transition_cost(cell_obj, neighbor, self.highways)):
-				self.cost_set_list[h_index][neighbor_index] = self.cost_set_list[h_index][c_index] + get_transition_cost(cell_obj, neighbor, self.highways)
+			if self.cost_set_list[h_index][neighbor_index] > (self.cost_set_list[h_index][c_index] + get_transition_cost(cell_obj, neighbor)):
+				self.cost_set_list[h_index][neighbor_index] = self.cost_set_list[h_index][c_index] + get_transition_cost(cell_obj, neighbor)
 
 				if cell_in_list(neighbor, self.closed_set_lists[h_index]) == False:
 					self.frontier_list[h_index].update_or_insert(neighbor, self.sequential_astar_key(h_index, w1, neighbor, neighbor_index),  parent=cell_obj)
@@ -1151,7 +1151,6 @@ class main_window(QWidget):
 		for i in range(len(self.open_t)):
 			self.open_t[i].remove(s)
 
-		#s_index = get_cell_index(s,self.cells)
 		s_index = s.index # get the index of the current cell
 		successors = get_neighbors(s,self.cells)
 
@@ -1169,10 +1168,8 @@ class main_window(QWidget):
 				if succ.state == "full":
 					continue
 
-			if self.g[succ_index] > (self.g[s_index] + get_transition_cost(s,succ,self.highways)): # if g(s') > g(s)+c(s,s')
-				self.g[succ_index] = self.g[s_index] + get_transition_cost(s,succ,self.highways) # g(s') = g(s) + c(s,s')
-
-				#if cell_in_list(succ,self.closed_anchor)==False: # if s' not in CLOSEDanchor
+			if self.g[succ_index] > (self.g[s_index] + get_transition_cost(s,succ)): # if g(s') > g(s)+c(s,s')
+				self.g[succ_index] = self.g[s_index] + get_transition_cost(s,succ) # g(s') = g(s) + c(s,s')
 				if self.closed_anchor[succ.index]==False: # if s' not in CLOSEDanchor
 					anchor_cost = self.Key(succ,0,succ_index,w1)
 					self.open_t[0].update_or_insert(succ,anchor_cost,parent=s)
@@ -1276,7 +1273,7 @@ class main_window(QWidget):
 			visited[current_node_index] = True
 
 			for neighbor in neighbor_list:
-				transition_cost = get_transition_cost(cur_node,neighbor,self.highways)
+				transition_cost = get_transition_cost(cur_node,neighbor)
 				updated_cost = cost_list[current_node_index] + transition_cost
 				neighborIndex = neighbor.index
 
@@ -1293,7 +1290,7 @@ class main_window(QWidget):
 		self.grid.shortest_path = rectify_path(self.path_end)
 		self.grid.update() # render grid with new solution path
 		pyqt_app.processEvents()
-		final_solution_cost = get_path_cost(self.path_end,self.highways)
+		final_solution_cost = get_path_cost(self.path_end)
 		print("\nFinished a* search in "+str(time.time()-overall_start)[:6]+" seconds, final cost: "+str(final_solution_cost)+", checked "+str(len(self.explored))+" cells")
 
 		if self.is_benchmark:
@@ -1309,12 +1306,11 @@ class main_window(QWidget):
 		self.stop_executing = False # Ctrl+C calls clear which will set this to true
 
 		# indicate the refresh rate here
-		#refresh_rate = 0.1 # at least every this many seconds refresh
 		refresh_rate = GLOBAL_REFRESH_RATE if self.is_benchmark==False else BENCHMARK_REFRESH_RATE
-		cost_refresh_rate = 1 # refresh if the algo has increased the current fringe cost by this much
-		explored_refresh_rate = 100 # refresh if the algo has increased the explorted count by this much
 
 		self.overall_start = time.time()
+		step_time = self.overall_start
+
 		self.fetch_current_grid_state() # set: self.cells, self.start_cell, self.end_cell, self.highways
 
 		if USE_UCS_MULTITHREADED:
@@ -1337,15 +1333,64 @@ class main_window(QWidget):
 		self.explored = [] # empty set
 
 		while True:
-			done = self.uniform_cost_step(refresh_rate,cost_refresh_rate,explored_refresh_rate)
-			self.grid.solution_path = self.explored
-			self.grid.shortest_path = rectify_path(self.path_end)
-			self.tried_paths.append(self.grid.shortest_path)
-			self.grid.path_traces = self.tried_paths
-			self.grid.update() # render grid with new solution path
-			pyqt_app.processEvents()
-			if done:
+
+			if self.stop_executing:
+				return True
+
+			print("explored: "+str(len(self.explored))+", frontier: "+str(self.frontier.length())+", time: "+str(time.time()-self.overall_start)[:6]+", cost: "+str(self.path_cost)[:5],end="\r")
+
+			if self.frontier.length() == 0:
+				print("ERROR: Uniform cost search failed to find a solution path.")
+				return True
+
+			cur_node = self.frontier.pop()
+			self.path_cost = cur_node.cost # get the path cost so far
+
+			if cur_node.x==self.end_cell[0] and cur_node.y==self.end_cell[1]:
+				# if we have reached the goal node
+				self.path_end = cur_node
 				break
+
+			self.explored.append(cur_node) # add current node to explored list
+			node_neigbors = get_neighbors(cur_node,self.cells)
+
+			for neighbor in node_neigbors:
+				if neighbor.index==cur_node.index:
+					continue
+
+				transition_cost = get_transition_cost(cur_node,neighbor)
+
+				# if not explored yet and not in frontier already
+				if cell_in_list(neighbor,self.explored)==False and self.frontier.has_cell(neighbor)==False:
+					# if not a blocked cell
+					if transition_cost!=-1:
+						# add to frontier
+						self.frontier.push(neighbor,self.path_cost+transition_cost,parent=cur_node)
+
+				# if in the frontier already
+				elif self.frontier.has_cell(neighbor)==True:
+					# if version in frontier has higher cost
+					if self.frontier.get_cell_cost(neighbor)>(self.path_cost+transition_cost):
+						self.frontier.replace_cell(neighbor,self.path_cost+transition_cost,parent=cur_node)
+
+			# at least refresh every "refresh_rate" seconds
+			if int(time.time()-step_time)>refresh_rate:
+				self.path_end = cur_node
+				self.grid.solution_path = self.explored
+				self.grid.shortest_path = rectify_path(self.path_end)
+				self.tried_paths.append(self.grid.shortest_path)
+				self.grid.path_traces = self.tried_paths
+				self.grid.update() # render grid with new solution path
+				pyqt_app.processEvents()
+				step_time = time.time()
+
+		print("\nFinished uniform cost search in "+str(time.time()-self.overall_start)[:6]+" seconds, final cost: "+str(self.path_cost)+", checked "+str(len(self.explored))+" cells\n")
+		self.grid.solution_path = self.explored
+		self.grid.shortest_path = rectify_path(self.path_end)
+		self.tried_paths.append(self.grid.shortest_path)
+		self.grid.path_traces = self.tried_paths
+		self.grid.update() # render grid with new solution path
+		pyqt_app.processEvents()
 
 		# used for benchmarking
 		if self.is_benchmark:
@@ -1384,7 +1429,7 @@ class main_window(QWidget):
 			node_neigbors = get_neighbors(cur_node,self.cells)
 
 			for neighbor in node_neigbors:
-				transition_cost = get_transition_cost(cur_node,neighbor,self.highways)
+				transition_cost = get_transition_cost(cur_node,neighbor)
 
 				# if not explored yet and not in frontier already
 				if cell_in_list(neighbor,self.explored)==False and self.frontier.has_cell(neighbor)==False:
@@ -2157,7 +2202,7 @@ class main_window(QWidget):
 		self.setEnabled(False)
 		self.allow_render_mouse = False
 		self.stop_executing = True # if performing ucs w/o multhithreading, tell it to stop
-		self.ucs_agent.stop_executing = True # if using multithreading, tell usc_agent to stop executing
+		if USE_UCS_MULTITHREADED: self.ucs_agent.stop_executing = True # if using multithreading, tell usc_agent to stop executing
 		pyqt_app.processEvents()
 		self.grid.clear()
 		self.grid.random()
@@ -2169,7 +2214,7 @@ class main_window(QWidget):
 	def clear(self):
 		# clears the current grid
 		self.stop_executing = True
-		self.ucs_agent.stop_executing = True
+		if USE_UCS_MULTITHREADED: self.ucs_agent.stop_executing = True
 		pyqt_app.processEvents()
 		self.grid.clear()
 		self.grid.repaint()
@@ -2236,8 +2281,7 @@ class main_window(QWidget):
 		self.grid.set_cell_state(self.click.x(),self.click.y(),"end")
 
 		self.end_cell = [int(self.click.x()),int(self.click.y())]
-		if USE_UCS_MULTITHREADED:
-			self.ucs_agent.end_cell = self.end_cell
+		if USE_UCS_MULTITHREADED: self.ucs_agent.end_cell = self.end_cell
 
 	def set_free(self):
 		# called when user chooses item in right click menu

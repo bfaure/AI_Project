@@ -1,13 +1,13 @@
 [algo=integrated_a_star]-[w1=1_0]-[w2=1_0]
 
 sources: [0-0.grid]
-times: [30.6940000057]
-costs: [148.44848481]
-frontiers: [3340]
-explored: [10230]
+times: [30.4869999886]
+costs: [148.112698372]
+frontiers: [3653]
+explored: [10590]
 
-Average Time: 30.6940000057 seconds
-Average Cost: 148.44848481
-Average Frontier: 3340 cells
-Average Explored: 10230 cells
-Total Time: 30.6940000057 seconds
+Average Time: 30.4869999886 seconds
+Average Cost: 148.112698372
+Average Frontier: 3653 cells
+Average Explored: 10590 cells
+Total Time: 30.4869999886 seconds
