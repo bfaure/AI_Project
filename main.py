@@ -33,7 +33,7 @@ TURN_OFF_HIGHWAY_HEURISTIC = True # True
 
 # this can be set to a lower number to reduce the amount of grids
 # that are used when benchmarking, normally set to 50
-MAX_GRIDS_TO_BENCHMARK = 50 # 50
+MAX_GRIDS_TO_BENCHMARK = 1 # 50
 
 # this is the value that is used by all of the search algoritms, it
 # denotes the maximum amount of time between grid updates while
@@ -42,7 +42,7 @@ MAX_GRIDS_TO_BENCHMARK = 50 # 50
 GLOBAL_REFRESH_RATE = 0.1 # 0.1
 
 # during benchmarking, the GLOBAL_REFRESH_RATE is swapped out with this value
-BENCHMARK_REFRESH_RATE = 5 # 10
+BENCHMARK_REFRESH_RATE = 10 # 10
 
 # weights used for Sequential and Integrated A* benchmarks
 W1_BENCHMARK_WEIGHTS = [1.0,1.25,2.0,4.0]
@@ -1038,6 +1038,16 @@ class main_window(QWidget):
 		num_iterations = 0
 		while self.open_t[0].Minkey() < inf and done==False:
 
+			if (num_iterations>100000):
+				print("\nERROR: Integrated A* hit maximum iteration limit.")
+				print("\nHeuristic Frontier Emptied: ",heuristic_queue_emptied)
+				print("Heuristic Expansion Counts:",heuristics_used)
+				sys.stdout.flush()
+				self.latest_search_cost = 0
+				self.latest_num_explored = 0
+				self.latest_frontier_length = 0
+				return
+
 			if (self.stop_executing):
 				self.set_ui_interaction(enabled=True)
 				return
@@ -1055,24 +1065,37 @@ class main_window(QWidget):
 			num_iterations += 1
 
 			for i in range(1,num_heuristics):
-				if len(self.open_t[i]._queue)==0:
-					heuristic_queue_emptied[i]+=1
-					continue
 
-				if self.open_t[i].Minkey() <= ( w2 * self.open_t[0].Minkey() ):
-					heuristics_used[i]+=1
-					if self.g[s_goal] <= self.open_t[i].Minkey() and self.g[s_goal]<inf:
-						result_code = i
-						done = True
-						break
-					else:
-						s = self.open_t[i].top()
-						last_cell = s
-						self.explored.append(s)
-						self.ExpandState(s,w1,w2)
-						#self.closed_inad.append(s)
-						self.closed_inad[s.index]=True
+				# make sure this heuristic frontier is not empty
+				if len(self.open_t[i]._queue)!=0:
+						if self.open_t[i].Minkey() <= ( w2 * self.open_t[0].Minkey() ):
+							heuristics_used[i]+=1
+							if self.g[s_goal] <= self.open_t[i].Minkey() and self.g[s_goal]<inf:
+								result_code = i
+								done = True
+								break
+							else:
+								s = self.open_t[i].top()
+								last_cell = s
+								self.explored.append(s)
+								self.ExpandState(s,w1,w2)
+								self.closed_inad[s.index]=True
+						else:
+							heuristics_used[0]+=1
+							if self.g[s_goal] <= self.open_t[0].Minkey() and self.g[s_goal]<inf:
+								result_code = 0
+								done = True
+								break
+							else:
+								s = self.open_t[0].top()
+								last_cell = s
+								self.explored.append(s)
+								self.ExpandState(s,w1,w2)
+								self.closed_anchor[s.index]=True
+
+				# if empty then just expand the anchor frontier (assuming its not empty)
 				else:
+					heuristic_queue_emptied[i]+=1
 					heuristics_used[0]+=1
 					if self.g[s_goal] <= self.open_t[0].Minkey() and self.g[s_goal]<inf:
 						result_code = 0
@@ -1083,8 +1106,10 @@ class main_window(QWidget):
 						last_cell = s
 						self.explored.append(s)
 						self.ExpandState(s,w1,w2)
-						#self.closed_anchor.append(s)
 						self.closed_anchor[s.index]=True
+
+		print("\nHeuristic Frontier Emptied: ",heuristic_queue_emptied)
+		print("Heuristic Expansion Counts:",heuristics_used,end="\r")
 
 		self.last_cost_list = ["None"] * len(self.cells)
 		for index,cost in self.g.items():
@@ -1133,8 +1158,10 @@ class main_window(QWidget):
 		self.expanded[s_index] = True
 
 		for succ in successors: # foreach s' in Succ(s)
-			#succ_index = get_cell_index(succ,self.cells)
 			succ_index = succ.index # index of the neighbor
+
+			if succ_index==s_index:
+				continue
 
 			if self.expanded[succ_index]==False: # if s' was never generated
 				self.g[succ_index] = sys.maxint # g(s') = infinity
@@ -1158,13 +1185,7 @@ class main_window(QWidget):
 								self.open_t[i].update_or_insert(succ,inad_cost,parent=s)
 
 	def Key(self,s,i,s_index,w1):
-		'''
-		if s_index==0:
-			return self.g[s_index] + w1*(float(self.grid.heuristic_manager(s,self.end_cell_t,i,True if TURN_OFF_DIAGONAL_MULTIPLIER==False else False))/4.0)
-		else:
-			return self.g[s_index] + w1*(float(self.grid.heuristic_manager(s,self.end_cell_t,i,True if TURN_OFF_DIAGONAL_MULTIPLIER==False else False)))	
-		'''
-		return self.g[s_index] + w1*(float(self.grid.heuristic_manager(s,self.end_cell_t,i,True if TURN_OFF_DIAGONAL_MULTIPLIER==False else False))/4.0)
+		return self.g[s_index] + w1*(float(self.grid.heuristic_manager(s,self.end_cell_t,i,not TURN_OFF_DIAGONAL_MULTIPLIER))/4.0)
 
 	def weighted_astar_wrapper_default_heuristic(self):
 		self.grid.allow_render_mouse = False
@@ -1251,16 +1272,12 @@ class main_window(QWidget):
 
 			#get all the neighbors of the current node
 			neighbor_list = get_neighbors(cur_node,self.cells)
-			#index_list = neighbor_index_list(neighbor_list, self.cells)
-			#pruned_list = prune_neighbors(neighbor_list, visited, index_list)
-			#current_node_index = get_cell_index(cur_node, self.cells)
 			current_node_index = cur_node.index 
 			visited[current_node_index] = True
-			#self.frontier.clear()
+
 			for neighbor in neighbor_list:
 				transition_cost = get_transition_cost(cur_node,neighbor,self.highways)
 				updated_cost = cost_list[current_node_index] + transition_cost
-				#neighborIndex = get_cell_index(neighbor, self.cells)
 				neighborIndex = neighbor.index
 
 				if (neighborIndex not in cost_list or updated_cost < cost_list[neighborIndex]) and (neighbor.state != "full") and visited[neighborIndex] == False:
@@ -1468,9 +1485,14 @@ class main_window(QWidget):
 		self.setWindowTitle("AI Project 1 - (Width:"+str(self.size().width())+", Height:"+str(self.size().height())+") - BENCHMARKING")
 
 		data_dir = "benchmarks/data/"
-		filename = data_dir+"[algo=sequential_a_star]-[w1="+str(w1).replace(".","_")+"]-[w2="+str(w2).replace(".","_")+"].txt"
+		filename = data_dir+"[algo=sequential_a_star]-[w1="+str(w1).replace(".","_")+"]-[w2="+str(w2).replace(".","_")+"]"
 		
-		#print(">Writing results to "+filename+"...")
+		# if any of these are False then append information to filename
+		if TURN_OFF_DIAGONAL_MULTIPLIER==False:
+			filename += "-[diagonal_multiplier_enabled]"
+		if TURN_OFF_HIGHWAY_HEURISTIC==False:
+			filename += "-[highway_heuristic_enabled]"
+		filename += ".txt"
 
 		grids,short = self.get_all_grids()
 		if len(grids)>MAX_GRIDS_TO_BENCHMARK:
@@ -1522,6 +1544,8 @@ class main_window(QWidget):
 
 			# save screenshot
 			ext = short_name[:short_name.find(".grid")]
+			if TURN_OFF_HIGHWAY_HEURISTIC==False: ext+="]-[highway_heuristic_enabled"
+			if TURN_OFF_DIAGONAL_MULTIPLIER==False: ext+="]-[diagonal_multiplier_enabled"
 			filename = current_location+"/benchmarks/screenshots/[algo=sequential_a_star]-[w1="+str(w1).replace(".","_")+"]-[w2="+str(w2).replace(".","_")+"]-["+ext+"].png"
 			QPixmap.grabWindow(self.winId()).save(filename,'png')
 
@@ -1604,6 +1628,8 @@ class main_window(QWidget):
 
 			# save screenshot
 			ext = short_name[:short_name.find(".grid")]
+			if TURN_OFF_HIGHWAY_HEURISTIC==False: ext+="]-[highway_heuristic_enabled"
+			if TURN_OFF_DIAGONAL_MULTIPLIER==False: ext+="]-[diagonal_multiplier_enabled"
 			filename = current_location+"/benchmarks/screenshots/[algo=integrated_a_star]-[w1="+str(w1).replace(".","_")+"]-[w2="+str(w2).replace(".","_")+"]-["+ext+"].png"
 			QPixmap.grabWindow(self.winId()).save(filename,'png')
 

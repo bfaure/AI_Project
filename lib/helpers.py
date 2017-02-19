@@ -1306,10 +1306,14 @@ class eight_neighbor_grid(QWidget):
 			print("ERROR: Input types (start="+str(type(start))+"), (end="+str(type(end))+") to heuristic are unknown.")
 			return 1
 
-		if self.check_for_highway(x0,y0):
-			base_cost = base_cost*0.75
-		if self.check_for_highway(x1,y1):
-			base_cost = base_cost*0.75
+		s_highway = self.check_for_highway(x0,y0)
+		e_highway = self.check_for_highway(x1,y1)
+		if s_highway and e_highway:
+			return base_cost*0.5
+		if s_highway:
+			return base_cost*0.8
+		if e_highway:
+			return base_cost*0.8
 		return base_cost
 
 	def heuristic_manager(self, start, end, code, diagonal_multiplier=False):
@@ -1324,7 +1328,7 @@ class eight_neighbor_grid(QWidget):
 
 		elif code == 3:
 			h = self.euclidean_heuristic(start, end)
-			if diagonal_multiplier: h *= diagonal_movement_multiplier
+			#if diagonal_multiplier: h *= diagonal_movement_multiplier
 
 		elif code == 4:
 			h = self.approx_distance_heuristic_wrapper(start, end)
