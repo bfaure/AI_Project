@@ -70,7 +70,7 @@ if using_cython:
 
 	print("Building C code (if error here change python2 to python in main.py)...")
 	try:
-		val = subprocess.Popen('python setup.py build_ext --inplace', shell=True).wait()
+		val = subprocess.Popen('python2 setup.py build_ext --inplace', shell=True).wait()
 		print("Compilation return code: "+str(val))
 		tried_python2=True
 		#os.system("python2 setup.py build_ext --inplace")
