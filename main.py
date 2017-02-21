@@ -5,7 +5,7 @@ import sys
 # Python 2.7
 import time
 import random
-from copy import deepcopy
+from copy import deepcopy, copy
 
 from os import listdir
 from os.path import isfile,join
@@ -73,11 +73,8 @@ if using_cython:
 		val = subprocess.Popen('python2 setup.py build_ext --inplace', shell=True).wait()
 		print("Compilation return code: "+str(val))
 		tried_python2=True
-		#os.system("python2 setup.py build_ext --inplace")
-		#if ret != 0:
-		#	os.system("python setup.py build_ext --inplace")
 	except:
-		print("python2 is not in environment, trying Python.exe...")
+		print("python2.exe is not in environment, trying python.exe...")
 		val = subprocess.Popen('python setup.py build_ext --inplace', shell=True).wait()
 		print("Compilation return code: "+str(val))
 		tried_python2=False
@@ -522,12 +519,20 @@ class benchmark_t(object):
 class main_window(QWidget):
 
 	# Initializations...
-	def __init__(self,parent=None):
+	def __init__(self,parent=None,code=None):
 		# constructor
 		super(main_window,self).__init__()
 		self.parent = parent
 		self.init_vars()
 		self.init_ui()
+		if code=="profile":
+			# if we are running a cProfile
+			self.grid.load("grids/0-9.grid")
+			self.snap_to_small()
+			global GLOBAL_REFRESH_RATE
+			GLOBAL_REFRESH_RATE = 10
+			self.integrated_astar()
+			sys.exit()
 
 	def init_vars(self):
 		# initialize all class variables here
@@ -927,7 +932,7 @@ class main_window(QWidget):
 		# locate the goal cell at the end of the linked list for the best path
 		self.path_end = None
 		for item in self.frontier_list[result_code]._queue:
-			cell = item[1]
+			cell = item[-1]
 			if cell.index==self.end_cell_t.index:
 				self.path_end = cell 
 				break
@@ -976,7 +981,7 @@ class main_window(QWidget):
 		self.visited_lists[h_index][c_index] = True
 
 		for neighbor in neighbors:
-			neighbor = deepcopy(neighbor)
+			neighbor = copy(neighbor)
 
 			#neighbor_index = get_cell_index(neighbor, self.cells)
 			neighbor_index = neighbor.index 
@@ -1140,7 +1145,7 @@ class main_window(QWidget):
 		self.path_end = None
 
 		for item in self.open_t[result_code]._queue:
-			cell = item[1]
+			cell = item[-1]
 			if cell.index==self.end_cell_t.index and cell.cost==final_solution_cost:
 				self.path_end = cell 
 				break
@@ -2334,13 +2339,20 @@ class main_window(QWidget):
 			self.parent.close()
 		sys.exit()
 
+def profiler():
+	# for cProfile calling
+	global pyqt_app
+	pyqt_app = QtGui.QApplication(sys.argv)
+	_ = main_window(parent=pyqt_app,code="profile")
+	sys.exit(pyqt_app.exec_())
+
 def main():
 	global pyqt_app
 
 	# if no command line arguments, regular operation
 	if len(sys.argv)==1:
 		pyqt_app = QtGui.QApplication(sys.argv)
-		_ = main_window()
+		_ = main_window(parent=pyqt_app)
 		sys.exit(pyqt_app.exec_())
 
 	# if provided two arguments

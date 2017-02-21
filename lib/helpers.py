@@ -33,6 +33,8 @@ class cell(object):
 		self.parent = None # used in search algos to denote parent of cell
 		self.render_coordinate = None # x0,y0,x1,y1 render pixel coordinates
 		self.in_highway = in_highway # set to True if cell is in highway path
+		self.neighbor_indices = None # list of indices of neighbors in self.cells list
+		self.neighbors = None # references to neighbor cells
 
 	def to_string(self):
 		cell_str = ""
@@ -824,7 +826,59 @@ class eight_neighbor_grid(QWidget):
 		i=0
 		for y in range(self.num_rows):
 			for x in range(self.num_columns):
+				neighbor_indices = []
+				if y==0 and x==0:
+					neighbor_indices.append(i+1)
+					neighbor_indices.append(i+self.num_columns)
+					neighbor_indices.append(i+1+self.num_columns)
+				elif y==self.num_rows-1 and x==self.num_columns-1:
+					neighbor_indices.append(i-1)
+					neighbor_indices.append(i-self.num_columns)
+					neighbor_indices.append(i-1-self.num_columns)
+				elif y==0 and x==self.num_columns-1:
+					neighbor_indices.append(i-1)
+					neighbor_indices.append(i+self.num_columns)
+					neighbor_indices.append(i-1+self.num_columns)
+				elif y==self.num_rows-1 and x==0:
+					neighbor_indices.append(i+1)
+					neighbor_indices.append(i-self.num_columns)
+					neighbor_indices.append(i+1-self.num_columns)
+				elif y==0:
+					neighbor_indices.append(i-1)
+					neighbor_indices.append(i+1)
+					neighbor_indices.append(i-1+self.num_columns)
+					neighbor_indices.append(i+self.num_columns)
+					neighbor_indices.append(i+1+self.num_columns)
+				elif y==self.num_rows-1:
+					neighbor_indices.append(i-1)
+					neighbor_indices.append(i+1)
+					neighbor_indices.append(i-1-self.num_columns)
+					neighbor_indices.append(i-self.num_columns)
+					neighbor_indices.append(i+1-self.num_columns)
+				elif x==0:
+					neighbor_indices.append(i+1)
+					neighbor_indices.append(i-self.num_columns)
+					neighbor_indices.append(i+1-self.num_columns)
+					neighbor_indices.append(i+self.num_columns)
+					neighbor_indices.append(i+1+self.num_columns)
+				elif x==self.num_columns-1:
+					neighbor_indices.append(i-1)
+					neighbor_indices.append(i-self.num_columns)
+					neighbor_indices.append(i+self.num_columns)
+					neighbor_indices.append(i-1-self.num_columns)
+					neighbor_indices.append(i-1+self.num_columns)
+				else:
+					neighbor_indices.append(i+1)
+					neighbor_indices.append(i-1)
+					neighbor_indices.append(i-self.num_columns)
+					neighbor_indices.append(i+self.num_columns)
+					neighbor_indices.append(i-1-self.num_columns)
+					neighbor_indices.append(i+1-self.num_columns)
+					neighbor_indices.append(i-1+self.num_columns)
+					neighbor_indices.append(i+1+self.num_columns)
+
 				new_cell = cell(x,y,i)
+				new_cell.neighbor_indices = neighbor_indices
 				self.cells.append(new_cell)
 				i+=1
 		self.start_cell = (0,0) # default start cell
@@ -835,6 +889,7 @@ class eight_neighbor_grid(QWidget):
 		self.shortest_path = []
 		self.path_traces = [] # list of all paths tried (shown to user)
 		self.current_path = None # path under cursor
+		self.associate_cell_neighbors()
 		if leave_empty: return
 
 		if self.suppress_output==False: print("\nGenerating a random grid...")
@@ -846,6 +901,26 @@ class eight_neighbor_grid(QWidget):
 		self.solution_path = [] # the path eventually filled by one of the search algos
 
 		if self.suppress_output==False: print("Finished generating random grid, "+str(time.time()-start_time)+" seconds\n")
+
+	def associate_cell_neighbors(self):
+		# go through the self.cells list and fill in neighbors
+		print("Associating cell neighbors...",end="\r")
+		for cell in self.cells:
+			print("Associating cell neighbors... "+str(self.cells.index(cell)),end="\r")
+			cell.neighbors = []
+			if cell.neighbor_indices is not None:
+				for i in cell.neighbor_indices:
+					cell.neighbors.append(self.cells[i])
+			else:
+				allowed_x = [cell.x-1,cell.x,cell.x+1]
+				allowed_y = [cell.y-1,cell.y,cell.y+1]
+				prevent_index = cell.index
+
+				for other_cell in self.cells:
+					if other_cell.x in allowed_x and other_cell.y in allowed_y and other_cell.index!=prevent_index:
+						cell_neighbors.append(other_cell)
+				cell.neighbors = cell_neighbors
+		print("\n")
 
 	def mouseMoveEvent(self, event):
 
@@ -1778,8 +1853,60 @@ class eight_neighbor_grid(QWidget):
 						if self.suppress_output==False: print("WARNING: Came across invalid cell at location ("+str(x)+","+str(y)+") while loading file.")
 						cell_state = "free"
 
+					neighbor_indices = []
+					if y==0 and x==0:
+						neighbor_indices.append(i+1)
+						neighbor_indices.append(i+self.num_columns)
+						neighbor_indices.append(i+1+self.num_columns)
+					elif y==self.num_rows-1 and x==self.num_columns-1:
+						neighbor_indices.append(i-1)
+						neighbor_indices.append(i-self.num_columns)
+						neighbor_indices.append(i-1-self.num_columns)
+					elif y==0 and x==self.num_columns-1:
+						neighbor_indices.append(i-1)
+						neighbor_indices.append(i+self.num_columns)
+						neighbor_indices.append(i-1+self.num_columns)
+					elif y==self.num_rows-1 and x==0:
+						neighbor_indices.append(i+1)
+						neighbor_indices.append(i-self.num_columns)
+						neighbor_indices.append(i+1-self.num_columns)
+					elif y==0:
+						neighbor_indices.append(i-1)
+						neighbor_indices.append(i+1)
+						neighbor_indices.append(i-1+self.num_columns)
+						neighbor_indices.append(i+self.num_columns)
+						neighbor_indices.append(i+1+self.num_columns)
+					elif y==self.num_rows-1:
+						neighbor_indices.append(i-1)
+						neighbor_indices.append(i+1)
+						neighbor_indices.append(i-1-self.num_columns)
+						neighbor_indices.append(i-self.num_columns)
+						neighbor_indices.append(i+1-self.num_columns)
+					elif x==0:
+						neighbor_indices.append(i+1)
+						neighbor_indices.append(i-self.num_columns)
+						neighbor_indices.append(i+1-self.num_columns)
+						neighbor_indices.append(i+self.num_columns)
+						neighbor_indices.append(i+1+self.num_columns)
+					elif x==self.num_columns-1:
+						neighbor_indices.append(i-1)
+						neighbor_indices.append(i-self.num_columns)
+						neighbor_indices.append(i+self.num_columns)
+						neighbor_indices.append(i-1-self.num_columns)
+						neighbor_indices.append(i-1+self.num_columns)
+					else:
+						neighbor_indices.append(i+1)
+						neighbor_indices.append(i-1)
+						neighbor_indices.append(i-self.num_columns)
+						neighbor_indices.append(i+self.num_columns)
+						neighbor_indices.append(i-1-self.num_columns)
+						neighbor_indices.append(i+1-self.num_columns)
+						neighbor_indices.append(i-1+self.num_columns)
+						neighbor_indices.append(i+1+self.num_columns)
+
 					new_cell = cell(x,y,i,in_highway)
 					new_cell.state = cell_state
+					new_cell.neighbor_indices = neighbor_indices
 					new_cells.append(new_cell)
 					i+=1
 					x+=1
@@ -1791,6 +1918,7 @@ class eight_neighbor_grid(QWidget):
 		self.hard_to_traverse_regions 	= []
 		for item in hard_to_traverse_regions:
 			self.hard_to_traverse_regions.append(eval(item))
+		self.associate_cell_neighbors() # fill in cell neighbors
 		# now need to flush the elements from the highways list and reorganize
 		# it into individual lists that each represent an individual highway
 		self.highways = [] # list of lists of coordinates
@@ -2216,30 +2344,30 @@ class eight_neighbor_grid(QWidget):
 
 class PriorityQueue:
 
-	def __init__(self):
+	def __init__(self,max_len=20000):
 		self._queue = []
 		self._index = 0
+		self.max_len = max_len
+		self.cells_in_queue = [False] * max_len
 
 	def push(self, item, cost, parent):
 		# Push element onto queue
 		item.cost = cost # save the cost to the cell struct
 		item.parent = parent
 		#heapq.heappush(self._queue, (cost, self._index, item))
-		heapq.heappush(self._queue, (cost, item))
+		heapq.heappush(self._queue, (cost, self._index, item))
+		self.cells_in_queue[item.index] = True
 		self._index += 1
 
 	def pop(self):
 		# Return the item with the lowest cost
-		item = heapq.heappop(self._queue)[-1]
+		index,item = heapq.heappop(self._queue)[1:]
+		self.cells_in_queue[item.index] = False
 		self._index += -1
 		return item
 
 	def top(self):
-		temp = heapq.heappop(self._queue)[-1]
-		self._index += -1
-		#heapq.heappush(self._queue, (temp.cost, self._index, temp))
-		heapq.heappush(self._queue, (temp.cost, temp))
-		self._index += 1
+		return self._queue[0][-1]
 		return temp
 
 	def length(self):
@@ -2249,16 +2377,11 @@ class PriorityQueue:
 	def clear(self):
 		self._queue = []
 		self._index = 0
+		self.cells_in_queue = [False] * self.max_len
 
 	def has_cell(self,cell):
 		# Returns True if the cell is in the queue, False if not
-		for item in self._queue:
-			#queued_cell = item[2]
-			queued_cell = item[1]
-			#if cell.x==queued_cell.x and cell.y==queued_cell.y:
-			if cell.index==queued_cell.index:
-				return True
-		return False
+		return self.cells_in_queue[cell.index]
 
 	def update_or_insert(self,cell,cost,parent):
 		# either updates the cell cost or inserts it as a new cell if not yet in queue
@@ -2270,9 +2393,7 @@ class PriorityQueue:
 	def remove(self,cell):
 		i = 0
 		for item in self._queue:
-			#queued_cell = item[2]
-			queued_cell = item[1]
-			#if cell.x==queued_cell.x and cell.y==queued_cell.y:
+			queued_cell = item[-1]
 			if cell.index==queued_cell.index:
 				del self._queue[i]
 				self._index += -1
@@ -2284,7 +2405,7 @@ class PriorityQueue:
 		i = 0
 		for item in self._queue:
 			#queued_cell = item[2]
-			queued_cell = item[1]
+			queued_cell = item[-1]
 			#if queued_cell.x==cell.x and queued_cell.y==cell.y:
 			if queued_cell.index==cell.index:
 				del self._queue[i]
@@ -2294,13 +2415,8 @@ class PriorityQueue:
 		self.push(cell,new_cost,parent)
 
 	def get_cell_cost(self,cell):
-		for item in self._queue:
-			#if cell.x==item[2].x and cell.y==item[2].y:
-			if cell.index==item[1].index:
-				return item[1].cost
-			#if cell.x==item[1].x and cell.y==item[1].y:
-				#return item[2].cost
-			#	return item[1].cost
+		for cost,_,item in self._queue:
+			if cell.index==item.index: return cost
 
 	def Minkey(self):
 		# returns the value of the smallest cost
@@ -2309,6 +2425,8 @@ class PriorityQueue:
 
 def get_neighbors(current,cells):
 	# Returns a list of all 8 neighbor cells to "current"
+	return current.neighbors
+	'''
 	x = current.x
 	y = current.y
 	neighbors = []
@@ -2316,7 +2434,7 @@ def get_neighbors(current,cells):
 		if cell.x in [x,x-1,x+1] and cell.y in [y,y-1,y+1]:
 			neighbors.append(cell)
 	return neighbors
-
+	'''
 def cell_in_list(current,cells):
 	# Returns True if "current" is in the list, False if not
 	for cell in cells:
