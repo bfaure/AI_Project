@@ -70,14 +70,33 @@ if using_cython:
 
 	print("Building C code (if error here change python2 to python in main.py)...")
 	try:
-		val = subprocess.Popen('python2 setup.py build_ext --inplace', shell=True).wait()
+		val = subprocess.Popen('python setup.py build_ext --inplace', shell=True).wait()
+		print("Compilation return code: "+str(val))
+		tried_python2=True
 		#os.system("python2 setup.py build_ext --inplace")
 		#if ret != 0:
 		#	os.system("python setup.py build_ext --inplace")
-	except OSError:
+	except:
 		print("python2 is not in environment, trying Python.exe...")
-		subprocess.Popen('python setup.py build_ext --inplace', shell=True).wait()
+		val = subprocess.Popen('python setup.py build_ext --inplace', shell=True).wait()
+		print("Compilation return code: "+str(val))
+		tried_python2=False
 
+	if tried_python2==True and val!=0:
+		print("python2 is not in environment, trying Python.exe...")
+		val = subprocess.Popen('python setup.py build_ext --inplace', shell=True).wait()
+		print("Compilation return code: "+str(val))
+		
+		if val!=0: 
+			using_cython=False		
+			print("Could not compile Cython using python.exe or python2.exe")
+			choice = raw_input("Would you like to run without Cython? [y/n]: ")
+			if choice in ["N","n"]:
+				print("Exiting.")
+				sys.exit()
+			else:
+				sys.path.insert(0,"lib/")
+	
 	from helpers import PriorityQueue,get_neighbors,cell_in_list,uniform_cost_search,message
 	from helpers import get_transition_cost,rectify_path,eight_neighbor_grid, get_cell_index, get_path_cost
 	from helpers import non_gui_eight_neighbor_grid, cell
