@@ -1931,7 +1931,7 @@ class main_window(QWidget):
 					print("WARNING: Saving partial benchmark data.")
 					data.save()
 				return
-				
+
 			self.grid.verbose = False
 			print(">Running Uniform-Cost Search on "+grid+"...")
 			self.grid.load(grid)

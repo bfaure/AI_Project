@@ -785,6 +785,7 @@ class eight_neighbor_grid(QWidget):
 		self.mouse_location = None # the current location of the mouse over the widget
 		self.mouse_color = [243,243,21] # purple for cell under cursor
 		self.mouse_render_location = [0,0]
+		self.mouse_render_coordinates = [0,0]
 
 		self.horizontal_step = 1 # set later
 		self.vertical_step = 1 # set later
@@ -921,17 +922,34 @@ class eight_neighbor_grid(QWidget):
 
 	def associate_cell_neighbors(self):
 		# go through the self.cells list and fill in neighbors
-		if self.verbose: print("Associating cell neighbors...",end="\r")
+		progress_bar_length = 25
+		progress_bar_item = "-"
+		progress_bar_empty_item = " "
+
+		if self.verbose: print("Initializing cells... [",end="\r")
 		if self.cells[0].neighbor_indices is not None:
 			for cell in self.cells:
-				if self.verbose: print("Associating cell neighbors... "+str(self.cells.index(cell)),end="\r")
+				if self.verbose:
+					num_items = int(  (float(cell.index)/float(len(self.cells)))*float(progress_bar_length) )
+					percent = str(float(cell.index/len(self.cells))*100)[:4]
+					progress_string = ""
+					for prog_index in range(progress_bar_length):
+						if prog_index<=num_items:
+							progress_string += progress_bar_item
+						else:
+							progress_string += progress_bar_empty_item
+					progress_string += "]"
+					print("Initializing cells... ["+progress_string,end="\r")
+					sys.stdout.flush()
+
+				#if self.verbose: print("Associating cell neighbors... ["+str(self.cells.index(cell)),end="\r")
 				cell.neighbors = []
 				if cell.neighbor_indices is not None:
 					for i in cell.neighbor_indices:
 						cell.neighbors.append(self.cells[i])
 		else:
 			for cell in self.cells:
-				if self.verbose: print("Associating cell neighbors... "+str(self.cells.index(cell)),end="\r")
+				if self.verbose: print("Initializing cells... "+str(self.cells.index(cell)),end="\r")
 				cell.neighbors = []
 
 				allowed_x = [cell.x-1,cell.x,cell.x+1]
@@ -962,12 +980,13 @@ class eight_neighbor_grid(QWidget):
 				return
 
 			self.mouse_render_location = current_cell_attributes.coordinates
+			self.mouse_render_coordinates = self.cells[current_cell_attributes.index].render_coordinate
 
 			current_cell_attributes.is_valid = True
 			current_cell_attributes.state = self.get_cell_state(current_cell_attributes.coordinates[0],current_cell_attributes.coordinates[1])
-			current_cell_attributes.h = self.get_h_value(x,y)
-			current_cell_attributes.g = self.get_g_value(x,y)
-			current_cell_attributes.f = current_cell_attributes.h+current_cell_attributes.g
+			#current_cell_attributes.h = self.get_h_value(x,y)
+			#current_cell_attributes.g = self.get_g_value(x,y)
+			#current_cell_attributes.f = current_cell_attributes.h+current_cell_attributes.g
 
 			if self.trace_highlighting:
 				if len(self.solution_path)>0:
@@ -1941,7 +1960,7 @@ class eight_neighbor_grid(QWidget):
 						new_cell = self.cells[i]
 						new_cell.state = cell_state
 						new_cell.in_highway = in_highway
-						
+
 					new_cells.append(new_cell)
 					i+=1
 					x+=1
@@ -2201,11 +2220,13 @@ class eight_neighbor_grid(QWidget):
 					x = self.mouse_render_location[0]
 					y = self.mouse_render_location[1]
 
+				qp.drawRect(self.mouse_render_coordinates[0],self.mouse_render_coordinates[1],horizontal_step,vertical_step)
+				'''
 				for cell in self.cells:
 					if cell.x==x and cell.y==y:
 						qp.drawRect(cell.render_coordinate[0],cell.render_coordinate[1],horizontal_step,vertical_step)
 						break
-
+				'''
 					#if x>=(cell.render_coordinate[0]) and x<(cell.render_coordinate[0]+horizontal_step):
 					#	if y>=(cell.render_coordinate[1]) and y<(cell.render_coordinate[1]+vertical_step):
 					#		qp.drawRect(cell.render_coordinate[0],cell.render_coordinate[1],horizontal_step,vertical_step)
