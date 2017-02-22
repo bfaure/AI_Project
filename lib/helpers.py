@@ -36,6 +36,16 @@ class cell(object):
 		self.neighbor_indices = None # list of indices of neighbors in self.cells list
 		self.neighbors = None # references to neighbor cells
 
+	def reset_cell(self,preserve_neighbors_and_index=True):
+		# resets the data in the cell
+		self.state = "free"
+		self.cost = 0
+		self.parent = None 
+		self.render_coordinate = None 
+		self.in_highway = False 
+		if not preserve_neighbors_and_index: self.neighbor_indices = None
+		if not preserve_neighbors_and_index: self.neighbors = None
+
 	def to_string(self):
 		cell_str = ""
 		cell_str += "("+str(self.x)+","+str(self.y)+"), "
@@ -817,70 +827,77 @@ class eight_neighbor_grid(QWidget):
 		self.solution_trace_line_type = "DotLine"
 		self.highway_line_type = "SolidLine"
 
-	def init_cells(self,leave_empty=False):
+	def init_cells(self,leave_empty=False,reassociate=True):
 		# creates the list of cells in the grid (all default to free), if leave_empty
 		# is False then we will fill in the grid following the instructions in the
 		# assignment pdf
-		self.cells = []
-		self.verbose = True # if true then the time to paint the grid will be printed to terminal
-		i=0
-		for y in range(self.num_rows):
-			for x in range(self.num_columns):
-				neighbor_indices = []
-				if y==0 and x==0:
-					neighbor_indices.append(i+1)
-					neighbor_indices.append(i+self.num_columns)
-					neighbor_indices.append(i+1+self.num_columns)
-				elif y==self.num_rows-1 and x==self.num_columns-1:
-					neighbor_indices.append(i-1)
-					neighbor_indices.append(i-self.num_columns)
-					neighbor_indices.append(i-1-self.num_columns)
-				elif y==0 and x==self.num_columns-1:
-					neighbor_indices.append(i-1)
-					neighbor_indices.append(i+self.num_columns)
-					neighbor_indices.append(i-1+self.num_columns)
-				elif y==self.num_rows-1 and x==0:
-					neighbor_indices.append(i+1)
-					neighbor_indices.append(i-self.num_columns)
-					neighbor_indices.append(i+1-self.num_columns)
-				elif y==0:
-					neighbor_indices.append(i-1)
-					neighbor_indices.append(i+1)
-					neighbor_indices.append(i-1+self.num_columns)
-					neighbor_indices.append(i+self.num_columns)
-					neighbor_indices.append(i+1+self.num_columns)
-				elif y==self.num_rows-1:
-					neighbor_indices.append(i-1)
-					neighbor_indices.append(i+1)
-					neighbor_indices.append(i-1-self.num_columns)
-					neighbor_indices.append(i-self.num_columns)
-					neighbor_indices.append(i+1-self.num_columns)
-				elif x==0:
-					neighbor_indices.append(i+1)
-					neighbor_indices.append(i-self.num_columns)
-					neighbor_indices.append(i+1-self.num_columns)
-					neighbor_indices.append(i+self.num_columns)
-					neighbor_indices.append(i+1+self.num_columns)
-				elif x==self.num_columns-1:
-					neighbor_indices.append(i-1)
-					neighbor_indices.append(i-self.num_columns)
-					neighbor_indices.append(i+self.num_columns)
-					neighbor_indices.append(i-1-self.num_columns)
-					neighbor_indices.append(i-1+self.num_columns)
-				else:
-					neighbor_indices.append(i+1)
-					neighbor_indices.append(i-1)
-					neighbor_indices.append(i-self.num_columns)
-					neighbor_indices.append(i+self.num_columns)
-					neighbor_indices.append(i-1-self.num_columns)
-					neighbor_indices.append(i+1-self.num_columns)
-					neighbor_indices.append(i-1+self.num_columns)
-					neighbor_indices.append(i+1+self.num_columns)
+		if not reassociate:
+			# if we already have the self.cells list associated correctly with the neighbors set we can just
+			# clear the attributes of the self.cells and avoid having to re-create the <=8 pointers per cell
+			for i in range(len(self.cells)):
+				self.cells[i].reset_cell(preserve_neighbors_and_index=True)
+		else:
+			# need to create new self.cells list and associate neighbors later
+			self.cells = []
+			self.verbose = True # if true then the time to paint the grid will be printed to terminal
+			i=0
+			for y in range(self.num_rows):
+				for x in range(self.num_columns):
+					neighbor_indices = []
+					if y==0 and x==0:
+						neighbor_indices.append(i+1)
+						neighbor_indices.append(i+self.num_columns)
+						neighbor_indices.append(i+1+self.num_columns)
+					elif y==self.num_rows-1 and x==self.num_columns-1:
+						neighbor_indices.append(i-1)
+						neighbor_indices.append(i-self.num_columns)
+						neighbor_indices.append(i-1-self.num_columns)
+					elif y==0 and x==self.num_columns-1:
+						neighbor_indices.append(i-1)
+						neighbor_indices.append(i+self.num_columns)
+						neighbor_indices.append(i-1+self.num_columns)
+					elif y==self.num_rows-1 and x==0:
+						neighbor_indices.append(i+1)
+						neighbor_indices.append(i-self.num_columns)
+						neighbor_indices.append(i+1-self.num_columns)
+					elif y==0:
+						neighbor_indices.append(i-1)
+						neighbor_indices.append(i+1)
+						neighbor_indices.append(i-1+self.num_columns)
+						neighbor_indices.append(i+self.num_columns)
+						neighbor_indices.append(i+1+self.num_columns)
+					elif y==self.num_rows-1:
+						neighbor_indices.append(i-1)
+						neighbor_indices.append(i+1)
+						neighbor_indices.append(i-1-self.num_columns)
+						neighbor_indices.append(i-self.num_columns)
+						neighbor_indices.append(i+1-self.num_columns)
+					elif x==0:
+						neighbor_indices.append(i+1)
+						neighbor_indices.append(i-self.num_columns)
+						neighbor_indices.append(i+1-self.num_columns)
+						neighbor_indices.append(i+self.num_columns)
+						neighbor_indices.append(i+1+self.num_columns)
+					elif x==self.num_columns-1:
+						neighbor_indices.append(i-1)
+						neighbor_indices.append(i-self.num_columns)
+						neighbor_indices.append(i+self.num_columns)
+						neighbor_indices.append(i-1-self.num_columns)
+						neighbor_indices.append(i-1+self.num_columns)
+					else:
+						neighbor_indices.append(i+1)
+						neighbor_indices.append(i-1)
+						neighbor_indices.append(i-self.num_columns)
+						neighbor_indices.append(i+self.num_columns)
+						neighbor_indices.append(i-1-self.num_columns)
+						neighbor_indices.append(i+1-self.num_columns)
+						neighbor_indices.append(i-1+self.num_columns)
+						neighbor_indices.append(i+1+self.num_columns)
 
-				new_cell = cell(x,y,i)
-				new_cell.neighbor_indices = neighbor_indices
-				self.cells.append(new_cell)
-				i+=1
+					new_cell = cell(x,y,i)
+					new_cell.neighbor_indices = neighbor_indices
+					self.cells.append(new_cell)
+					i+=1
 		self.start_cell = (0,0) # default start cell
 		self.end_cell = (self.num_columns-1,self.num_rows-1) # default end cell
 		self.hard_to_traverse_regions = [] # empty by default
@@ -889,7 +906,7 @@ class eight_neighbor_grid(QWidget):
 		self.shortest_path = []
 		self.path_traces = [] # list of all paths tried (shown to user)
 		self.current_path = None # path under cursor
-		self.associate_cell_neighbors()
+		if reassociate: self.associate_cell_neighbors()
 		if leave_empty: return
 
 		if self.suppress_output==False: print("\nGenerating a random grid...")
@@ -1057,11 +1074,16 @@ class eight_neighbor_grid(QWidget):
 		# that these cells were part of the same highway when, in reality, they were
 		# just two highways next to eachother.
 		if self.check_for_highway(x_coord,y_coord,temp_highway): return True
-		temp_cell = cell(x_coord,y_coord)
-		neighbors = get_neighbors(temp_cell)
+		#temp_cell = cell(x_coord,y_coord)
+		neighbors = get_neighbors(self.cells[self.xy_to_i(x_coord,y_coord)])
 		for neighbor in neighbors:
 			if self.check_for_highway(neighbor.x,neighbor.y): return True
 		return False
+
+	def xy_to_i(self,x,y):
+		# converts x and y coordinates to self.cells index
+		# x,y start at zero --> self.num_cols-1,self.num_rows-1
+		return y*self.num_columns + x
 
 	def get_highway(self,head,edge,total_attempts):
 		# helper function for the init_highways function, returns True if it can
@@ -1521,11 +1543,11 @@ class eight_neighbor_grid(QWidget):
 
 	def clear(self):
 		# clears the current grid
-		self.init_cells(leave_empty=True)
+		self.init_cells(leave_empty=True,reassociate=False)
 
 	def random(self):
 		# same as clear but creates a new random grid after clearing
-		self.init_cells(leave_empty=False)
+		self.init_cells(leave_empty=False,reassociate=False)
 
 	def save(self,filename):
 		# saves the current grid to filename location
@@ -1796,9 +1818,11 @@ class eight_neighbor_grid(QWidget):
 		if self.suppress_output==False: print("WARNING: Highway was repaired.")
 		return
 
-	def load(self,filename):
+	def load(self,filename,reassociate=False):
 		# loads in a new set of cells from a file, see the assignment pdf for
 		# details on the file format
+		self.clear() # clear the self.cells cell structs
+
 		f 			= open(filename,'r') # open the file
 		lines 		= f.read().split('\n') # split file into lines
 		new_cells 	= [] # to hold the new cells
@@ -1857,60 +1881,67 @@ class eight_neighbor_grid(QWidget):
 						if self.suppress_output==False: print("WARNING: Came across invalid cell at location ("+str(x)+","+str(y)+") while loading file.")
 						cell_state = "free"
 
-					neighbor_indices = []
-					if y==0 and x==0:
-						neighbor_indices.append(i+1)
-						neighbor_indices.append(i+self.num_columns)
-						neighbor_indices.append(i+1+self.num_columns)
-					elif y==self.num_rows-1 and x==self.num_columns-1:
-						neighbor_indices.append(i-1)
-						neighbor_indices.append(i-self.num_columns)
-						neighbor_indices.append(i-1-self.num_columns)
-					elif y==0 and x==self.num_columns-1:
-						neighbor_indices.append(i-1)
-						neighbor_indices.append(i+self.num_columns)
-						neighbor_indices.append(i-1+self.num_columns)
-					elif y==self.num_rows-1 and x==0:
-						neighbor_indices.append(i+1)
-						neighbor_indices.append(i-self.num_columns)
-						neighbor_indices.append(i+1-self.num_columns)
-					elif y==0:
-						neighbor_indices.append(i-1)
-						neighbor_indices.append(i+1)
-						neighbor_indices.append(i-1+self.num_columns)
-						neighbor_indices.append(i+self.num_columns)
-						neighbor_indices.append(i+1+self.num_columns)
-					elif y==self.num_rows-1:
-						neighbor_indices.append(i-1)
-						neighbor_indices.append(i+1)
-						neighbor_indices.append(i-1-self.num_columns)
-						neighbor_indices.append(i-self.num_columns)
-						neighbor_indices.append(i+1-self.num_columns)
-					elif x==0:
-						neighbor_indices.append(i+1)
-						neighbor_indices.append(i-self.num_columns)
-						neighbor_indices.append(i+1-self.num_columns)
-						neighbor_indices.append(i+self.num_columns)
-						neighbor_indices.append(i+1+self.num_columns)
-					elif x==self.num_columns-1:
-						neighbor_indices.append(i-1)
-						neighbor_indices.append(i-self.num_columns)
-						neighbor_indices.append(i+self.num_columns)
-						neighbor_indices.append(i-1-self.num_columns)
-						neighbor_indices.append(i-1+self.num_columns)
-					else:
-						neighbor_indices.append(i+1)
-						neighbor_indices.append(i-1)
-						neighbor_indices.append(i-self.num_columns)
-						neighbor_indices.append(i+self.num_columns)
-						neighbor_indices.append(i-1-self.num_columns)
-						neighbor_indices.append(i+1-self.num_columns)
-						neighbor_indices.append(i-1+self.num_columns)
-						neighbor_indices.append(i+1+self.num_columns)
+					if reassociate==True:
+						neighbor_indices = []
+						if y==0 and x==0:
+							neighbor_indices.append(i+1)
+							neighbor_indices.append(i+self.num_columns)
+							neighbor_indices.append(i+1+self.num_columns)
+						elif y==self.num_rows-1 and x==self.num_columns-1:
+							neighbor_indices.append(i-1)
+							neighbor_indices.append(i-self.num_columns)
+							neighbor_indices.append(i-1-self.num_columns)
+						elif y==0 and x==self.num_columns-1:
+							neighbor_indices.append(i-1)
+							neighbor_indices.append(i+self.num_columns)
+							neighbor_indices.append(i-1+self.num_columns)
+						elif y==self.num_rows-1 and x==0:
+							neighbor_indices.append(i+1)
+							neighbor_indices.append(i-self.num_columns)
+							neighbor_indices.append(i+1-self.num_columns)
+						elif y==0:
+							neighbor_indices.append(i-1)
+							neighbor_indices.append(i+1)
+							neighbor_indices.append(i-1+self.num_columns)
+							neighbor_indices.append(i+self.num_columns)
+							neighbor_indices.append(i+1+self.num_columns)
+						elif y==self.num_rows-1:
+							neighbor_indices.append(i-1)
+							neighbor_indices.append(i+1)
+							neighbor_indices.append(i-1-self.num_columns)
+							neighbor_indices.append(i-self.num_columns)
+							neighbor_indices.append(i+1-self.num_columns)
+						elif x==0:
+							neighbor_indices.append(i+1)
+							neighbor_indices.append(i-self.num_columns)
+							neighbor_indices.append(i+1-self.num_columns)
+							neighbor_indices.append(i+self.num_columns)
+							neighbor_indices.append(i+1+self.num_columns)
+						elif x==self.num_columns-1:
+							neighbor_indices.append(i-1)
+							neighbor_indices.append(i-self.num_columns)
+							neighbor_indices.append(i+self.num_columns)
+							neighbor_indices.append(i-1-self.num_columns)
+							neighbor_indices.append(i-1+self.num_columns)
+						else:
+							neighbor_indices.append(i+1)
+							neighbor_indices.append(i-1)
+							neighbor_indices.append(i-self.num_columns)
+							neighbor_indices.append(i+self.num_columns)
+							neighbor_indices.append(i-1-self.num_columns)
+							neighbor_indices.append(i+1-self.num_columns)
+							neighbor_indices.append(i-1+self.num_columns)
+							neighbor_indices.append(i+1+self.num_columns)
 
-					new_cell = cell(x,y,i,in_highway)
-					new_cell.state = cell_state
-					new_cell.neighbor_indices = neighbor_indices
+						new_cell = cell(x,y,i,in_highway)
+						new_cell.state = cell_state
+						new_cell.neighbor_indices = neighbor_indices
+
+					else:
+						new_cell = self.cells[i]
+						new_cell.state = cell_state
+						new_cell.in_highway = in_highway
+						
 					new_cells.append(new_cell)
 					i+=1
 					x+=1
@@ -1923,6 +1954,7 @@ class eight_neighbor_grid(QWidget):
 		for item in hard_to_traverse_regions:
 			self.hard_to_traverse_regions.append(eval(item))
 		self.associate_cell_neighbors() # fill in cell neighbors
+
 		# now need to flush the elements from the highways list and reorganize
 		# it into individual lists that each represent an individual highway
 		self.highways = [] # list of lists of coordinates
