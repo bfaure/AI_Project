@@ -1,6 +1,16 @@
 import os
 import sys
 
+GET_SOURCES 			= True
+GET_TIMES 				= True
+GET_COSTS 				= True
+GET_FRONTIERS 			= False
+GET_EXPLORED 			= False
+GET_MEMORY_FOOTPRINT 	= True
+GET_EFFICIENCY 			= False
+GET_SPEED 				= False
+
+
 def main():
 	data_dir = "data/"
 	files = os.listdir(data_dir)
@@ -27,6 +37,7 @@ def main():
 			costs = []
 			frontiers = [] # length of frontier
 			explored = []  # number explored cells
+			memory_footprint = [] # explored+frontier
 			efficiency = [] # time * cost 
 			speed = [] # explored / time
 
@@ -35,24 +46,28 @@ def main():
 				lines = f.read().split("\n")
 				file_index = cur_algo_files.index(filename)
 
-				# making the header shorter so it fits in to the MATLAB file importer title
-				info = lines[0]
-				info = info[info.find("algo=")+5:]
-				info = info.replace("_","")
-				info = info.replace("weight","w")
-				info = info.replace("=","")
-				info = info.replace("]-[",".")
-				info = info.replace("]",".")
-				info = info.replace(".","_")
-				
-				info = info.replace("integratedastar","intastar")
-				info = info.replace("sequentialastar","seqastar")
+				trim_title = False
+				if trim_title:
+					# making the header shorter so it fits in to the MATLAB file importer title
+					info = lines[0]
+					info = info[info.find("algo=")+5:]
+					info = info.replace("_","")
+					info = info.replace("weight","w")
+					info = info.replace("=","")
+					info = info.replace("]-[",".")
+					info = info.replace("]",".")
+					info = info.replace(".","_")
+					
+					info = info.replace("integratedastar","intastar")
+					info = info.replace("sequentialastar","seqastar")
 
-				info = info.replace("approxdistance","appdist")
-				info = info.replace("approxeuclidean","appeuc")
-				info = info.replace("diagonaldistance","diagdist")
-				info = info.replace("euclidean","euc")
-				info = info.replace("manhattan","man")
+					info = info.replace("approxdistance","appdist")
+					info = info.replace("approxeuclidean","appeuc")
+					info = info.replace("diagonaldistance","diagdist")
+					info = info.replace("euclidean","euc")
+					info = info.replace("manhattan","man")
+				else:
+					info = lines[0]
 
 				headers.append(info)
 
@@ -95,18 +110,35 @@ def main():
 					else: cur_speed.append(str(float(e)/float(t)))
 				speed.append(cur_speed)
 
+				cur_memory = []
+				for explored_size,frontier_size in list(zip(explored[file_index],frontiers[file_index])):
+					try:
+						e = int(explored_size)
+					except:
+						e = -1
+						print("ERROR while reading "+filename+" explored data")
+					try:
+						f = int(frontier_size)
+					except:
+						f = -1
+						print("ERROR while reading "+filename+" frontier data")
+
+					cur_memory.append(str(int(e)+int(f)))
+				memory_footprint.append(cur_memory)
+
 			f = open(algo+".txt","w")
 
 			# write out the first line of the file
 			for header in headers:
 
-				f.write(header+"src\t")
-				f.write(header+"time\t")
-				f.write(header+"cost\t")
-				f.write(header+"front\t")
-				f.write(header+"eff\t")
-				f.write(header+"speed\t")
-				f.write(header+"expl")
+				if GET_SOURCES: 	f.write(header+"_sources\t")
+				if GET_TIMES: 		f.write(header+"_times\t")
+				if GET_COSTS: 		f.write(header+"_costs\t")
+				if GET_MEMORY_FOOTPRINT: f.write(header+"_memory")
+				if GET_FRONTIERS: 	f.write(header+"_front\t")
+				if GET_EFFICIENCY:	f.write(header+"_eff\t")
+				if GET_SPEED: 		f.write(header+"_speed\t")
+				if GET_EXPLORED: 	f.write(header+"_expl")
 
 				if headers.index(header)!=len(headers)-1:
 					f.write("\t")
@@ -115,13 +147,14 @@ def main():
 			data_index = 0
 			while data_index<len(sources[0]):
 				for header in headers:
-					f.write(sources[headers.index(header)][data_index]+"\t")
-					f.write(times[headers.index(header)][data_index]+"\t")
-					f.write(costs[headers.index(header)][data_index]+"\t")
-					f.write(frontiers[headers.index(header)][data_index]+"\t")
-					f.write(efficiency[headers.index(header)][data_index]+"\t")
-					f.write(speed[headers.index(header)][data_index]+"\t")
-					f.write(explored[headers.index(header)][data_index])
+					if GET_SOURCES: 		f.write(sources[headers.index(header)][data_index]+"\t")
+					if GET_TIMES: 			f.write(times[headers.index(header)][data_index]+"\t")
+					if GET_COSTS: 			f.write(costs[headers.index(header)][data_index]+"\t")
+					if GET_MEMORY_FOOTPRINT:f.write(memory_footprint[headers.index(header)][data_index]+"\t")
+					if GET_FRONTIERS: 		f.write(frontiers[headers.index(header)][data_index]+"\t")
+					if GET_EFFICIENCY: 		f.write(efficiency[headers.index(header)][data_index]+"\t")
+					if GET_SPEED: 			f.write(speed[headers.index(header)][data_index]+"\t")
+					if GET_EXPLORED: 		f.write(explored[headers.index(header)][data_index])
 					if headers.index(header)!=len(headers)-1:
 						f.write("\t")
 				f.write("\n")

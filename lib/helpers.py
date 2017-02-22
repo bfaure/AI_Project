@@ -904,23 +904,27 @@ class eight_neighbor_grid(QWidget):
 
 	def associate_cell_neighbors(self):
 		# go through the self.cells list and fill in neighbors
-		print("Associating cell neighbors...",end="\r")
-		for cell in self.cells:
-			print("Associating cell neighbors... "+str(self.cells.index(cell)),end="\r")
-			cell.neighbors = []
-			if cell.neighbor_indices is not None:
-				for i in cell.neighbor_indices:
-					cell.neighbors.append(self.cells[i])
-			else:
+		if self.verbose: print("Associating cell neighbors...",end="\r")
+		if self.cells[0].neighbor_indices is not None:
+			for cell in self.cells:
+				if self.verbose: print("Associating cell neighbors... "+str(self.cells.index(cell)),end="\r")
+				cell.neighbors = []
+				if cell.neighbor_indices is not None:
+					for i in cell.neighbor_indices:
+						cell.neighbors.append(self.cells[i])
+		else:
+			for cell in self.cells:
+				if self.verbose: print("Associating cell neighbors... "+str(self.cells.index(cell)),end="\r")
+				cell.neighbors = []
+
 				allowed_x = [cell.x-1,cell.x,cell.x+1]
 				allowed_y = [cell.y-1,cell.y,cell.y+1]
 				prevent_index = cell.index
 
 				for other_cell in self.cells:
 					if other_cell.x in allowed_x and other_cell.y in allowed_y and other_cell.index!=prevent_index:
-						cell_neighbors.append(other_cell)
-				cell.neighbors = cell_neighbors
-		print("\n")
+						cell.neighbors.append(other_cell)
+		if self.verbose: print("\n")
 
 	def mouseMoveEvent(self, event):
 
@@ -1054,7 +1058,7 @@ class eight_neighbor_grid(QWidget):
 		# just two highways next to eachother.
 		if self.check_for_highway(x_coord,y_coord,temp_highway): return True
 		temp_cell = cell(x_coord,y_coord)
-		neighbors = get_neighbors(temp_cell,self.cells)
+		neighbors = get_neighbors(temp_cell)
 		for neighbor in neighbors:
 			if self.check_for_highway(neighbor.x,neighbor.y): return True
 		return False
@@ -2368,7 +2372,6 @@ class PriorityQueue:
 
 	def top(self):
 		return self._queue[0][-1]
-		return temp
 
 	def length(self):
 		# Return the length of the queue
@@ -2423,10 +2426,10 @@ class PriorityQueue:
 		#print(self._queue)
 		return self.top().cost
 
-def get_neighbors(current,cells):
+def get_neighbors(current,cells=None):
 	# Returns a list of all 8 neighbor cells to "current"
-	return current.neighbors
-	'''
+	if cells==None: return current.neighbors
+
 	x = current.x
 	y = current.y
 	neighbors = []
@@ -2434,7 +2437,7 @@ def get_neighbors(current,cells):
 		if cell.x in [x,x-1,x+1] and cell.y in [y,y-1,y+1]:
 			neighbors.append(cell)
 	return neighbors
-	'''
+	
 def cell_in_list(current,cells):
 	# Returns True if "current" is in the list, False if not
 	for cell in cells:
